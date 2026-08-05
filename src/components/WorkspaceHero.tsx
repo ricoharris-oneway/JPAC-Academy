@@ -1,0 +1,6 @@
+import type{ReactNode}from'react';
+
+type HeroStat={label:string;value:string|number;icon?:string};
+type WorkspaceHeroProps={eyebrow:string;title:string;description:string;environment?:'lobby'|'admissions'|'operations'|'classroom'|'student'|'studio'|'career'|'default';ariaMessage?:string;ariaLabel?:string;actions?:ReactNode;stats?:HeroStat[];children?:ReactNode};
+
+export function WorkspaceHero({eyebrow,title,description,environment='default',ariaMessage,ariaLabel='ARIA recommends',actions,stats=[],children}:WorkspaceHeroProps){return <section className={`workspace-hero environment-${environment}`}><div className="workspace-hero-light"/><div className="workspace-hero-copy"><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{description}</p>{actions&&<div className="workspace-hero-actions">{actions}</div>}{stats.length>0&&<div className="workspace-hero-stats">{stats.map(stat=><div key={stat.label}><span>{stat.icon}</span><strong>{stat.value}</strong><small>{stat.label}</small></div>)}</div>}</div>{ariaMessage&&<aside className="workspace-aria"><div className="workspace-aria-avatar" aria-hidden="true">A</div><div><span>{ariaLabel}</span><p>{ariaMessage}</p></div></aside>}{children}</section>}
