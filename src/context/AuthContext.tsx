@@ -1,0 +1,12 @@
+import{createContext,useContext,useEffect,useMemo,useState,type ReactNode}from'react';
+import type{Session,User}from'@supabase/supabase-js';
+import{supabase}from'../lib/supabase';
+export type AppRole='student'|'teacher'|'admin'|'developer';
+type Profile={id:string;email:string|null;display_name:string;role:AppRole;avatar_url:string|null;total_xp:number};
+type AuthValue={session:Session|null;user:User|null;profile:Profile|null;loading:boolean;signIn:(email:string,password:string)=>Promise<string|null>;signUp:(email:string,password:string,displayName:string)=>Promise<string|null>;signOut:()=>Promise<void>;refreshProfile:()=>Promise<void>};
+const AuthContext=createContext<AuthValue|null>(null);
+export function AuthProvider({children}:{children:ReactNode}){const[session,setSession]=useState<Session|null>(null);const[profile,setProfile]=useState<Profile|null>(null);const[loading,setLoading]=useState(true);
+const loadProfile=async(userId?:string)=>{if(!supabase||!userId){setProfile(null);return;}const{data}=await supabase.from('profiles').select('id,email,display_name,role,avatar_url,total_xp').eq('id',userId).maybeSingle();setProfile((data as Profile|null)||null)};
+useEffect(()=>{if(!supabase){setLoading(false);return;}supabase.auth.getSession().then(async({data})=>{setSession(data.session);await loadProfile(data.session?.user.id);setLoading(false)});const{sub}= {sub:supabase.auth.onAuthStateChange(async(_event,next)=>{setSession(next);await loadProfile(next?.user.id);setLoading(false)}).data.subscription};return()=>sub.unsubscribe()},[]);
+const value=useMemo<AuthValue>(()=>({session,user:session?.user||null,profile,loading,signIn:async(email,password)=>{if(!supabase)return'Supabase is not configured.';const{error}=await supabase.auth.signInWithPassword({email,password});return error?.message||null},signUp:async(email,password,displayName)=>{if(!supabase)return'Supabase is not configured.';const{error}=await supabase.auth.signUp({email,password,options:{data:{display_name:displayName}}});return error?.message||null},signOut:async()=>{await supabase?.auth.signOut()},refreshProfile:async()=>loadProfile(session?.user.id)}),[session,profile,loading]);return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>}
+export function useAuth(){const value=useContext(AuthContext);if(!value)throw new Error('useAuth must be used inside AuthProvider');return value}
