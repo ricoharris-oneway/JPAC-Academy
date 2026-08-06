@@ -17,7 +17,7 @@ export default async function handler(req,res){
   const member=body.member||{};
   const email=text(member.email||body.email).toLowerCase();
   const wixMemberId=text(member.id||member.memberId||body.wixMemberId);
-  if(!eventId||!eventType||(!email&&!wixMemberId))return json(res,400,{ok:false,error:'eventId, eventType, and a Wix member identity are required'});
+  if(!eventId||!eventType||(!email&&!ixMemberId))return json(res,400,{ok:false,error:'eventId, eventType, and a Wix member identity are required'});
 
   const{data:existing}=await supabase.from('integration_events').select('id,processing_status').eq('provider','wix').eq('external_event_id',eventId).maybeSingle();
   if(existing?.processing_status==='processed')return json(res,200,{ok:true,duplicate:true});
@@ -36,8 +36,17 @@ export default async function handler(req,res){
 
     if(body.programEnrollment){const p=body.programEnrollment;await supabase.from('wix_program_enrollments').upsert({profile_id:profile.id,wix_participant_id:text(p.participantId||p.id),wix_program_id:text(p.programId),wix_program_title:text(p.programTitle||p.title),status:text(p.status||'active').toLowerCase(),progress:Number(p.progress||0),joined_at:dateOrNull(p.joinedAt),completed_at:dateOrNull(p.completedAt),raw_payload:p,last_synced_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'profile_id,wix_program_id'})}
 
+    if(body.assignment){
+      const a=body.assignment;
+      const assignmentId=text(a.id||a.assignmentId);
+      const programId=text(a.programId||body.programEnrollment?.programId);
+      if(!assignmentId||!programId)throw new Error('assignment.id and assignment.programId are required for assignment synchronization');
+      const{error:assignmentError}=await supabase.from('wix_assignments').upsert({wix_assignment_id:assignmentId,wix_program_id:programId,wix_step_id:text(a.stepId||a.lessonId)||null,title:text(a.title)||'JPAC Assignment',description:text(a.description)||null,due_at:dateOrNull(a.dueAt||a.dueDate),submission_type:text(a.submissionType||'performance').toLowerCase(),status:text(a.status||'active').toLowerCase(),raw_payload:a,last_synced_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'wix_assignment_id'});
+      if(assignmentError)throw assignmentError;
+    }
+
     await supabase.from('integration_events').update({profile_id:profile.id,processing_status:'processed',processed_at:new Date().toISOString(),error_message:null}).eq('provider','wix').eq('external_event_id',eventId);
-    return json(res,200,{ok:true,profileId:profile.id,eventId});
+    return json(res,200,{ok:true,profileId:profile.id,eventId,assignmentSynced:Boolean(body.assignment)});
   }catch(error){
     const message=error instanceof Error?error.message:'Unknown synchronization error';
     await supabase.from('integration_events').update({processing_status:'error',error_message:message,processed_at:new Date().toISOString()}).eq('provider','wix').eq('external_event_id',eventId);
