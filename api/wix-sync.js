@@ -17,7 +17,7 @@ export default async function handler(req,res){
   const member=body.member||{};
   const email=text(member.email||body.email).toLowerCase();
   const wixMemberId=text(member.id||member.memberId||body.wixMemberId);
-  if(!eventId||!eventType||(!email&&!ixMemberId))return json(res,400,{ok:false,error:'eventId, eventType, and a Wix member identity are required'});
+  if(!eventId||!eventType||(!email&&!wixMemberId))return json(res,400,{ok:false,error:'eventId, eventType, and a Wix member identity are required'});
 
   const{data:existing}=await supabase.from('integration_events').select('id,processing_status').eq('provider','wix').eq('external_event_id',eventId).maybeSingle();
   if(existing?.processing_status==='processed')return json(res,200,{ok:true,duplicate:true});
