@@ -1,0 +1,87 @@
+// JPAC Academy — Classic Velo backend event bridge
+// Copy this file into Wix: Backend/events.js
+
+import { getSecret } from 'wix-secrets-backend';
+import { fetch } from 'wix-fetch';
+
+const JPAC_API = 'https://jpac-academy.vercel.app/api/wix-sync';
+
+function text(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function eventId(event, prefix) {
+  return text(event?.metadata?.id) || `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function sendToJpac(payload) {
+  const secret = await getSecret('JPAC_WIX_SYNC_SECRET');
+  if (!secret) throw new Error('JPAC_WIX_SYNC_SECRET is missing from Wix Secrets Manager.');
+
+  const response = await fetch(JPAC_API, {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-jpac-wix-secret': secret,
+      'Authorization': `Bearer ${secret}`
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const body = await response.json();
+  if (!response.ok || body?.ok !== true) {
+    throw new Error(body?.error || `JPAC sync returned HTTP ${response.status}`);
+  }
+
+  console.log('JPAC sync completed:', body);
+  return body;
+}
+
+// Fires after a Wix site member is created.
+export async function wixMembers_onMemberCreated(event) {
+  const member = event?.entity || {};
+  const profile = member?.profile || {};
+  const contact = member?.contact || {};
+  const firstName = text(contact?.firstName || profile?.firstName);
+  const lastName = text(contact?.lastName || profile?.lastName);
+  const displayName = text(profile?.nickname || `${firstName} ${lastName}`) || text(member?.loginEmail);
+
+  return sendToJpac({
+    eventId: eventId(event, 'wix-member-created'),
+    eventType: 'member.created',
+    member: {
+      id: text(member?._id || event?.metadata?.entityId),
+      email: text(member?.loginEmail || contact?.emails?.[0]?.email).toLowerCase(),
+      displayName,
+      status: text(member?.status || 'APPROVED').toLowerCase()
+    },
+    rawEvent: event
+  });
+}
+
+// Fires when a Wix Pricing Plans order is purchased, including free plans.
+export async function wixPricingPlans_onOrderPurchased(event) {
+  const data = event?.data || {};
+  const order = data?.order || event?.entity || {};
+  const buyer = data?.buyer || order?.buyer || {};
+
+  return sendToJpac({
+    eventId: eventId(event, 'wix-order-purchased'),
+    eventType: 'pricing_plan.order_purchased',
+    member: {
+      id: text(buyer?.memberId || buyer?.contactId || order?.buyerId),
+      email: text(buyer?.email || order?.buyer?.email).toLowerCase(),
+      displayName: text(buyer?.name || order?.buyer?.name)
+    },
+    order: {
+      id: text(order?._id || order?.id),
+      orderId: text(order?._id || order?.id),
+      planId: text(data?.planId || order?.planId),
+      planName: text(data?.planName || order?.planName),
+      status: text(order?.status || 'purchased').toLowerCase(),
+      startsAt: order?.startDate || order?._createdDate || event?.metadata?.eventTime || null,
+      endsAt: order?.endDate || order?.validUntil || null
+    },
+    rawEvent: event
+  });
+}
