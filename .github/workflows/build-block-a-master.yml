@@ -1,0 +1,43 @@
+name: Build Block A Master SQL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/2026080600*_block_a*.sql'
+      - 'supabase/migrations/202608060010_notification_routing.sql'
+      - 'scripts/build-block-a-master.mjs'
+      - '.github/workflows/build-block-a-master.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-master:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate master installer
+        run: node scripts/build-block-a-master.mjs
+
+      - name: Commit generated installer
+        run: |
+          if git diff --quiet -- supabase/BLOCK_A_MASTER_INSTALLER.sql; then
+            echo "Master installer is already current."
+            exit 0
+          fi
+          git config user.name "jpac-build-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add supabase/BLOCK_A_MASTER_INSTALLER.sql
+          git commit -m "Generate master Block A SQL installer"
+          git push
