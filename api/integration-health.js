@@ -6,19 +6,21 @@ export default async function handler(req,res){
 
   const config=configuration();
   let database={connected:false,error:null};
-  let queues={incomingErrors:0,outboundPending:0,outboundFailed:0};
+  let queues={incomingErrors:0,outboundPending:0,outboundFailed:0,notificationPending:0,notificationFailed:0};
   try{
     const supabase=createServerSupabase();
-    const[{count:incomingErrors,error:incomingError},{count:outboundPending,error:pendingError},{count:outboundFailed,error:failedError}]=await Promise.all([
+    const[{count:incomingErrors,error:incomingError},{count:outboundPending,error:pendingError},{count:outboundFailed,error:failedError},{count:notificationPending,error:notificationPendingError},{count:notificationFailed,error:notificationFailedError}]=await Promise.all([
       supabase.from('integration_events').select('id',{count:'exact',head:true}).eq('processing_status','error'),
       supabase.from('integration_outbox').select('id',{count:'exact',head:true}).in('delivery_status',['pending','retry']),
-      supabase.from('integration_outbox').select('id',{count:'exact',head:true}).eq('delivery_status','failed')
+      supabase.from('integration_outbox').select('id',{count:'exact',head:true}).eq('delivery_status','failed'),
+      supabase.from('certificate_email_queue').select('id',{count:'exact',head:true}).in('delivery_status',['pending','retry']),
+      supabase.from('certificate_email_queue').select('id',{count:'exact',head:true}).eq('delivery_status','failed')
     ]);
-    const firstError=incomingError||pendingError||failedError;
+    const firstError=incomingError||pendingError||failedError||notificationPendingError||notificationFailedError;
     database={connected:!firstError,error:firstError?.message||null};
-    queues={incomingErrors:incomingErrors||0,outboundPending:outboundPending||0,outboundFailed:outboundFailed||0};
+    queues={incomingErrors:incomingErrors||0,outboundPending:outboundPending||0,outboundFailed:outboundFailed||0,notificationPending:notificationPending||0,notificationFailed:notificationFailed||0};
   }catch(error){database={connected:false,error:error instanceof Error?error.message:'Unknown database health error'}}
 
   const required=config.SUPABASE_URL&&config.SUPABASE_SERVICE_ROLE_KEY&&config.JPAC_WIX_SYNC_SECRET;
-  return json(res,required&&database.connected?200:503,{ok:required&&database.connected,status:required&&database.connected?'operational':'configuration_required',configuration:config,database,queues,wixProgressReturn:config.WIX_PROGRESS_WEBHOOK_URL?'configured':'waiting_for_wix_endpoint',checkedAt:new Date().toISOString()});
+  return json(res,required&&database.connected?200:503,{ok:required&&database.connected,status:required&&database.connected?'operational':'configuration_required',configuration:config,database,queues,wixProgressReturn:config.WIX_PROGRESS_WEBHOOK_URL?'configured':'waiting_for_wix_endpoint',notificationDelivery:config.JPAC_NOTIFICATION_WEBHOOK_URL?'configured':'waiting_for_notification_endpoint',checkedAt:new Date().toISOString()});
 }

@@ -9,9 +9,6 @@ Production foundation for J. Moné's Performing Arts Center.
 - Wix Programs, Members and Subscriptions integration layer
 - GitHub source control
 
-## Production path
-1. Foundation
-2. Student Experience
-3. Teacher Experience
-4. Admin Command Center + Developer Studio
-5. Production Deployment and Wix integration
+## Production roadmap
+
+The authoritative architecture, milestone order, production rules, and validation gates are maintained in [docs/JPAC-PRODUCTION-MASTER-ROADMAP.md](docs/JPAC-PRODUCTION-MASTER-ROADMAP.md).

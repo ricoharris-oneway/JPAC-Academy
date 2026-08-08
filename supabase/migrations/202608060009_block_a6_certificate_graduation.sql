@@ -300,7 +300,9 @@ as $$
   from public.certificates c
   join public.profiles p on p.id=c.student_id
   left join public.courses co on co.id=c.course_id
-  where c.verification_token=credential_token and c.status in ('issued','active')
+  where c.verification_token::text=credential_token
+    and c.status in ('issued','active')
+    and c.revoked_at is null
   limit 1;
 $$;
 
