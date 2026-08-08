@@ -2,9 +2,10 @@ import{useEffect,useState}from'react';
 import{useNavigate}from'react-router-dom';
 import{supabase}from'../lib/supabase';
 import{getAuthFlowType,safeInternalPath}from'../lib/auth';
+import{useAuth}from'../context/AuthContext';
 
 export function AuthCallbackPage(){
-  const navigate=useNavigate();const[error,setError]=useState('');
+  const navigate=useNavigate();const{beginPasswordRecovery}=useAuth();const[error,setError]=useState('');
   useEffect(()=>{let active=true;async function complete(){
     if(!supabase){setError('Supabase is not configured.');return}
 
@@ -16,6 +17,7 @@ export function AuthCallbackPage(){
     const refreshToken=hash.get('refresh_token');
     const type=getAuthFlowType(url);
     const requested=safeInternalPath(url.searchParams.get('next'),'/');
+    if(type==='recovery')beginPasswordRecovery();
 
     // Remove one-time credentials from browser history before async work or an
     // error render can expose them.
@@ -40,8 +42,8 @@ export function AuthCallbackPage(){
       return
     }
 
-    const destination=type==='invite'||type==='recovery'?'/set-password':requested;
+    const destination=type==='invite'?'/set-password':type==='recovery'?'/reset-password':requested;
     if(active)navigate(destination,{replace:true,state:{authFlow:type}})
-  }void complete();return()=>{active=false}},[navigate]);
+  }void complete();return()=>{active=false}},[beginPasswordRecovery,navigate]);
   return <main className="auth-status-page"><section className="auth-panel card"><div className="eyebrow">JPAC Academy</div><h1>{error?'We could not complete that link':'Activating your Academy access…'}</h1><p className="muted">{error||'Please wait while your secure session is prepared.'}</p>{error&&<button className="button button-primary" onClick={()=>navigate('/login',{replace:true})}>Return to sign in</button>}</section></main>
 }

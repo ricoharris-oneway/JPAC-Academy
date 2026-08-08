@@ -3,30 +3,13 @@ import{Link,useSearchParams}from'react-router-dom';
 import{supabase}from'../lib/supabase';
 import{useAuth}from'../context/AuthContext';
 import{WorkspaceHero}from'../components/WorkspaceHero';
-
 type WixAssignment={wix_assignment_id:string;wix_program_id:string;title:string;description:string|null;due_at:string|null};
 function safeName(name:string){return name.replace(/[^a-zA-Z0-9._-]/g,'-').slice(-120)}
-
 export function PracticeCoachPage(){
   const{profile}=useAuth();const[params]=useSearchParams();const assignmentId=params.get('assignment')||'';const programId=params.get('program')||'';
-  const[assignment,setAssignment]=useState<WixAssignment|null>(null);const[file,setFile]=useState<File|null>(null);const[message,setMessage]=useState('');const[busy,setBusy]=useState(false);
-  useEffect(()=>{async function load(){
-    if(!supabase||!assignmentId){return}
-    const{data,error}=await supabase.from('wix_assignments').select('wix_assignment_id,wix_program_id,title,description,due_at').eq('wix_assignment_id',assignmentId).eq('status','active').maybeSingle();
-    if(error){setMessage(error.message);return}
-    if(!data){setMessage('This assignment is unavailable or is not assigned to your Wix Program.');return}
-    if(programId&&data.wix_program_id!==programId){setMessage('The assignment link does not match the synchronized Wix Program.');return}
-    setAssignment(data as WixAssignment)
-  }void load()},[assignmentId,programId]);
-  async function submit(){
-    if(!supabase||!profile||!assignment||!file)return;setBusy(true);setMessage('');
-    const path=`${profile.id}/${assignment.wix_assignment_id}/${crypto.randomUUID()}-${safeName(file.name)}`;
-    const{error:uploadError}=await supabase.storage.from('performance-submissions').upload(path,file,{contentType:file.type||undefined,upsert:false});
-    if(uploadError){setMessage(uploadError.message);setBusy(false);return}
-    const{error}=await supabase.rpc('jpac_create_wix_submission',{assignment_external_id:assignment.wix_assignment_id,target_student:profile.id,file_name:file.name,file_type:file.type||'application/octet-stream',file_url:path});
-    if(error){await supabase.storage.from('performance-submissions').remove([path]);setMessage(error.message);setBusy(false);return}
-    setMessage('Performance submitted successfully. It is now in Teacher Studio for review.');setFile(null);setBusy(false)
-  }
+  const[assignment,setAssignment]=useState<WixAssignment|null>(null);const[file,setFile]=useState<File|null>(null);const[message,setMessage]=useState('');const[busy,setBusy]=useState(false);const[loading,setLoading]=useState(Boolean(assignmentId));
+  useEffect(()=>{async function load(){if(!supabase||!assignmentId){setLoading(false);return}const{data,error}=await supabase.from('wix_assignments').select('wix_assignment_id,wix_program_id,title,description,due_at').eq('wix_assignment_id',assignmentId).eq('status','active').maybeSingle();if(error){setMessage(error.message);setLoading(false);return}if(!data){setMessage('This assignment is unavailable or is not assigned to your Wix Program.');setLoading(false);return}if(programId&&data.wix_program_id!==programId){setMessage('The assignment link does not match the synchronized Wix Program.');setLoading(false);return}setAssignment(data as WixAssignment);setLoading(false)}void load()},[assignmentId,programId]);
+  async function submit(){if(!supabase||!profile||!assignment||!file)return;setBusy(true);setMessage('');const path=`${profile.id}/${assignment.wix_assignment_id}/${crypto.randomUUID()}-${safeName(file.name)}`;const{error:uploadError}=await supabase.storage.from('performance-submissions').upload(path,file,{contentType:file.type||undefined,upsert:false});if(uploadError){setMessage(uploadError.message);setBusy(false);return}const{error}=await supabase.rpc('jpac_create_wix_submission',{assignment_external_id:assignment.wix_assignment_id,target_student:profile.id,file_name:file.name,file_type:file.type||'application/octet-stream',file_url:path});if(error){await supabase.storage.from('performance-submissions').remove([path]);setMessage(error.message);setBusy(false);return}setMessage('Performance submitted successfully. It is now in Teacher Studio for review.');setFile(null);setBusy(false)}
   if(!assignmentId)return <section className="card card-pad"><h1>Practice submissions</h1><p className="muted">Open a synchronized assignment from Wix Programs to submit official work.</p><Link className="button button-secondary" to="/courses">Return to My Courses</Link></section>;
-  return <div className="practice-coach"><WorkspaceHero eyebrow="Wix Assignment · Official Submission" title={assignment?.title||'Loading assignment…'} description={assignment?.description||'Only assignments connected to your Wix Program can be submitted.'} environment="studio" stats={assignment?.due_at?[{icon:'📅',value:new Date(assignment.due_at).toLocaleDateString(),label:'Due date'}]:[]}/>{message&&<div className="admin-message">{message}</div>}{assignment&&<section className="card practice-upload"><label className={`practice-drop ${file?'ready':''}`}><input type="file" accept="audio/*,video/*" onChange={event=>setFile(event.target.files?.[0]||null)}/><strong>{file?file.name:'Add audio or video recording'}</strong><small>{file?`${(file.size/1024/1024).toFixed(1)} MB`:'Your file is stored privately for instructor review.'}</small></label><button className="button button-primary" disabled={!file||busy} onClick={()=>void submit()}>{busy?'Uploading and submitting…':'Submit to Teacher Studio'}</button></section>}</div>
+  return <div className="practice-coach"><WorkspaceHero eyebrow="Wix Assignment · Official Submission" title={assignment?.title||(loading?'Loading assignment…':'Assignment unavailable')} description={assignment?.description||'Only assignments connected to your Wix Program can be submitted.'} environment="studio" stats={assignment?.due_at?[{icon:'📅',value:new Date(assignment.due_at).toLocaleDateString(),label:'Due date'}]:[]}/>{message&&<div className="admin-message">{message}</div>}{!loading&&!assignment&&<section className="card card-pad"><p>This submission cannot be opened from the current assignment link.</p><Link className="button button-secondary" to="/courses">Return to My Courses</Link></section>}{assignment&&<section className="card practice-upload"><label className={`practice-drop ${file?'ready':''}`}><input type="file" accept="audio/*,video/*" onChange={event=>setFile(event.target.files?.[0]||null)}/><strong>{file?file.name:'Add audio or video recording'}</strong><small>{file?`${(file.size/1024/1024).toFixed(1)} MB`:'Your file is stored privately for instructor review.'}</small></label><button className="button button-primary" disabled={!file||busy} onClick={()=>void submit()}>{busy?'Uploading and submitting…':'Submit to Teacher Studio'}</button></section>}</div>;
 }

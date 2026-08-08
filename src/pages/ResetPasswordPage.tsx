@@ -1,0 +1,15 @@
+import{useEffect,useState,type FormEvent}from'react';
+import{Link,useNavigate}from'react-router-dom';
+import{supabase}from'../lib/supabase';
+import{useAuth}from'../context/AuthContext';
+
+const MINIMUM_PASSWORD_LENGTH=8;
+
+export function ResetPasswordPage(){
+  const{user,loading,recoveryMode,signOut}=useAuth();const navigate=useNavigate();const[password,setPassword]=useState('');const[confirm,setConfirm]=useState('');const[message,setMessage]=useState('');const[busy,setBusy]=useState(false);const[complete,setComplete]=useState(false);
+  useEffect(()=>{if(!complete)return;const timer=setTimeout(()=>{void signOut().finally(()=>navigate('/login',{replace:true,state:{message:'Password updated successfully. Sign in with your new password.'}}))},1400);return()=>clearTimeout(timer)},[complete,navigate,signOut]);
+  async function submit(event:FormEvent){event.preventDefault();setMessage('');if(password.length<MINIMUM_PASSWORD_LENGTH){setMessage(`Password must be at least ${MINIMUM_PASSWORD_LENGTH} characters.`);return}if(password!==confirm){setMessage('Passwords do not match.');return}if(!supabase){setMessage('Supabase is not configured.');return}setBusy(true);const{error}=await supabase.auth.updateUser({password});setBusy(false);if(error){setMessage(error.message);return}setComplete(true);setPassword('');setConfirm('');setMessage('Password updated successfully.')}
+  if(loading)return <main className="auth-status-page"><section className="auth-panel card"><p className="muted">Preparing your secure recovery session…</p></section></main>;
+  if(!user||!recoveryMode)return <main className="auth-status-page"><section className="auth-panel card"><div className="eyebrow">Password recovery</div><h1>Recovery link unavailable</h1><p className="muted">This password-recovery link is invalid, expired, or has already been completed. Request a new link and try again.</p><Link className="button button-primary" to="/forgot-password">Request a new recovery link</Link><Link className="auth-switch" to="/login">Return to sign in</Link></section></main>;
+  return <main className="auth-status-page"><section className="auth-panel card"><div className="eyebrow">JPAC Academy · Password recovery</div><h1>Create a new password</h1><p className="muted">Choose a secure password for {user.email||'your JPAC Academy account'}.</p><form className="auth-form" onSubmit={submit}><label>New Password<input type="password" minLength={MINIMUM_PASSWORD_LENGTH} required autoComplete="new-password" value={password} onChange={event=>setPassword(event.target.value)}/></label><label>Confirm New Password<input type="password" minLength={MINIMUM_PASSWORD_LENGTH} required autoComplete="new-password" value={confirm} onChange={event=>setConfirm(event.target.value)}/></label><button className="button button-primary" disabled={busy||complete}>{busy?'Updating…':complete?'Password updated':'Update Password'}</button></form>{message&&<div className="auth-message" role="status">{message}</div>}</section></main>;
+}

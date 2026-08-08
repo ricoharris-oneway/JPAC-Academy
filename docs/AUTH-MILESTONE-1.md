@@ -12,6 +12,24 @@ In Supabase Dashboard → Authentication → URL Configuration:
 
 In Authentication → Email Templates, keep Supabase's confirmation URL variable in Invite, Recovery, Confirmation, and Magic Link templates. Do not hard-code a localhost or app-root URL in a template.
 
+## Password-recovery URL configuration
+
+In the production Supabase project, open **Authentication → URL Configuration** and enter:
+
+- **Site URL:** `https://jpac-academy.vercel.app`
+- **Redirect URLs:**
+  - `https://jpac-academy.vercel.app/auth/callback?next=%2Freset-password&type=recovery`
+  - `http://localhost:5173/auth/callback?next=%2Freset-password&type=recovery`
+  - `https://jpac-academy.vercel.app/auth/callback?next=%2Fset-password&type=invite`
+  - `http://localhost:5173/auth/callback?next=%2Fset-password&type=invite`
+
+The application sends password recovery with an exact redirect such as:
+
+- Production: `https://jpac-academy.vercel.app/auth/callback?next=%2Freset-password&type=recovery`
+- Local development: `http://localhost:5173/auth/callback?next=%2Freset-password&type=recovery`
+
+Supabase requires the `redirectTo` value to match an allowed Redirect URL, so enter the complete values including their query strings. Do not change the production Site URL to localhost. Keep the Recovery email template's standard Supabase confirmation URL variable so Supabase verifies the one-time token before returning to the Academy callback. If additional confirmation or magic-link callback variants are used, allowlist their exact `redirectTo` values separately.
+
 ## Authentication lifecycle
 
 - A new Wix purchaser is invited by `/api/wix-sync` with `/auth/callback?next=%2Fset-password&type=invite` as the production redirect.
