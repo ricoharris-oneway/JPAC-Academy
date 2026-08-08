@@ -82,7 +82,7 @@ create or replace function public.jpac_create_wix_submission(
   target_student uuid,
   file_name text,
   file_type text,
-  file_url text
+  file_url text default null
 ) returns uuid
 language plpgsql
 security definer

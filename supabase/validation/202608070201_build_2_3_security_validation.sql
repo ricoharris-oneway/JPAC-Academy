@@ -24,6 +24,14 @@ where schemaname='storage' and tablename='objects'
   and policyname like '%performance media%'
 order by cmd,policyname;
 
+-- EXPECT trailing_default_count=1 and a NULL default expression. CREATE OR
+-- REPLACE must preserve the production function's optional file_url argument.
+select
+  p.pronargdefaults as trailing_default_count,
+  pg_get_expr(p.proargdefaults,0) as trailing_defaults
+from pg_proc p
+where p.oid='public.jpac_create_wix_submission(text,uuid,text,text,text)'::regprocedure;
+
 -- Auth-context negative test template. Replace UUIDs/IDs and expect an error.
 -- begin;
 -- set local role authenticated;
