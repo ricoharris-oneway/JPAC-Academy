@@ -1,0 +1,4 @@
+.auth-switch{display:inline-block;margin-top:18px}
+.auth-status-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 20% 10%,rgba(123,53,200,.35),transparent 34%),#050208}
+.auth-status-page .auth-panel h1{margin:12px 0}
+.auth-status-page .button{margin-top:18px}

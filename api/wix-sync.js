@@ -4,7 +4,10 @@ async function provisionProfile(supabase,{email,displayName,wixMemberId}){
   if(!email)throw new Error('A Wix member email is required to provision a JPAC Academy account.');
 
   let user=null;
-  const{data:inviteData,error:inviteError}=await supabase.auth.admin.inviteUserByEmail(email,{redirectTo:'https://jpac-academy.vercel.app',data:{display_name:displayName||email,wix_member_id:wixMemberId||null,source:'wix'}});
+  const configuredSiteUrl=(process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app').replace(/\/$/,'');
+  if(!configuredSiteUrl.startsWith('https://')||/localhost|127\.0\.0\.1/i.test(configuredSiteUrl))throw new Error('ACADEMY_SITE_URL must be a production HTTPS URL.');
+  const redirectTo=`${configuredSiteUrl}/auth/callback?next=${encodeURIComponent('/set-password')}&type=invite`;
+  const{data:inviteData,error:inviteError}=await supabase.auth.admin.inviteUserByEmail(email,{redirectTo,data:{display_name:displayName||email,wix_member_id:wixMemberId||null,source:'wix'}});
   if(inviteError){
     const{data:listData,error:listError}=await supabase.auth.admin.listUsers({page:1,perPage:1000});
     if(listError)throw inviteError;

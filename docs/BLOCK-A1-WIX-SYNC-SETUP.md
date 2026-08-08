@@ -23,6 +23,7 @@ Add these Production, Preview, and Development variables:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `JPAC_WIX_SYNC_SECRET`
+- `ACADEMY_SITE_URL` (the canonical production HTTPS Academy origin)
 
 Use a long random value for `JPAC_WIX_SYNC_SECRET`. Do not expose the service-role key in frontend variables.
 
@@ -78,9 +79,9 @@ Required header:
 
 Repeated delivery of the same event does not create duplicate XP, users, access records, or enrollments.
 
-## 6. Profile matching rule
+## 6. Profile matching and activation rule
 
-A Wix member is matched to an existing JPAC `profiles` record by email. If no profile exists, the event is logged as an error instead of silently creating a duplicate identity. The member should first sign into JPAC Academy through the approved enrollment flow, or an Admin/Developer can create the student manually.
+A Wix member is matched to an existing JPAC `profiles` record by email. If no profile exists, the endpoint creates an invited Supabase user, the existing auth trigger creates its student profile, and the invitation returns through the production Academy auth callback so the purchaser can set a password. Existing profile IDs, roles, links, and access records are preserved.
 
 ## 7. Operational verification
 
