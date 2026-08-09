@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { academyConfig } from '../config/academy';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { useAuth, type AppRole } from '../context/AuthContext';
@@ -7,7 +7,6 @@ import { resolveDisplayName } from '../lib/displayName';
 
 const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
-  ['Academy Account', '/account', '⚙️', ['student', 'teacher', 'admin', 'developer']],
   ['My Academy', '/courses', '🎓', ['student']],
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
@@ -42,7 +41,8 @@ export function AppLayout() {
       <div className="brand"><img src="/assets/jpac-official-logo.png.png" alt="J. Moné's Performing Arts Center" /><div><h1>{academyConfig.shortName}</h1><p>{academyConfig.tagline}</p></div></div>
       <div className="authenticated-role"><span>Signed in as</span><strong>{role.replace('_', ' ')}</strong></div>
       <nav className="nav" aria-label="Workspace menu">{nav.filter((item) => (item[3] as readonly string[]).includes(role)).map((item) => <NavLink key={item[1]} to={item[1]} end={item[1] === '/'} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><b>{item[2]}</b><span>{item[0]}</span></NavLink>)}</nav>
-      <div className="sidebar-footer"><span className="avatar">{initials}</span><div><strong>{name}</strong><small>{user?.email}</small></div><button className="logout-button" onClick={() => void signOut()}>Sign out</button></div>
+      <NavLink to="/account" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><b>⚙️</b><span>Account Settings</span></NavLink>
+      <div className="sidebar-footer"><Link to="/account" className="avatar" aria-label="Open Account Settings">{initials}</Link><div><Link to="/account"><strong>{name}</strong><small>{user?.email}</small></Link></div><button className="logout-button" onClick={() => void signOut()}>Sign out</button></div>
     </aside>
     <main className="main">
       <header className="topbar"><button className="mobile-menu-button" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}>☰</button><div><strong>JPAC Academy · Creative Operating System</strong><div className="muted">Learning and creative operations in one workspace</div></div><div className="topbar-actions"><div className="status">● {isSupabaseConfigured ? 'Supabase configured' : 'Supabase key needed'}</div></div></header>
