@@ -1,0 +1,28 @@
+import{createServerSupabase}from'./integration.js';
+
+export async function requireCurriculumAdmin(req){
+  const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)throw Object.assign(new Error('Authentication required'),{status:401});
+  const supabase=createServerSupabase();const{data,error}=await supabase.auth.getUser(token);if(error||!data.user)throw Object.assign(new Error('Invalid session'),{status:401});
+  const profile=await supabase.from('profiles').select('id,role').eq('id',data.user.id).single();if(profile.error||!['admin','developer'].includes(profile.data?.role))throw Object.assign(new Error('Administrator access required'),{status:403});
+  return{supabase,user:data.user,profile:profile.data};
+}
+
+const tokens=value=>String(value||'').toLowerCase().match(/[a-z0-9]{4,}/g)||[];
+export async function assembleCurriculumContext(supabase,{courseId,moduleId,lessonId,activityId,administratorInstruction='',levelNumbers=[]}){
+  const courseResult=await supabase.from('courses').select('id,title,slug,description,status').eq('id',courseId).single();if(courseResult.error)throw courseResult.error;
+  const modulesResult=await supabase.from('course_modules').select('id,course_id,course_level_id,level_module_number,title,description,status,short_intro,career_connection,primary_video_url,video_brief,core_xp,core_unlock_threshold,lab_tool_id,aria_coaching_targets,portfolio_moment,portfolio_ready_threshold,course_level:course_levels(level_number,title)').eq('course_id',courseId).order('sort_order').limit(80);if(modulesResult.error)throw modulesResult.error;
+  const modules=modulesResult.data||[];const selectedModule=modules.find(item=>item.id===moduleId)||null;
+  const moduleIds=(moduleId?[moduleId]:modules.filter(item=>!levelNumbers.length||levelNumbers.includes((Array.isArray(item.course_level)?item.course_level[0]:item.course_level)?.level_number)).map(item=>item.id)).slice(0,40);
+  const[lessonsResult,activitiesResult,toolsResult,sourcesResult]=await Promise.all([
+    moduleIds.length?supabase.from('lessons').select('id,module_id,title,status,sort_order,short_summary,learning_objective,content_blocks,technique_cues,common_mistakes,self_check').in('module_id',moduleIds).order('sort_order').limit(160):Promise.resolve({data:[],error:null}),
+    moduleIds.length?supabase.from('activities').select('id,module_id,title,description,instructions,activity_type,submission_type,xp_reward,xp_type,required,status,passing_score,rubric,portfolio_candidate').in('module_id',moduleIds).limit(160):Promise.resolve({data:[],error:null}),
+    supabase.from('lab_tools').select('id,name,description,status,launch_url,tool_type').eq('status','ready').limit(30),
+    supabase.from('curriculum_source_sections').select('id,source_id,course_id,level_number,topic,heading,content,classification,keywords,source:curriculum_sources!inner(id,title,source_type,version,approval_status,discipline)').eq('source.approval_status','approved').or(`course_id.eq.${courseId},course_id.is.null`).limit(40)
+  ]);const error=lessonsResult.error||activitiesResult.error||toolsResult.error||sourcesResult.error;if(error)throw error;
+  const lessons=lessonsResult.data||[];const activities=activitiesResult.data||[];const lesson=lessons.find(item=>item.id===lessonId)||null;const activity=activities.find(item=>item.id===activityId)||null;
+  if(moduleId&&!selectedModule)throw new Error('Module is outside selected course');if(lessonId&&!lesson)throw new Error('Lesson is outside selected module');if(activityId&&!activity)throw new Error('Activity is outside selected module');
+  const relevance=new Set(tokens([administratorInstruction,selectedModule?.title,lesson?.title,activity?.title,courseResult.data.title].join(' ')));
+  const sourceSections=(sourcesResult.data||[]).map(section=>{const source=Array.isArray(section.source)?section.source[0]:section.source;const score=tokens(`${section.heading} ${section.topic} ${(section.keywords||[]).join(' ')}`).filter(token=>relevance.has(token)).length;return{id:section.id,sourceId:section.source_id,sourceTitle:source?.title,sourceType:source?.source_type,version:source?.version,heading:section.heading,topic:section.topic,reasonUsed:score?`Matches ${score} selected curriculum topic term${score===1?'':'s'}.`:'Approved source context for the selected discipline and level.',content:String(section.content).slice(0,2400),score}}).sort((a,b)=>b.score-a.score).slice(0,8);
+  const sourceConflicts=[];for(let index=0;index<sourceSections.length;index++)for(let other=index+1;other<sourceSections.length;other++){const a=sourceSections[index],b=sourceSections[other];if(a.sourceId!==b.sourceId&&String(a.heading).toLowerCase()===String(b.heading).toLowerCase()&&a.content!==b.content)sourceConflicts.push({sourceA:`${a.sourceTitle}: ${a.heading}`,sourceB:`${b.sourceTitle}: ${b.heading}`,recommendedInterpretation:'Potentially conflicting approved sections share a heading. Compare their versions and authority before accepting a recommendation.'})}
+  return{course:courseResult.data,modules:moduleId?[selectedModule]:modules.filter(Boolean).slice(0,40),module:selectedModule,lesson,activity,lessons:lessons.slice(0,120),activities:activities.slice(0,120),tools:toolsResult.data||[],sourceSections,sourceConflicts:sourceConflicts.slice(0,5),administratorInstruction:String(administratorInstruction).slice(0,2000),constraints:{proposalOnly:true,publishedMutationForbidden:true,coreActivityXp:350,unlockThreshold:438,knownIssues:['Singing Beginner Module 1 reviewed E3 Core Challenge is missing; preserve the published legacy challenge and do not manufacture a canonical record.']}};
+}

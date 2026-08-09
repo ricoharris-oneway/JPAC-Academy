@@ -1,37 +1,25 @@
-import{createServerSupabase,json,parseBody}from'./_lib/integration.js';
+import{json,parseBody}from'./_lib/integration.js';
+import{assembleCurriculumContext,requireCurriculumAdmin}from'./_lib/curriculum-context.js';
 import{curriculumProvider,supportedCurriculumActions}from'./_lib/curriculum-intelligence.js';
-
-const one=value=>Array.isArray(value)?value[0]:value;
 
 export default async function handler(req,res){
   if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});
-  const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
-  if(!token)return json(res,401,{error:'Authentication required'});
   try{
-    const supabase=createServerSupabase();
-    const{data:userData,error:userError}=await supabase.auth.getUser(token);
-    if(userError||!userData.user)return json(res,401,{error:'Invalid session'});
-    const{data:profile,error:profileError}=await supabase.from('profiles').select('id,role').eq('id',userData.user.id).single();
-    if(profileError||!profile||!['admin','developer'].includes(profile.role))return json(res,403,{error:'Administrator access required'});
-    const body=parseBody(req);const action=body.action;const courseId=body.courseId;const moduleId=body.moduleId;const lessonId=body.lessonId;const activityId=body.activityId;
-    if(!supportedCurriculumActions.includes(action)||!courseId)return json(res,400,{error:'Unsupported curriculum intelligence request'});
-    const[courseResult,moduleResult,lessonResult,activityResult,lessonsResult,activitiesResult,toolsResult]=await Promise.all([
-      supabase.from('courses').select('id,title,slug,description,status').eq('id',courseId).single(),
-      moduleId?supabase.from('course_modules').select('id,course_id,level_module_number,title,description,status,short_intro,career_connection,primary_video_url,core_xp,core_unlock_threshold,lab_tool_id,aria_coaching_targets').eq('id',moduleId).eq('course_id',courseId).single():Promise.resolve({data:null,error:null}),
-      lessonId?supabase.from('lessons').select('id,module_id,title,status,sort_order,short_summary,learning_objective,content_blocks,technique_cues,common_mistakes,self_check').eq('id',lessonId).single():Promise.resolve({data:null,error:null}),
-      activityId?supabase.from('activities').select('id,module_id,title,description,instructions,activity_type,submission_type,xp_reward,xp_type,required,status,passing_score,rubric').eq('id',activityId).single():Promise.resolve({data:null,error:null}),
-      moduleId?supabase.from('lessons').select('id,module_id,title,status,sort_order,learning_objective').eq('module_id',moduleId).order('sort_order'):Promise.resolve({data:[],error:null}),
-      moduleId?supabase.from('activities').select('id,module_id,title,status,required,xp_type,xp_reward,passing_score').eq('module_id',moduleId):Promise.resolve({data:[],error:null}),
-      supabase.from('lab_tools').select('id,name,status,launch_url').eq('status','ready')
-    ]);
-    const error=courseResult.error||moduleResult.error||lessonResult.error||activityResult.error||lessonsResult.error||activitiesResult.error||toolsResult.error;
-    if(error)return json(res,400,{error:error.message});
-    const module=one(moduleResult.data);const lesson=one(lessonResult.data);const activity=one(activityResult.data);
-    if(module&&module.course_id!==courseId)return json(res,400,{error:'Module is outside selected course'});
-    if(lesson&&lesson.module_id!==moduleId)return json(res,400,{error:'Lesson is outside selected module'});
-    if(activity&&activity.module_id!==moduleId)return json(res,400,{error:'Activity is outside selected module'});
-    const provider=curriculumProvider();
-    const proposal=await provider.generate({action,course:courseResult.data,module,lesson,activity,neighbors:lessonsResult.data||[],activities:activitiesResult.data||[],tools:toolsResult.data||[],knownIssues:['Beginner Module 1 reviewed E3 Core Challenge is missing; retain the published legacy challenge and do not manufacture a replacement.']});
-    return json(res,200,{provider:provider.id,model:provider.model,lifecycle:'generated',label:'PROPOSAL / NOT PUBLISHED',proposal});
-  }catch(error){return json(res,500,{error:error instanceof Error?error.message:'Curriculum intelligence failed'});}
+    const{supabase,user}=await requireCurriculumAdmin(req);const body=parseBody(req);
+    if(!supportedCurriculumActions.includes(body.action)||!body.courseId)return json(res,400,{error:'Unsupported curriculum intelligence request'});
+    const context=await assembleCurriculumContext(supabase,{courseId:body.courseId,moduleId:body.moduleId,lessonId:body.lessonId,activityId:body.activityId,administratorInstruction:body.administratorInstruction,levelNumbers:Array.isArray(body.levelNumbers)?body.levelNumbers.map(Number):[]});
+    const provider=curriculumProvider();const proposal=await provider.generate({action:body.action,context});
+    const scope=body.action==='improve_lesson'?'lesson':body.action==='regenerate_activity'?'activity':body.action==='modernize_module'?'module':'course';
+    const operation=body.action==='improve_lesson'?'improve':body.action==='regenerate_activity'?'regenerate':body.action==='modernize_module'?'modernize':body.action==='rebuild_course'?'regenerate':'analyze';
+    const requestResult=await supabase.from('curriculum_change_requests').insert({requested_by:user.id,scope_type:scope,operation,course_id:body.courseId,module_id:['lesson','activity','module'].includes(scope)?body.moduleId:null,lesson_id:scope==='lesson'?body.lessonId:null,activity_id:scope==='activity'?body.activityId:null,administrator_instruction:context.administratorInstruction,source_context:{source_section_ids:context.sourceSections.map(item=>item.id),bounded_context:{modules:context.modules.length,lessons:context.lessons.length,activities:context.activities.length}},status:'generated'}).select('id').single();if(requestResult.error)throw requestResult.error;
+    const proposalResult=await supabase.from('curriculum_proposals').insert({request_id:requestResult.data.id,provider:provider.id,provider_model:provider.model,current_snapshot:proposal.current||{},proposed_snapshot:proposal.proposed,change_set:proposal.changes||[],ai_rationale:proposal.rationale,validation_result:proposal.validation||{},source_conflicts:proposal.conflicts||[],review_state:'generated'}).select('id').single();if(proposalResult.error)throw proposalResult.error;
+    const cited=(proposal.sourceSupport||[]).filter(item=>item.sourceSectionId).map(item=>({proposal_id:proposalResult.data.id,source_section_id:item.sourceSectionId,reason_used:item.reasonUsed}));if(cited.length){const citationResult=await supabase.from('curriculum_proposal_sources').insert(cited);if(citationResult.error)throw citationResult.error}
+    let versionId=null;
+    if(body.action==='rebuild_course'){
+      const latest=await supabase.from('curriculum_versions').select('version_number').eq('course_id',body.courseId).order('version_number',{ascending:false}).limit(1).maybeSingle();if(latest.error)throw latest.error;
+      const version=await supabase.from('curriculum_versions').insert({course_id:body.courseId,version_number:Number(latest.data?.version_number||0)+1,proposal_id:proposalResult.data.id,source_summary:proposal.sourceSupport||[],title:proposal.proposed?.title||`${context.course.title} Proposal`,administrator_goal:context.administratorInstruction,status:'draft',created_by:user.id}).select('id').single();if(version.error)throw version.error;versionId=version.data.id;
+      const items=context.modules.map((module,index)=>({version_id:versionId,object_type:'module',canonical_object_id:module.id,change_type:'improved',sort_order:index,current_snapshot:module,proposed_snapshot:{...module,proposal_decision:'REVIEW'},review_state:'pending'}));if(items.length){const itemResult=await supabase.from('curriculum_version_items').insert(items);if(itemResult.error)throw itemResult.error}
+    }
+    return json(res,200,{provider:provider.id,model:provider.model,lifecycle:'generated',label:'PROPOSAL / NOT PUBLISHED',requestId:requestResult.data.id,proposalId:proposalResult.data.id,versionId,contextSummary:{modules:context.modules.length,lessons:context.lessons.length,activities:context.activities.length,sources:context.sourceSections.length},proposal});
+  }catch(error){return json(res,error.status||500,{error:error instanceof Error?error.message:'Curriculum intelligence failed'});}
 }
