@@ -7,7 +7,8 @@ async function provisionProfile(supabase,{email,displayName,wixMemberId}){
   const configuredSiteUrl=(process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app').replace(/\/$/,'');
   if(!configuredSiteUrl.startsWith('https://')||/localhost|127\.0\.0\.1/i.test(configuredSiteUrl))throw new Error('ACADEMY_SITE_URL must be a production HTTPS URL.');
   const redirectTo=`${configuredSiteUrl}/auth/callback?next=${encodeURIComponent('/set-password')}&type=invite`;
-  const{data:inviteData,error:inviteError}=await supabase.auth.admin.inviteUserByEmail(email,{redirectTo,data:{display_name:displayName||email,wix_member_id:wixMemberId||null,source:'wix'}});
+  const authMetadata={wix_member_id:wixMemberId||null,source:'wix'};if(displayName)authMetadata.display_name=displayName;
+  const{data:inviteData,error:inviteError}=await supabase.auth.admin.inviteUserByEmail(email,{redirectTo,data:authMetadata});
   if(inviteError){
     const{data:listData,error:listError}=await supabase.auth.admin.listUsers({page:1,perPage:1000});
     if(listError)throw inviteError;
@@ -17,7 +18,7 @@ async function provisionProfile(supabase,{email,displayName,wixMemberId}){
 
   if(!user?.id)throw new Error(`Unable to provision JPAC Academy access for ${email}.`);
 
-  const profileRow={id:user.id,email,display_name:displayName||email,wix_member_id:wixMemberId||null,role:'student'};
+  const nameParts=displayName?displayName.split(/\s+/):[];const profileRow={id:user.id,email,display_name:displayName||null,first_name:nameParts[0]||null,last_name:nameParts.slice(1).join(' ')||null,full_name:displayName||null,wix_member_id:wixMemberId||null,role:'student'};
   const{data:profile,error:profileError}=await supabase.from('profiles').upsert(profileRow,{onConflict:'id'}).select('id,display_name,email,role').single();
   if(profileError)throw profileError;
   return profile;
@@ -30,7 +31,7 @@ export default async function handler(req,res){
   let supabase;
   try{supabase=createServerSupabase()}catch(error){return json(res,500,{ok:false,error:error instanceof Error?error.message:'Server configuration is incomplete'})}
 
-  const body=parseBody(req);const eventId=text(body.eventId||body.id);const eventType=text(body.eventType||body.type);const member=body.member||{};const email=text(member.email||body.email).toLowerCase();const wixMemberId=text(member.id||member.memberId||body.wixMemberId);const displayName=text(member.displayName||member.name)||email;
+  const body=parseBody(req);const eventId=text(body.eventId||body.id);const eventType=text(body.eventType||body.type);const member=body.member||{};const email=text(member.email||body.email).toLowerCase();const wixMemberId=text(member.id||member.memberId||body.wixMemberId);const firstName=text(member.firstName||member.first_name||member.contact?.firstName);const lastName=text(member.lastName||member.last_name||member.contact?.lastName);const candidateName=text(member.displayName||member.name)||text(`${firstName} ${lastName}`);const displayName=candidateName&&candidateName.toLowerCase()!==email&&candidateName.toLowerCase()!==email.split('@')[0]?candidateName:null;
   if(!eventId||!eventType||(!email&&!wixMemberId))return json(res,400,{ok:false,error:'eventId, eventType, and a Wix member identity are required'});
 
   const{data:existing,error:existingError}=await supabase.from('integration_events').select('id,processing_status').eq('provider','wix').eq('external_event_id',eventId).maybeSingle();
@@ -44,8 +45,8 @@ export default async function handler(req,res){
     if(!profile){profile=await provisionProfile(supabase,{email,displayName,wixMemberId});provisioned=true}
 
     const now=new Date().toISOString();
-    const{error:memberError}=await supabase.from('wix_member_links').upsert({profile_id:profile.id,wix_member_id:wixMemberId||`email:${email}`,email:email||profile.email,display_name:displayName||profile.display_name,sync_status:'active',last_synced_at:now,updated_at:now},{onConflict:'profile_id'});if(memberError)throw memberError;
-    await supabase.from('profiles').update({wix_member_id:wixMemberId||null,display_name:displayName||profile.display_name}).eq('id',profile.id);
+    const{error:memberError}=await supabase.from('wix_member_links').upsert({profile_id:profile.id,wix_member_id:wixMemberId||`email:${email}`,email:email||profile.email,display_name:displayName||profile.display_name||null,sync_status:'active',last_synced_at:now,updated_at:now},{onConflict:'profile_id'});if(memberError)throw memberError;
+    const profilePatch={wix_member_id:wixMemberId||null};if(displayName){profilePatch.display_name=displayName;profilePatch.full_name=displayName;profilePatch.first_name=firstName||displayName.split(/\s+/)[0];profilePatch.last_name=lastName||displayName.split(/\s+/).slice(1).join(' ')||null}await supabase.from('profiles').update(profilePatch).eq('id',profile.id);
 
     if(body.order){const o=body.order;const{error}=await supabase.from('wix_access_entitlements').upsert({profile_id:profile.id,wix_order_id:text(o.id||o.orderId),wix_plan_id:text(o.planId),plan_name:text(o.planName),status:text(o.status||'unknown').toLowerCase(),starts_at:dateOrNull(o.startsAt||o.startDate),ends_at:dateOrNull(o.endsAt||o.endDate),raw_payload:o,last_synced_at:now,updated_at:now},{onConflict:'wix_order_id'});if(error)throw error}
     if(body.programEnrollment){const p=body.programEnrollment;const{error}=await supabase.from('wix_program_enrollments').upsert({profile_id:profile.id,wix_participant_id:text(p.participantId||p.id),wix_program_id:text(p.programId),wix_program_title:text(p.programTitle||p.title),status:text(p.status||'active').toLowerCase(),progress:Number(p.progress||0),joined_at:dateOrNull(p.joinedAt),completed_at:dateOrNull(p.completedAt),raw_payload:p,last_synced_at:now,updated_at:now},{onConflict:'profile_id,wix_program_id'});if(error)throw error}
