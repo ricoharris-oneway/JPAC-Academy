@@ -2,3 +2,6 @@
 
 /* Phase E4 preview-density refinement */
 .e4-blocks article{grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:10px;padding:12px;border:1px solid var(--border);border-radius:14px}.e4-blocks article textarea{min-height:130px}.e4-blocks article div{grid-column:1/-1;justify-content:flex-end}.e4-order{display:flex;gap:6px;margin-top:4px}.e4-readiness-panel>div.missing span{color:#ff9da4}@media(max-width:700px){.e4-blocks article div{grid-column:auto;justify-content:flex-start}}
+
+/* Readiness requirement/status alignment */
+.e4-readiness-panel>div:not(.section-head){grid-template-columns:minmax(0,1fr) minmax(110px,auto);align-items:center;gap:16px}.e4-readiness-panel>div:not(.section-head)>span{justify-self:end;min-width:100px;text-align:center;padding:6px 10px;border-radius:999px;font-size:.72rem;font-weight:900}.e4-readiness-panel>div.complete>span{background:rgba(50,180,110,.14);color:#82e6ad}.e4-readiness-panel>div.missing>span{background:rgba(220,80,90,.12);color:#ff9da4}@media(max-width:520px){.e4-readiness-panel>div:not(.section-head){grid-template-columns:1fr}.e4-readiness-panel>div:not(.section-head)>span{justify-self:start}}
