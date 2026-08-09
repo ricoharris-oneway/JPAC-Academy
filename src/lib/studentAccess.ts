@@ -1,7 +1,7 @@
 import{supabase}from'./supabase';
 
 export type AcademyCourse={course_id:string;slug:string;title:string;description:string;difficulty:string;total_xp:number;wix_program_url:string|null;enrollment_id:string;enrollment_status:string;enrollment_start_date:string|null;enrollment_end_date:string|null;enrollment_level:number;enrollment_source:string;progress:number;last_accessed_at:string|null;next_lesson_id:string|null;next_module_id:string|null};
-export type CourseModule={id:string;course_id:string;title:string;description:string;sort_order:number;xp_value:number;level_number:number|null;level_title:string|null};
+export type CourseModule={id:string;course_id:string;title:string;description:string;sort_order:number;xp_value:number;level_number:number|null;level_title:string|null;level_module_number?:number|null;short_intro?:string;primary_video_url?:string|null;core_xp?:number;bonus_xp_available?:number;jpac_tool_activity?:Record<string,string>;real_world_activity?:Record<string,string>;career_connection?:string};
 export type CourseLesson={id:string;module_id:string;title:string;description:string;lesson_type:string;duration_minutes:number|null;sort_order:number;xp_value:number;wix_lesson_url:string|null};
 export type LessonProgress={lesson_id:string;status:string;percent_complete:number;updated_at:string};
 
@@ -63,7 +63,7 @@ export async function loadCourseContent(courseId:string){
   if(identity.error)return{course:null,modules:[],lessons:[],progress:[],courseProgress:0,error:identity.error};
   const access=await supabase.rpc('jpac_student_has_course_access',{target_course:courseId});
   if(access.error||!access.data)return{course:null,modules:[],lessons:[],progress:[],courseProgress:0,error:access.error?.message||'This course is locked because your account does not have an active entitlement.'};
-  const[courseResult,moduleResult]=await Promise.all([supabase.from('courses').select('id,title,slug,description,difficulty,total_xp,wix_program_url').eq('id',courseId).maybeSingle(),supabase.from('course_modules').select('id,course_id,title,description,sort_order,xp_value,course_level:course_levels(level_number,title)').eq('course_id',courseId).eq('status','published').order('sort_order')]);
+  const[courseResult,moduleResult]=await Promise.all([supabase.from('courses').select('id,title,slug,description,difficulty,total_xp,wix_program_url').eq('id',courseId).maybeSingle(),supabase.from('course_modules').select('id,course_id,title,description,sort_order,xp_value,level_module_number,short_intro,primary_video_url,core_xp,bonus_xp_available,jpac_tool_activity,real_world_activity,career_connection,course_level:course_levels(level_number,title)').eq('course_id',courseId).eq('status','published').order('sort_order')]);
   const modules=((moduleResult.data as unknown as Array<Omit<CourseModule,'level_number'|'level_title'>&{course_level:{level_number:number;title:string}|Array<{level_number:number;title:string}>|null}>)||[]).map(item=>{const level=Array.isArray(item.course_level)?item.course_level[0]:item.course_level;return{...item,level_number:level?.level_number||null,level_title:level?.title||null}});
   const lessonResult=modules.length?await supabase.from('lessons').select('id,module_id,title,description,lesson_type,duration_minutes,sort_order,xp_value,wix_lesson_url').in('module_id',modules.map(item=>item.id)).eq('status','published').order('sort_order'):{data:[],error:null};
   const moduleOrder=new Map(modules.map(module=>[module.id,module.sort_order]));
