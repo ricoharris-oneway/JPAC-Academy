@@ -3,7 +3,7 @@
 **Repository status:** implemented locally; production validation pending  
 **Visual scope:** existing JPAC visual language retained  
 **Canonical identity:** Supabase Auth `auth.uid()` / authenticated JWT  
-**Canonical ownership:** Wix purchases and program membership; Supabase profiles, entitlements, curriculum, progress, XP, credentials, portfolio, and intelligence evidence
+**Canonical ownership:** Supabase profiles, Academy enrollments, curriculum, progress, XP, credentials, portfolio, and intelligence evidence. Build 2.5 supersedes Wix entitlement authorization for student course access while preserving Wix history.
 
 This matrix records every student-visible route and actionable control in the current production application. “Working” means the repository implementation is connected to a canonical source and has a real destination or mutation. It does not attest that production Wix mappings, rows, environment settings, or migrations have passed live validation.
 
@@ -11,12 +11,12 @@ This matrix records every student-visible route and actionable control in the cu
 
 | Surface | UI label/control | Current route or action | Expected route or action | Current data source | Required canonical data source | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Sidebar | Home | `/` | Student dashboard | Auth profile and entitlement/progress RPCs | `profiles`, `jpac_my_entitled_courses()`, `lesson_progress` | Working |
-| Sidebar | My Academy | `/courses` | Entitled courses only | `jpac_my_entitled_courses()` enriched with published curriculum and own progress | Wix entitlement + explicit plan/course map; Supabase curriculum/progress | Working |
+| Sidebar | Home | `/` | Student dashboard | Auth profile and Academy enrollment/progress RPCs | `profiles`, `jpac_my_academy_courses()`, `lesson_progress` | Working |
+| Sidebar | My Academy | `/courses` | Actively enrolled courses only | `jpac_my_academy_courses()` enriched with published curriculum and own progress | Academy enrollment; Supabase curriculum/progress | Working after Build 2.5 migration |
 | Sidebar | Practice Submissions | `/practice-coach` | Explain that an authorized Wix assignment link is required | Route is neutral without assignment parameters | `wix_assignments`, Wix Program membership, private Storage, submission RPC | Working |
 | Sidebar | Student Intelligence | `/student-intelligence` | Display stored evidence only | Supabase intelligence tables; neutral zero/empty fallback | `student_digital_twins`, preferences, strengths, recommendations, timeline | Working; live evidence validation pending |
 | Sidebar | Certificates & Portfolio | `/certificates` | Own issued credentials and own portfolio | Student-filtered Supabase queries plus RLS | `certificates`, `portfolio_projects`, `media_assets` | Working; live RLS validation pending |
-| Sidebar | Creative Studio | `/studio` | Ready tools mapped to an entitled course | `lab_tools`, `lab_tool_courses`, `jpac_my_entitled_courses()` | Supabase tools/mappings plus Wix-backed access | Working; empty when no mapped launchable tool |
+| Sidebar | Creative Studio | `/studio` | Ready tools mapped to an actively enrolled course | `lab_tools`, `lab_tool_courses`, `jpac_my_academy_courses()` | Supabase tools/mappings plus Academy enrollment | Working after Build 2.5 migration; empty when no mapped launchable tool |
 | Sidebar | ARIA Mentor | Hidden | Remain hidden until a governed production runtime exists | Removed scripted implementation | Governed server-side ARIA runtime | Feature unavailable; intentionally hidden |
 | Sidebar | Creative Challenges | Hidden | Remain hidden until official persistence/workflows exist | Removed browser/demo implementation | Approved server-side challenge records and mutations | Feature unavailable; intentionally hidden |
 | Sidebar | Sign out | `signOut()` | End Supabase session and return through auth routing | Supabase Auth | Supabase Auth | Working |
@@ -28,7 +28,7 @@ This matrix records every student-visible route and actionable control in the cu
 | Dashboard | Welcome name | Display only | Profile name, then Auth metadata, then email | `profiles.display_name`, Auth metadata/email | Same | Working |
 | Dashboard | Active programs | Display only | Count current entitled mapped courses | Entitlement RPC result | Wix access + explicit mapping | Working |
 | Dashboard | Canonical XP | Display only | Stored profile XP aggregate | `profiles.total_xp` | Canonical XP aggregate maintained by trusted workflow | Working |
-| My Academy | Course cards | Exact entitled UUID set | Show only purchased/current mapped programs | `jpac_my_entitled_courses()` | Same | Working |
+| My Academy | Course cards | Exact actively enrolled UUID set | Show only active Academy enrollments | `jpac_my_academy_courses()` | Same | Working after Build 2.5 migration |
 | My Academy | Open Course | `/courses/:courseId` | Open entitled course | Canonical course UUID | Same | Working |
 | My Academy | Continue Learning | `/courses/:courseId/lessons/:lessonId` when eligible | Resume next eligible lesson | Own lesson progress + curriculum ordering | Same | Working |
 | Course | Open in Wix | External `wix_program_url` | Open configured Wix program in new tab | `courses.wix_program_url` | Supabase course integration metadata | Working when configured; hidden otherwise |
@@ -95,7 +95,7 @@ This matrix records every student-visible route and actionable control in the cu
 
 ## Manual production test procedure
 
-Before testing, deploy the reviewed Build 2.1–2.3 migrations and this preview build. Use real Wix plan IDs mapped to canonical course UUIDs; do not create title-derived mappings. For every persona, capture the browser Network request/response for `jpac_my_entitled_courses`, `jpac_student_has_course_access`, curriculum selects, and lesson-progress writes, plus relevant Supabase logs.
+Before testing, deploy the reviewed Build 2.1–2.3 migrations, the Build 2.5 Academy-enrollment access migration, and this preview build. Create enrollment records with canonical profile/course UUIDs; do not resolve courses by display title. For every persona, capture the browser Network request/response for `jpac_my_academy_courses`, `jpac_student_has_course_access`, curriculum selects, and lesson-progress writes, plus relevant Supabase logs.
 
 ### Singing-only student
 

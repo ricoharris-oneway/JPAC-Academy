@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { academyConfig } from '../config/academy';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { useAuth, type AppRole } from '../context/AuthContext';
+import { resolveDisplayName } from '../lib/displayName';
 
 const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
@@ -24,8 +25,7 @@ export function AppLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const role = (profile?.role || 'student') as AppRole;
-  const metadataName = String(user?.user_metadata?.full_name || user?.user_metadata?.display_name || user?.user_metadata?.first_name || '').trim();
-  const name = profile?.display_name?.trim() || metadataName || user?.email || 'JPAC Student';
+  const name = resolveDisplayName(profile, user);
   const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
   useEffect(() => setMobileOpen(false), [location.pathname]);

@@ -1,0 +1,6 @@
+import type{User}from'@supabase/supabase-js';
+export type DisplayNameProfile={display_name?:string|null;full_name?:string|null;first_name?:string|null;last_name?:string|null;wix_display_name?:string|null};
+function clean(value:unknown){return typeof value==='string'?value.trim().replace(/\s+/g,' '):''}
+function humanName(value:unknown,email:string){const candidate=clean(value);if(!candidate)return'';const normalized=candidate.toLowerCase();const normalizedEmail=email.toLowerCase();const emailLocal=normalizedEmail.split('@')[0];return normalized.includes('@')||normalized===normalizedEmail||normalized===emailLocal?'':candidate}
+function combined(first:unknown,last:unknown){return clean(`${clean(first)} ${clean(last)}`)}
+export function resolveDisplayName(profile:DisplayNameProfile|null|undefined,user:User|null|undefined){const email=clean(user?.email);const metadata=user?.user_metadata||{};const candidates=[profile?.display_name,profile?.full_name,combined(profile?.first_name,profile?.last_name),profile?.wix_display_name,metadata.full_name,metadata.display_name,metadata.name,combined(metadata.first_name,metadata.last_name),metadata.first_name,metadata.given_name];return candidates.map(candidate=>humanName(candidate,email)).find(Boolean)||email||'JPAC Student'}

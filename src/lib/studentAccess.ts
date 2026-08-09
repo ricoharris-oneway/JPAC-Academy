@@ -1,6 +1,6 @@
 import{supabase}from'./supabase';
 
-export type EntitledCourse={course_id:string;slug:string;title:string;description:string;difficulty:string;total_xp:number;wix_program_url:string|null;entitlement_id:string;plan_name:string;entitlement_status:string;entitlement_ends_at:string|null;progress:number;last_accessed_at:string|null;next_lesson_id:string|null;next_module_id:string|null};
+export type AcademyCourse={course_id:string;slug:string;title:string;description:string;difficulty:string;total_xp:number;wix_program_url:string|null;enrollment_id:string;enrollment_status:string;enrollment_start_date:string|null;enrollment_end_date:string|null;enrollment_level:number;enrollment_source:string;progress:number;last_accessed_at:string|null;next_lesson_id:string|null;next_module_id:string|null};
 export type CourseModule={id:string;course_id:string;title:string;description:string;sort_order:number;xp_value:number};
 export type CourseLesson={id:string;module_id:string;title:string;description:string;lesson_type:string;duration_minutes:number|null;sort_order:number;xp_value:number;wix_lesson_url:string|null};
 export type LessonProgress={lesson_id:string;status:string;percent_complete:number;updated_at:string};
@@ -15,9 +15,9 @@ async function authenticatedUserId(){
 }
 
 export async function loadMyCourses(){
-  if(!supabase)return{data:[]as EntitledCourse[],error:'Supabase is not configured.'};
-  const[{data,error},identity]=await Promise.all([supabase.rpc('jpac_my_entitled_courses'),authenticatedUserId()]);
-  const courses=((data as EntitledCourse[]|null)||[]).map(course=>({...course,next_lesson_id:null,next_module_id:null}));
+  if(!supabase)return{data:[]as AcademyCourse[],error:'Supabase is not configured.'};
+  const[{data,error},identity]=await Promise.all([supabase.rpc('jpac_my_academy_courses'),authenticatedUserId()]);
+  const courses=((data as AcademyCourse[]|null)||[]).map(course=>({...course,next_lesson_id:null,next_module_id:null}));
   if(error||identity.error||!courses.length)return{data:courses,error:error?.message||identity.error||''};
 
   const{data:moduleData,error:moduleError}=await supabase.from('course_modules').select('id,course_id,sort_order').in('course_id',courses.map(course=>course.course_id)).eq('status','published').order('sort_order');
@@ -46,7 +46,7 @@ export async function loadMyCourses(){
   return{data:enriched,error:progressError?.message||''};
 }
 
-export function continueDestination(courses:EntitledCourse[]){
+export function continueDestination(courses:AcademyCourse[]){
   if(!courses.length)return{to:'/courses',label:'View My Courses'};
   const withActivity=[...courses].filter(course=>course.last_accessed_at).sort((a,b)=>String(b.last_accessed_at).localeCompare(String(a.last_accessed_at)));
   if(!withActivity.length)return{to:`/courses/${courses[0].course_id}`,label:'Open First Course'};
