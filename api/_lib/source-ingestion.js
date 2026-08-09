@@ -12,8 +12,12 @@ export function normalizeText(value){return String(value||'').replace(/\r\n?/g,'
 export async function extractDocument(buffer,format){
   if(format==='txt'||format==='md')return normalizeText(buffer.toString('utf8'));
   if(format==='docx'){const mammoth=await import('mammoth');const result=await mammoth.default.extractRawText({buffer});return normalizeText(result.value)}
-  if(format==='pdf'){const{PDFParse}=await import('pdf-parse');const parser=new PDFParse({data:buffer});try{const result=await parser.getText();return normalizeText(result.text)}finally{await parser.destroy()}}
+  if(format==='pdf'){const{extractText}=await import('unpdf');const result=await extractText(new Uint8Array(buffer),{mergePages:true});return normalizeText(result.text)}
   throw new Error('Unsupported source format');
+}
+export function sanitizeProcessingError(error){
+  const raw=error instanceof Error?error.message:String(error||'Source processing failed');
+  return raw.replace(/(?:[A-Za-z]:\\|\/(?:var|tmp|home)\/)[^\s]*/g,'[server path]').replace(/(service[_-]?role|authorization|apikey|token)\s*[:=]\s*[^\s,;]+/gi,'$1=[redacted]').slice(0,500)||'Source processing failed';
 }
 export function sectionDocument(text){
   const paragraphs=normalizeText(text).split(/\n\s*\n/).filter(Boolean);const sections=[];let heading='Source Overview',content=[];
