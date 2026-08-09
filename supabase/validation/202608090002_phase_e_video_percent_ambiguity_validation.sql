@@ -1,11 +1,24 @@
 begin transaction read only;
 
 -- Exercise the normal authenticated/RLS path for the existing Singing student.
+do $$
+begin
+  if not exists(
+    select 1
+    from public.enrollments e
+    join public.courses c on c.id=e.course_id
+    where c.slug='singing' and e.status='active'
+  ) then
+    raise exception 'No active enrollment exists for the canonical Singing course';
+  end if;
+end;
+$$;
+
 select set_config('request.jwt.claims',(
   select jsonb_build_object('sub',e.student_id,'role','authenticated')::text
   from public.enrollments e join public.courses c on c.id=e.course_id
-  where c.slug='singing' and e.status in('active','enrolled','in_progress')
-  order by e.created_at limit 1
+  where c.slug='singing' and e.status='active'
+  order by e.id limit 1
 ),true);
 set local role authenticated;
 
