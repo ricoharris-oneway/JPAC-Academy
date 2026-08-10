@@ -12,13 +12,17 @@ PDF image scans are rejected when they contain insufficient extractable text. OC
 
 ## Retrieval and source authority
 
-The server retrieves at most eight approved sections for a proposal, filtered by selected course and ranked using level/topic terms. Each section is capped before provider submission. No student submission, media, grade, or private evidence content is loaded.
+The server retrieves at most eight approved and ready sections for a proposal. It applies course and level scope, uses the existing PostgreSQL `search_vector` for full-text prefiltering, and then ranks the bounded candidates using headings, topics, keywords, curriculum terminology, administrator goals, content matches, and scope specificity. Each excerpt is capped at 1,800 characters before provider submission. No student submission, media, grade, private evidence content, storage path, or private file URL is loaded.
+
+Every retrieved section retains source and section UUIDs, source title/version, section heading/key, classification, relevance details, and its bounded excerpt. Provider citations are allow-listed against those exact section UUIDs and enriched from server-owned provenance rather than trusting provider-supplied source labels.
 
 Authority remains: published curriculum/evidence protections, approved JPAC curriculum, approved ARIA/teaching standards, approved rubric/practice/performance standards, staged curriculum, administrator instruction, then AI suggestion. Provider citations are filtered against section IDs actually included in context. Unsupported recommendations are labeled `AI RECOMMENDATION — NO DIRECT JPAC SOURCE`.
 
 ## Providers
 
-Set `CURRICULUM_AI_PROVIDER=openai` with `OPENAI_API_KEY` and optional `OPENAI_CURRICULUM_MODEL`, or `CURRICULUM_AI_PROVIDER=gemini` with `GEMINI_API_KEY` and optional `GEMINI_CURRICULUM_MODEL`. All calls execute in server functions. With no valid configuration, ARIA falls back to `jpac-safe-development-mock · grounded-rules-v2`.
+Set `CURRICULUM_AI_PROVIDER=openai` with `OPENAI_API_KEY` and optional `OPENAI_CURRICULUM_MODEL`, or `CURRICULUM_AI_PROVIDER=gemini` with `GEMINI_API_KEY` and optional `GEMINI_CURRICULUM_MODEL`. All calls execute in server functions with a bounded context and timeout. With no valid configuration, ARIA falls back to the explicitly labeled `jpac-safe-development-mock · grounded-rules-v3`; the UI states that no LLM generated the proposal.
+
+Structured proposals use `KEEP`, `IMPROVE`, `ADD`, or `REPLACE_IN_FUTURE_VERSION`. Lesson proposals may include title, learning objective, instructional content, practice, ARIA evidence targets, JPAC Lab integration, career connection, rationale, field-level changes, conflicts, confidence, and section-level source support. Each source citation names the recommendation fields it supports and provides an administrator-expandable excerpt.
 
 ## Proposal and version safety
 
