@@ -31,6 +31,11 @@ export default async function handler(req,res){
   try{
     const{supabase,user}=await requireCurriculumAdmin(req);
     if(req.method==='GET'){
+      if(req.query?.sourceId){
+        const source=await supabase.from('curriculum_sources').select('id,title,source_type,discipline,version,approval_status,file_format,file_size,source_hash,processing_status,processing_error,ready_at,approved_at,created_at,updated_at').eq('id',String(req.query.sourceId)).maybeSingle();if(source.error)return json(res,400,{error:source.error.message});if(!source.data)return json(res,404,{error:'Source not found'});
+        const sections=await supabase.from('curriculum_source_sections').select('id,source_id,course_id,level_number,topic,section_key,heading,content,content_hash,classification,keywords,metadata,sort_order,created_at,updated_at,course:courses(id,title)').eq('source_id',source.data.id).order('sort_order',{ascending:true});if(sections.error)return json(res,400,{error:sections.error.message});
+        const rows=sections.data||[];return json(res,200,{source:{...source.data,section_count:rows.length,character_count:rows.reduce((total,item)=>total+String(item.content||'').length,0)},sections:rows.map(item=>({...item,token_estimate:Math.ceil(String(item.content||'').length/4)}))});
+      }
       const result=await supabase.from('curriculum_sources').select('id,title,source_type,discipline,version,approval_status,file_format,file_size,source_hash,processing_status,processing_error,ready_at,created_at,updated_at').order('created_at',{ascending:false}).limit(100);
       return result.error?json(res,400,{error:result.error.message}):json(res,200,{sources:result.data||[]});
     }
@@ -44,9 +49,9 @@ export default async function handler(req,res){
         catch(error){const message=sanitizeProcessingError(error);await supabase.from('curriculum_source_sections').delete().eq('source_id',body.id);await supabase.from('curriculum_sources').update({processing_status:'failed',processing_error:message,ready_at:null,updated_at:new Date().toISOString()}).eq('id',body.id);return json(res,400,{error:message,sourceId:body.id});}
       }
       if(!body.id||!['approved','retired'].includes(body.approvalStatus))return json(res,400,{error:'Invalid source review request'});
-      if(body.approvalStatus==='approved'){const source=await supabase.from('curriculum_sources').select('processing_status').eq('id',body.id).single();if(source.error||source.data?.processing_status!=='ready')return json(res,409,{error:'Only a successfully processed source can be approved.'});}
-      const patch={approval_status:body.approvalStatus,updated_at:new Date().toISOString(),approved_by:body.approvalStatus==='approved'?user.id:null,approved_at:body.approvalStatus==='approved'?new Date().toISOString():null};
-      const result=await supabase.from('curriculum_sources').update(patch).eq('id',body.id).select('id,approval_status').single();return result.error?json(res,400,{error:result.error.message}):json(res,200,{source:result.data});
+      const now=new Date().toISOString();const approving=body.approvalStatus==='approved';const patch=approving?{approval_status:'approved',updated_at:now,approved_by:user.id,approved_at:now}:{approval_status:'retired',updated_at:now};
+      let update=supabase.from('curriculum_sources').update(patch).eq('id',body.id).eq('approval_status',approving?'draft':'approved');if(approving)update=update.eq('processing_status','ready');
+      const result=await update.select('id,approval_status,approved_at').maybeSingle();if(result.error)return json(res,400,{error:result.error.message});if(!result.data)return json(res,409,{error:approving?'Only a ready draft source can be approved.':'Only an approved source can be archived.'});return json(res,200,{source:result.data});
     }
     if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});
     const format=String(body.format||'').toLowerCase();const type=String(body.sourceType||'');
