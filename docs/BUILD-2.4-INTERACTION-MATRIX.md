@@ -1,8 +1,8 @@
 # Build 2.4 — Functional Student Experience
 
-**Repository status:** implemented locally; production validation pending  
-**Visual scope:** existing JPAC visual language retained  
-**Canonical identity:** Supabase Auth `auth.uid()` / authenticated JWT  
+**Repository status:** implemented locally; production validation pending
+**Visual scope:** existing JPAC visual language retained
+**Canonical identity:** Supabase Auth `auth.uid()` / authenticated JWT
 **Canonical ownership:** Supabase profiles, Academy enrollments, curriculum, progress, XP, credentials, portfolio, and intelligence evidence. Build 2.5 supersedes Wix entitlement authorization for student course access while preserving Wix history.
 
 This matrix records every student-visible route and actionable control in the current production application. “Working” means the repository implementation is connected to a canonical source and has a real destination or mutation. It does not attest that production Wix mappings, rows, environment settings, or migrations have passed live validation.
