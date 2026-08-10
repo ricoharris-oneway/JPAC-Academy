@@ -13,6 +13,7 @@ type RelatedLabel={id:string;title:string};
 type ActivityContext={id:string;title:string;xp_reward:number;submission_type:string;passing_score:number;rubric:{criteria?:unknown};course:RelatedLabel|RelatedLabel[]|null;module:RelatedLabel|RelatedLabel[]|null};
 type Submission={id:string;student_id:string;status:string|null;score:number|null;teacher_feedback:string|null;submitted_at:string|null;reviewed_at:string|null;attempt_number:number;media_type:string|null;rubric_assessment:RubricAssessment|null;activity:ActivityContext|ActivityContext[]|null};
 type MediaAccess={submissionId:string;mediaType:'audio'|'video';signedUrl:string;expiresIn:number};
+type AssessmentResponse={calculatedScore:number;result:'approved'|'revision_requested';xpAwarded:number};
 
 const one=<T,>(value:T|T[]|null|undefined):T|null=>Array.isArray(value)?value[0]||null:value||null;
 const studentLabel=(student:Student|null|undefined)=>student?.display_name?.trim()||student?.email?.trim()||'Student';
@@ -89,8 +90,8 @@ export function TeacherPage(){
   async function assess(){
     if(!supabase||!reviewSubmission||!allScoresPresent)return;setReviewBusy(true);setMessage('');
     const criterion_scores=rubricCriteria.map(item=>({name:item.name,score:Number(criterionScores[item.name])}));
-    const{error}=await supabase.rpc('jpac_assess_module_submission',{submission_target:reviewSubmission.id,criterion_scores,review_feedback:feedback});
-    setReviewBusy(false);setMessage(error?.message||`Assessment complete: ${expectedResult}.`);if(!error){closeReview();await load()}
+    const{data,error}=await supabase.rpc('jpac_assess_module_submission',{submission_target:reviewSubmission.id,criterion_scores,review_feedback:feedback});
+    setReviewBusy(false);if(error){setMessage(error.message);return}const result=data as AssessmentResponse|null;if(!result){setMessage('The assessment was saved, but its result could not be loaded. Refresh Teacher Studio to confirm the attempt status.');return}closeReview();await load();setMessage(`Assessment complete: ${result.result==='approved'?'Approved':'Revision requested'} at ${result.calculatedScore}%. ${result.xpAwarded>0?`${result.xpAwarded} Core XP awarded.`:'No duplicate Core XP awarded.'}`)
   }
   async function awardPracticeXp(){if(!supabase||!selected||!profile||!['admin','developer'].includes(profile.role))return;const{error}=await supabase.rpc('admin_award_xp',{target_student:selected,xp_amount:250,xp_reason:'Administrative practice recognition'});setMessage(error?.message||'250 XP awarded for practice.');if(!error)await load()}
 

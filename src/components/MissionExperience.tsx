@@ -2,7 +2,9 @@ import{Link}from'react-router-dom';
 import type{CourseLesson,CourseModule,LessonProgress}from'../lib/studentAccess';
 
 export type MissionActivity={id:string;title:string;description:string;instructions:string;activity_type:string;submission_type:string;xp_reward:number;xp_type:'core'|'bonus';required:boolean;passing_score:number;rubric:Record<string,unknown>};
-export type MissionAttempt={id:string;activity_id:string;attempt_number:number;status:string;score:number|null;teacher_feedback:string|null;submitted_at:string};
+type MissionCriterionScore={name:string;weight:number;score:number;weighted_contribution:number};
+type MissionRubricAssessment={schema_version:number;criterion_scores:MissionCriterionScore[];calculated_score:number;passing_score:number;result:'approved'|'revision_requested'};
+export type MissionAttempt={id:string;activity_id:string;attempt_number:number;status:string;score:number|null;teacher_feedback:string|null;submitted_at:string;reviewed_at:string|null;xp_awarded:number;rubric_assessment:MissionRubricAssessment|null};
 export type MissionCompletion={video_percent:number;assignment_score:number;core_xp_earned:number;core_xp_available:number;core_xp_threshold:number;intro_complete:boolean;assignment_submitted:boolean;assessment_passed:boolean;mastery_awarded:boolean;is_complete:boolean};
 type StageState='locked'|'available'|'active'|'complete'|'revision';
 
@@ -40,7 +42,7 @@ export function PracticeChallenge({kind,activity,moduleData,busy,earned,onComple
 }
 
 export function SubmissionHistory({attempts}:{attempts:MissionAttempt[]}){
-  if(!attempts.length)return null;return <div className="attempt-timeline"><div className="mission-section-label">Submission history</div>{attempts.map(attempt=><article key={attempt.id}><span>{attempt.attempt_number}</span><div><strong>Attempt {attempt.attempt_number}</strong><small>{new Date(attempt.submitted_at).toLocaleDateString()} · {statusLabel(attempt.status)}</small>{attempt.teacher_feedback&&<p>{attempt.teacher_feedback}</p>}</div><b>{attempt.score===null?'Awaiting review':`${attempt.score}%`}</b></article>)}</div>
+  if(!attempts.length)return null;return <div className="attempt-timeline"><div className="mission-section-label">Submission history</div>{attempts.map(attempt=>{const assessment=attempt.rubric_assessment;return <article key={attempt.id}><span>{attempt.attempt_number}</span><div><strong>Attempt {attempt.attempt_number}</strong><small>{new Date(attempt.submitted_at).toLocaleDateString()} · {statusLabel(attempt.status)}</small>{assessment&&<div className="student-assessment-result"><div><span>Assessment result</span><strong>{assessment.calculated_score}% · {assessment.result==='approved'?'Approved':'Revision requested'}</strong><small>Passing score: {assessment.passing_score}%</small></div><div className="student-rubric-results">{assessment.criterion_scores.map(criterion=><p key={criterion.name}><span>{criterion.name}<small>{criterion.weight}% weight</small></span><strong>{criterion.score}%</strong><b>{criterion.weighted_contribution.toFixed(2)} pts</b></p>)}</div>{attempt.teacher_feedback&&<blockquote><strong>Teacher feedback</strong><p>{attempt.teacher_feedback}</p></blockquote>}<p className="student-xp-result">{attempt.xp_awarded>0?`+${attempt.xp_awarded} Core XP earned`:assessment.result==='approved'?'Approved · Core XP was already earned on an earlier passing attempt':'No Core XP awarded · submit a new attempt after revising'}</p></div>}</div><b>{attempt.score===null?'Awaiting review':`${attempt.score}%`}</b></article>})}</div>
 }
 
 export function AriaFeedback({attempt}:{attempt:MissionAttempt|null}){

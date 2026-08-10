@@ -28,7 +28,7 @@ export function ModulePage(){
       supabase.from('xp_ledger').select('source_id,amount').eq('student_id',user.id).eq('module_id',selected.id).eq('xp_type','bonus'),
     ]);
     const activityRows=(activityResult.data as MissionActivity[]|null)||[];setActivities(activityRows);setCompletion(Array.isArray(completionResult.data)?(completionResult.data[0]as MissionCompletion||null):null);setBonusAwards((bonusResult.data as BonusAward[]|null)||[]);
-    let historyError='';if(activityRows.length){const historyResult=await supabase.from('submissions').select('id,activity_id,attempt_number,status,score,teacher_feedback,submitted_at').eq('student_id',user.id).in('activity_id',activityRows.map(item=>item.id)).order('attempt_number',{ascending:false});setAttempts((historyResult.data as MissionAttempt[]|null)||[]);historyError=historyResult.error?.message||''}
+    let historyError='';if(activityRows.length){const historyResult=await supabase.from('submissions').select('id,activity_id,attempt_number,status,score,teacher_feedback,submitted_at,reviewed_at,xp_awarded,rubric_assessment').eq('student_id',user.id).in('activity_id',activityRows.map(item=>item.id)).order('attempt_number',{ascending:false});setAttempts((historyResult.data as MissionAttempt[]|null)||[]);historyError=historyResult.error?.message||''}
     setMessage(activityResult.error?.message||completionResult.error?.message||bonusResult.error?.message||historyError);setLoading(false);
   }
   useEffect(()=>{void load()},[courseId,moduleId,user?.id]);
