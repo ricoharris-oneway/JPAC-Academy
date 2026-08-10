@@ -1,7 +1,7 @@
 import{Link}from'react-router-dom';
 import type{CourseLesson,CourseModule,LessonProgress}from'../lib/studentAccess';
 
-export type MissionActivity={id:string;title:string;description:string;instructions:string;activity_type:string;submission_type:string;xp_reward:number;xp_type:'core'|'bonus';required:boolean;rubric:Record<string,unknown>};
+export type MissionActivity={id:string;title:string;description:string;instructions:string;activity_type:string;submission_type:string;xp_reward:number;xp_type:'core'|'bonus';required:boolean;passing_score:number;rubric:Record<string,unknown>};
 export type MissionAttempt={id:string;activity_id:string;attempt_number:number;status:string;score:number|null;teacher_feedback:string|null;submitted_at:string};
 export type MissionCompletion={video_percent:number;assignment_score:number;core_xp_earned:number;core_xp_available:number;core_xp_threshold:number;intro_complete:boolean;assignment_submitted:boolean;assessment_passed:boolean;mastery_awarded:boolean;is_complete:boolean};
 type StageState='locked'|'available'|'active'|'complete'|'revision';
@@ -16,7 +16,7 @@ export function MissionProgress({completion,lessons,progress,bonusEarned,bonusAv
     {label:'Learn',detail:lessons.length?`${progress.filter(item=>item.status==='completed'&&lessons.some(lesson=>lesson.id===item.lesson_id)).length}/${lessons.length} lessons`:'No lessons yet',state:lessonsComplete?'complete':completion?.intro_complete?'active':'available'},
     {label:'Watch',detail:`${Math.round(completion?.video_percent||0)}% watched`,state:(completion?.video_percent||0)>=90?'complete':'available'},
     {label:'Practice',detail:bonusAvailable?`${bonusEarned}/${bonusAvailable} Bonus XP`:'Optional',state:bonusEarned>0?'complete':'available'},
-    {label:'Create',detail:hasRevision?'Another take':completion?.assignment_submitted?'Submitted':'Creative challenge',state:hasRevision?'revision':completion?.assessment_passed?'complete':completion?.assignment_submitted?'active':'available'},
+    {label:'Core Challenge',detail:hasRevision?'Another take':completion?.assignment_submitted?'Awaiting review':'Submit your evidence',state:hasRevision?'revision':completion?.assessment_passed?'complete':completion?.assignment_submitted?'active':'available'},
     {label:'Master',detail:completion?.is_complete?'Mission mastered':'Complete every Core step',state:completion?.is_complete?'complete':hasRevision?'revision':'available'},
   ];
   return <section className="mission-progress" aria-label="Mission progress"><div className="mission-progress-head"><div><span>Mission progress</span><h2>Keep your creative momentum</h2></div><div className="mission-xp-summary"><strong>{completion?.core_xp_earned||0} / {completion?.core_xp_available||625}</strong><small>Core XP</small><b>{bonusEarned} / {bonusAvailable}</b><small>Bonus XP</small></div></div><ol>{stages.map((stage,index)=><li className={`mission-stage state-${stage.state}`} key={stage.label}><span>{stage.state==='complete'?'✓':index+1}</span><div><strong>{stage.label}</strong><small>{stage.detail}</small></div><em>{stageLabel[stage.state]}</em></li>)}</ol></section>

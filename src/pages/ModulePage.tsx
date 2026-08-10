@@ -1,16 +1,17 @@
 import{useEffect,useMemo,useRef,useState}from'react';
-import{Link,useParams}from'react-router-dom';
+import{Link,useLocation,useParams}from'react-router-dom';
 import{loadCourseContent,type CourseModule}from'../lib/studentAccess';
 import{supabase}from'../lib/supabase';
 import{useAuth}from'../context/AuthContext';
 import{AriaFeedback,LearnSection,LevelUpCard,MasteryChecklist,MissionBrief,MissionProgress,PracticeChallenge,SubmissionHistory,WatchSection,type MissionActivity,type MissionAttempt,type MissionCompletion}from'../components/MissionExperience';
+import'../styles/student-assignment-flow.css';
 
 type CourseRecord={id:string;title:string};
 type BonusAward={source_id:string|null;amount:number};
 const matchesDataTitle=(activity:MissionActivity,data?:Record<string,string>)=>Boolean(data?.title&&activity.title.toLowerCase().includes(data.title.toLowerCase()));
 
 export function ModulePage(){
-  const{courseId='',moduleId=''}=useParams();const{user}=useAuth();
+  const{courseId='',moduleId=''}=useParams();const location=useLocation();const{user}=useAuth();
   const[course,setCourse]=useState<CourseRecord|null>(null);const[module,setModule]=useState<CourseModule|null>(null);const[courseModules,setCourseModules]=useState<CourseModule[]>([]);const[lessons,setLessons]=useState<Awaited<ReturnType<typeof loadCourseContent>>['lessons']>([]);const[progress,setProgress]=useState<Awaited<ReturnType<typeof loadCourseContent>>['progress']>([]);const[activities,setActivities]=useState<MissionActivity[]>([]);const[completion,setCompletion]=useState<MissionCompletion|null>(null);const[attempts,setAttempts]=useState<MissionAttempt[]>([]);const[bonusAwards,setBonusAwards]=useState<BonusAward[]>([]);const[file,setFile]=useState<File|null>(null);const[loading,setLoading]=useState(true);const[busy,setBusy]=useState(false);const[message,setMessage]=useState('');const lastVideoSecond=useRef(-10);
 
   async function load(){
@@ -18,7 +19,7 @@ export function ModulePage(){
     setCourse(result.course as CourseRecord|null);setModule(selected);setCourseModules(result.modules);setLessons(selected?result.lessons.filter(item=>item.module_id===selected.id):[]);setProgress(result.progress);setActivities([]);setCompletion(null);setAttempts([]);setBonusAwards([]);
     if(result.error||!selected||!supabase||!user){setMessage(result.error||(!selected?'This mission is locked, unavailable, or outside your enrolled course.':''));setLoading(false);return}
     const[activityResult,completionResult,bonusResult]=await Promise.all([
-      supabase.from('activities').select('id,title,description,instructions,activity_type,submission_type,xp_reward,xp_type,required,rubric').eq('module_id',selected.id).eq('status','published'),
+      supabase.from('activities').select('id,title,description,instructions,activity_type,submission_type,xp_reward,xp_type,required,passing_score,rubric').eq('module_id',selected.id).eq('status','published'),
       supabase.rpc('jpac_module_completion',{target_student:user.id,target_module:selected.id}),
       supabase.from('xp_ledger').select('source_id,amount').eq('student_id',user.id).eq('module_id',selected.id).eq('xp_type','bonus'),
     ]);
@@ -35,7 +36,8 @@ export function ModulePage(){
   const otherPractice=optionalActivities.filter(activity=>activity.id!==labActivity?.id&&activity.id!==realWorldActivity?.id);
   const bonusEarned=bonusAwards.reduce((sum,row)=>sum+Number(row.amount||0),0);const awardedSources=new Set(bonusAwards.map(row=>row.source_id).filter(Boolean));
   const bonusAvailable=optionalActivities.length?optionalActivities.reduce((sum,item)=>sum+Number(item.xp_reward||0),0):Number(module?.bonus_xp_available||0);
-  const requiredAttempts=requiredActivity?attempts.filter(item=>item.activity_id===requiredActivity.id):[];const latestAssessed=requiredAttempts.find(item=>item.score!==null)||null;const hasRevision=requiredAttempts[0]?.status==='revision_requested';
+  const requiredAttempts=requiredActivity?attempts.filter(item=>item.activity_id===requiredActivity.id):[];const latestAttempt=requiredAttempts[0]||null;const latestAssessed=requiredAttempts.find(item=>item.score!==null)||null;const hasRevision=latestAttempt?.status==='revision_requested';
+  useEffect(()=>{if(!loading&&location.hash==='#core-challenge'&&requiredActivity){requestAnimationFrame(()=>{const target=document.getElementById('core-challenge');target?.focus({preventScroll:true});target?.scrollIntoView({behavior:'smooth',block:'start'})})}},[loading,location.hash,requiredActivity?.id]);
   const nextModule=useMemo(()=>{if(!module)return null;return courseModules.filter(item=>item.sort_order>module.sort_order).sort((a,b)=>a.sort_order-b.sort_order)[0]||null},[courseModules,module]);
 
   async function completeIntro(){if(!supabase)return;setBusy(true);const{data,error}=await supabase.rpc('jpac_complete_module_intro',{target_module:moduleId});setBusy(false);setMessage(error?.message||(Number(data)>0?'Mission started. 50 Core XP earned.':'Mission intro was already complete; no duplicate Core XP was awarded.'));if(!error)await load()}
@@ -52,7 +54,8 @@ export function ModulePage(){
     <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
     <WatchSection videoUrl={module.primary_video_url} percent={Number(completion?.video_percent||0)} onTimeUpdate={trackVideo}/>
     <div className="mission-practice-grid"><PracticeChallenge kind="practice" activity={realWorldActivity} moduleData={module.real_world_activity} busy={busy} earned={Boolean(realWorldActivity&&awardedSources.has(realWorldActivity.id))} onComplete={activity=>void completePractice(activity)}/><PracticeChallenge kind="lab" activity={labActivity} moduleData={module.jpac_tool_activity} busy={busy} earned={Boolean(labActivity&&awardedSources.has(labActivity.id))} onComplete={activity=>void completePractice(activity)}/>{otherPractice.map(activity=><PracticeChallenge key={activity.id} kind="practice" activity={activity} busy={busy} earned={awardedSources.has(activity.id)} onComplete={item=>void completePractice(item)}/>)}</div>
-    {requiredActivity&&<section className="mission-card creative-challenge"><div className="creative-challenge-head"><div><div className="mission-section-label">Create it</div><h2>{requiredActivity.title}</h2></div><strong>{requiredActivity.xp_reward} Core XP</strong></div><p>{requiredActivity.description}</p><p className="muted">{requiredActivity.instructions}</p><SubmissionHistory attempts={requiredAttempts}/><label className="practice-drop"><input type="file" accept="audio/*,video/*" onChange={event=>setFile(event.target.files?.[0]||null)}/><strong>{file?.name||'Choose an audio or video take'}</strong><small>{file?`${Math.max(.01,file.size/1024/1024).toFixed(2)} MB · ready to upload`:'Your file remains private and previous attempts are never overwritten.'}</small></label><button className="button button-primary" disabled={!file||busy} onClick={()=>void submit(requiredActivity)}>{busy?'Uploading…':requiredAttempts.length?`Submit attempt ${Math.max(...requiredAttempts.map(item=>item.attempt_number))+1}`:'Submit creative challenge'}</button></section>}
+    {requiredActivity&&<section className="mission-card creative-challenge" id="core-challenge" tabIndex={-1}><div className="creative-challenge-head"><div><div className="mission-section-label">Core Challenge · Assignment</div><h2>{requiredActivity.title}</h2></div><strong>{requiredActivity.xp_reward} Core XP</strong></div><div className="challenge-policy"><span><small>Submission type</small><strong>{requiredActivity.submission_type.replaceAll('_',' ')}</strong></span><span><small>Passing score</small><strong>{requiredActivity.passing_score}%</strong></span><span><small>Previous attempts</small><strong>{requiredAttempts.length}</strong></span><span><small>Current status</small><strong>{latestAttempt?latestAttempt.status.replaceAll('_',' '):'Not submitted'}</strong></span></div><p>{requiredActivity.description}</p><div className="challenge-instructions"><strong>Assignment instructions</strong><p>{requiredActivity.instructions}</p></div>{requiredAttempts.length?<SubmissionHistory attempts={requiredAttempts}/>:<p className="submission-status">No previous attempts. Your first submission will be preserved as attempt 1.</p>}<label className="practice-drop"><input type="file" accept="audio/*,video/*" onChange={event=>setFile(event.target.files?.[0]||null)}/><strong>{file?.name||'Choose an audio or video take'}</strong><small>{file?`${Math.max(.01,file.size/1024/1024).toFixed(2)} MB · selected and ready to upload`:'Your file remains private and previous attempts are never overwritten.'}</small></label><button className="button button-primary" disabled={!file||busy} onClick={()=>void submit(requiredActivity)}>{busy?'Uploading…':requiredAttempts.length?`Submit attempt ${Math.max(...requiredAttempts.map(item=>item.attempt_number))+1}`:'Submit creative challenge'}</button></section>}
+    {!requiredActivity&&!message&&<section className="mission-card"><div className="mission-section-label">Core Challenge</div><h2>Assignment unavailable</h2><p className="muted">No published Core Challenge is currently available for this unlocked module. Please contact JPAC Academy support.</p></section>}
     <AriaFeedback attempt={latestAssessed}/>
     <MasteryChecklist completion={completion}/>
     <LevelUpCard completion={completion} bonusEarned={bonusEarned} nextModule={nextModule} courseId={course.id} currentLevel={module.level_number}/>
