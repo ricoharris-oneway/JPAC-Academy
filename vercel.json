@@ -1,1 +1,1 @@
-{"framework":"vite","rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{"framework":"vite","installCommand":"pnpm install --frozen-lockfile","rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
