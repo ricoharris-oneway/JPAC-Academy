@@ -3,9 +3,34 @@ begin;
 do $$
 begin
   if to_regprocedure('public.jpac_sync_enrollment_progress(uuid,uuid)') is null
-    or to_regprocedure('public.jpac_record_module_video_progress(uuid,integer,integer)') is null
     or not exists(select 1 from pg_trigger where tgrelid='public.xp_ledger'::regclass and tgname='xp_ledger_sync_canonical_progress' and not tgisinternal)
-  then raise exception 'Migrations 202608100004 and 202608100005 must be installed first';
+  then raise exception 'Migration 202608100004_pilot_canonical_progress_consistency.sql must be installed first';
+  end if;
+end $$;
+
+-- 100005 may not have been applied. Adopt its non-destructive playback-position
+-- column here so both the 100004-only and 100005-installed baselines converge.
+alter table public.module_video_progress
+  add column if not exists last_reported_position_seconds integer;
+
+update public.module_video_progress
+set last_reported_position_seconds=watched_seconds
+where last_reported_position_seconds is null;
+
+alter table public.module_video_progress
+  alter column last_reported_position_seconds set default 0,
+  alter column last_reported_position_seconds set not null;
+
+do $$
+begin
+  if not exists(
+    select 1 from pg_constraint
+    where conrelid='public.module_video_progress'::regclass
+      and conname='module_video_progress_reported_position_check'
+  ) then
+    alter table public.module_video_progress
+      add constraint module_video_progress_reported_position_check
+      check(last_reported_position_seconds>=0);
   end if;
 end $$;
 
@@ -283,9 +308,16 @@ grant execute on function public.curriculum_update_instructional_media_metadata(
 grant execute on function public.curriculum_activate_instructional_media(uuid,text,integer) to authenticated;
 grant execute on function public.curriculum_set_instructional_media(uuid,text,text,integer) to authenticated;
 
--- Supersede the module-only attachment and progress entry points from 100005.
-revoke all on function public.curriculum_attach_initial_module_media(uuid,text,text,text,integer) from authenticated;
-revoke all on function public.jpac_record_module_video_progress(uuid,integer,integer) from authenticated;
+-- Supersede the optional 100005 entry points without requiring that migration.
+do $$
+begin
+  if to_regprocedure('public.curriculum_attach_initial_module_media(uuid,text,text,text,integer)') is not null then
+    revoke all on function public.curriculum_attach_initial_module_media(uuid,text,text,text,integer) from public,anon,authenticated;
+  end if;
+  if to_regprocedure('public.jpac_record_module_video_progress(uuid,integer,integer)') is not null then
+    revoke all on function public.jpac_record_module_video_progress(uuid,integer,integer) from public,anon,authenticated;
+  end if;
+end $$;
 
 create or replace function public.jpac_record_instructional_media_progress(target_module uuid,target_media uuid,watched integer,duration integer)
 returns numeric language plpgsql security definer set search_path=public as $$
