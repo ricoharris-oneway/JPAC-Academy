@@ -34,7 +34,6 @@ export async function loadMyCourses(){
     const courseLessons=lessons.filter(lesson=>moduleById.get(lesson.module_id)?.course_id===course.course_id).sort((a,b)=>{const am=moduleById.get(a.module_id)?.sort_order||0;const bm=moduleById.get(b.module_id)?.sort_order||0;return am-bm||a.sort_order-b.sort_order});
     if(!courseLessons.length)return course;
     const states=courseLessons.map(lesson=>progressByLesson.get(lesson.id));
-    const canonicalProgress=states.reduce((sum,state)=>sum+Math.max(0,Math.min(100,Number(state?.percent_complete||0))),0)/courseLessons.length;
     const latest=states.filter(Boolean).sort((a,b)=>String(b!.updated_at).localeCompare(String(a!.updated_at)))[0];
     let next=latest?courseLessons.find(lesson=>lesson.id===latest.lesson_id):undefined;
     if(latest?.status==='completed'){
@@ -42,7 +41,7 @@ export async function loadMyCourses(){
       next=courseLessons.slice(position+1).find(lesson=>progressByLesson.get(lesson.id)?.status!=='completed');
     }
     if(!next||progressByLesson.get(next.id)?.status==='completed')next=courseLessons.find(lesson=>progressByLesson.get(lesson.id)?.status!=='completed');
-    return{...course,progress:canonicalProgress,last_accessed_at:latest?.updated_at||course.last_accessed_at,next_lesson_id:next?.id||null,next_module_id:next?.module_id||null};
+    return{...course,last_accessed_at:latest?.updated_at||course.last_accessed_at,next_lesson_id:next?.id||null,next_module_id:next?.module_id||null};
   });
   return{data:enriched,error:progressError?.message||''};
 }

@@ -11,25 +11,27 @@ type Preference={student_id:string;visual_score:number;auditory_score:number;kin
 type Strength={id:string;student_id:string;skill_name:string;confidence:number};
 type Recommendation={id:string;student_id:string;title:string;rationale:string;priority:number;status:string;recommendation_type:string};
 type JourneyEvent={id:string;student_id:string;event_type:string;title:string;description:string;occurred_at:string};
+type EnrollmentProgress={student_id:string;progress:number;status:string};
 const blankTwin:Omit<Twin,'student_id'|'calculated_at'>={creative_health:0,course_progress_score:0,practice_consistency:0,confidence_score:0,technique_score:0,creativity_score:0,professionalism_score:0,portfolio_score:0,goal_progress_score:0,performance_readiness:0,career_readiness:0,learning_velocity:0,risk_level:'unknown',trend:'not calculated',summary:'No production learning analysis is available yet.',next_best_action:''};
 
 export function StudentIntelligencePage(){
   const{user,profile}=useAuth();
-  const[students,setStudents]=useState<Student[]>([]);const[twins,setTwins]=useState<Twin[]>([]);const[preferences,setPreferences]=useState<Preference[]>([]);const[strengths,setStrengths]=useState<Strength[]>([]);const[recommendations,setRecommendations]=useState<Recommendation[]>([]);const[timeline,setTimeline]=useState<JourneyEvent[]>([]);const[selected,setSelected]=useState('');const[message,setMessage]=useState('');const[loading,setLoading]=useState(true);
+  const[students,setStudents]=useState<Student[]>([]);const[twins,setTwins]=useState<Twin[]>([]);const[enrollmentProgress,setEnrollmentProgress]=useState<EnrollmentProgress[]>([]);const[preferences,setPreferences]=useState<Preference[]>([]);const[strengths,setStrengths]=useState<Strength[]>([]);const[recommendations,setRecommendations]=useState<Recommendation[]>([]);const[timeline,setTimeline]=useState<JourneyEvent[]>([]);const[selected,setSelected]=useState('');const[message,setMessage]=useState('');const[loading,setLoading]=useState(true);
   const isStaff=Boolean(profile&&['teacher','admin','developer'].includes(profile.role));
   async function load(){
     if(!supabase||!user)return;
     setLoading(true);
     const studentFilter=isStaff?supabase.from('profiles').select('id,display_name,email,total_xp').eq('role','student').order('display_name'):supabase.from('profiles').select('id,display_name,email,total_xp').eq('id',user.id);
-    const[{data:s},{data:t},{data:p},{data:st},{data:r},{data:tl}]=await Promise.all([
+    const[{data:s},{data:t},{data:ep},{data:p},{data:st},{data:r},{data:tl}]=await Promise.all([
       studentFilter,
       supabase.from('student_digital_twins').select('*'),
+      supabase.from('enrollments').select('student_id,progress,status').eq('status','active'),
       supabase.from('student_learning_preferences').select('student_id,visual_score,auditory_score,kinesthetic_score,reading_score,preferred_pace,preferred_feedback'),
       supabase.from('student_strengths').select('id,student_id,skill_name,confidence').order('confidence',{ascending:false}),
       supabase.from('aria_recommendations').select('id,student_id,title,rationale,priority,status,recommendation_type').eq('status','active').order('priority',{ascending:false}),
       supabase.from('student_timeline').select('id,student_id,event_type,title,description,occurred_at').order('occurred_at',{ascending:false}).limit(60),
     ]);
-    const studentRows=(s as Student[])||[];setStudents(studentRows);setTwins((t as Twin[])||[]);setPreferences((p as Preference[])||[]);setStrengths((st as Strength[])||[]);setRecommendations((r as Recommendation[])||[]);setTimeline((tl as JourneyEvent[])||[]);if(!selected&&studentRows[0])setSelected(studentRows[0].id);setLoading(false);
+    const studentRows=(s as Student[])||[];setStudents(studentRows);setTwins((t as Twin[])||[]);setEnrollmentProgress((ep as EnrollmentProgress[])||[]);setPreferences((p as Preference[])||[]);setStrengths((st as Strength[])||[]);setRecommendations((r as Recommendation[])||[]);setTimeline((tl as JourneyEvent[])||[]);if(!selected&&studentRows[0])setSelected(studentRows[0].id);setLoading(false);
   }
   useEffect(()=>{void load()},[user?.id,profile?.role]);
   const student=students.find(item=>item.id===selected);
@@ -39,7 +41,8 @@ export function StudentIntelligencePage(){
   const studentStrengths=strengths.filter(item=>item.student_id===selected).slice(0,6);
   const studentRecommendations=recommendations.filter(item=>item.student_id===selected).slice(0,4);
   const studentTimeline=timeline.filter(item=>item.student_id===selected).slice(0,8);
-  const dimensions=useMemo(()=>[['Course progress',twin.course_progress_score],['Creative flame',twin.practice_consistency],['Confidence',twin.confidence_score],['Technique',twin.technique_score],['Creativity',twin.creativity_score],['Professionalism',twin.professionalism_score],['Portfolio',twin.portfolio_score],['Career readiness',twin.career_readiness]] as [string,number][],[twin]);
+  const canonicalProgress=useMemo(()=>{const rows=enrollmentProgress.filter(item=>item.student_id===selected);return rows.length?rows.reduce((sum,item)=>sum+Number(item.progress||0),0)/rows.length:0},[enrollmentProgress,selected]);
+  const dimensions=useMemo(()=>[['Active-level mastery',canonicalProgress],['Creative flame',twin.practice_consistency],['Confidence',twin.confidence_score],['Technique',twin.technique_score],['Creativity',twin.creativity_score],['Professionalism',twin.professionalism_score],['Portfolio',twin.portfolio_score],['Career readiness',twin.career_readiness]] as [string,number][],[twin,canonicalProgress]);
   async function refreshTwin(){if(!supabase||!selected)return;setMessage('Refreshing production learning evidence…');const{error}=await supabase.rpc('refresh_student_digital_twin',{target_student:selected,refresh_reason:'Staff evidence refresh'});setMessage(error?.message||'Learning evidence refreshed.');if(!error)await load()}
   if(loading)return <SkeletonCards count={5}/>;
   if(!student)return <EmptyState icon="🌟" title="No creative journey available yet" detail={isStaff?'Create or enroll a student before learning evidence can be analyzed.':'Your learning evidence will appear here after you begin an enrolled course.'} actionLabel={isStaff?'Open Admissions':undefined} actionTo={isStaff?'/manual-student':undefined}/>;
