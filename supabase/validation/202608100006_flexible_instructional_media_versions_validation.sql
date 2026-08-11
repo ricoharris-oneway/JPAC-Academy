@@ -63,7 +63,10 @@ select
   public.jpac_normalize_instructional_media_url('https://www.youtube.com/watch?v=dQw4w9WgXcQ')->>'provider' youtube_watch_provider,
   public.jpac_normalize_instructional_media_url('https://youtu.be/dQw4w9WgXcQ?t=10')->>'provider_media_id' youtube_short_identity,
   public.jpac_normalize_instructional_media_url('https://www.youtube.com/embed/dQw4w9WgXcQ?start=10')->>'normalized_url' youtube_embed_normalized,
-  public.jpac_normalize_instructional_media_url('https://cdn.example.com/media/module-1.MP4?token=test')->>'provider' direct_provider;
+  public.jpac_normalize_instructional_media_url('https://cdn.example.com/media/module-1.MP4?token=test')->>'provider' direct_provider,
+  (public.jpac_normalize_instructional_media_url('https://cdn.example.com/media/module-1.MP4?token=test')->>'provider_media_id')=
+    (public.jpac_normalize_instructional_media_url('https://cdn.example.com/media/module-1.MP4?token=test')->>'normalized_url') direct_identity_is_exact_canonical_url,
+  position('digest(' in lower(pg_get_functiondef('public.jpac_normalize_instructional_media_url(text)'::regprocedure)))=0 normalizer_has_no_pgcrypto_dependency;
 
 select
   position('public.is_admin()' in pg_get_functiondef('public.curriculum_set_instructional_media(uuid,text,text,integer)'::regprocedure))>0 set_internal_admin_guard,

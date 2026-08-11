@@ -65,9 +65,10 @@ begin
   end if;
 
   if source~* '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}/[^[:space:]?#]+\.(mp4|webm|m4v)(\?[^[:space:]#]*)?(#[^[:space:]]*)?$' then
+    if octet_length(source)>1800 then raise exception 'Direct instructional media URL is too long'; end if;
     return jsonb_build_object(
       'provider','direct',
-      'provider_media_id',encode(digest(source,'sha256'),'hex'),
+      'provider_media_id',source,
       'normalized_url',source
     );
   end if;
@@ -79,7 +80,7 @@ $$;
 revoke all on function public.jpac_normalize_instructional_media_url(text) from public,anon,authenticated;
 
 create table if not exists public.module_instructional_media(
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key default pg_catalog.gen_random_uuid(),
   module_id uuid not null references public.course_modules(id) on delete restrict,
   version_number integer not null check(version_number>0),
   provider text not null check(provider in('youtube','direct','legacy')),
