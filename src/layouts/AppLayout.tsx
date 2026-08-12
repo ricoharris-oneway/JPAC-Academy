@@ -6,6 +6,7 @@ import { useAuth, type AppRole } from '../context/AuthContext';
 import { resolveDisplayName } from '../lib/displayName';
 
 const nav = [
+  ['Career Paths', '/career-paths', '✦', ['student', 'teacher', 'admin', 'developer']],
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
   ['My Academy', '/courses', '🎓', ['student']],
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
