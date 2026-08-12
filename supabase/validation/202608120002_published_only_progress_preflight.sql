@@ -103,18 +103,109 @@ from public.courses c join public.course_levels l on l.course_id=c.id and l.leve
 join public.course_modules m on m.course_level_id=l.id and m.level_module_number=1
 where c.slug='piano';
 
-with f as(
- select p.proname,pg_get_functiondef(p.oid) d,p.prosecdef,p.proconfig
+-- Supabase SQL Editor emphasizes the final statement. Return every manual-review
+-- report as one visible, ordered result set with a stable set of columns.
+with functions as(
+ select p.proname function_name,pg_get_functiondef(p.oid) definition,p.prosecdef security_definer,
+  array_to_string(p.proconfig,',') function_config,md5(pg_get_functiondef(p.oid)) definition_hash
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='public' and p.proname in('jpac_sync_enrollment_progress','jpac_enforce_canonical_enrollment_progress')
+), trigger_state as(
+ select t.tgname trigger_name,t.tgenabled::text trigger_enabled,p.proname trigger_function,
+  pg_get_triggerdef(t.oid,true) trigger_definition
+ from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_proc p on p.oid=t.tgfoid
+ where t.tgname='enrollments_enforce_canonical_progress' and c.oid='public.enrollments'::regclass and not t.tgisinternal
+), singing_status as(
+ select c.slug course_slug,l.level_number,m.status,count(*)::bigint module_count
+ from public.courses c join public.course_levels l on l.course_id=c.id
+ join public.course_modules m on m.course_level_id=l.id
+ where c.slug='singing' group by c.slug,l.level_number,m.status
+), singing_progress_base as(
+ select e.id enrollment_id,e.student_id,e.level current_level,e.progress stored_progress,
+  count(distinct m.id) filter(where m.status<>'archived')::bigint current_non_archived_denominator,
+  count(distinct m.id) filter(where m.status<>'archived' and exists(select 1 from public.xp_ledger x where x.student_id=e.student_id and x.module_id=m.id and x.xp_type='core' and x.metadata->>'component'='mastery'))::bigint current_non_archived_mastered_count,
+  count(distinct m.id) filter(where m.status='published')::bigint proposed_published_denominator,
+  count(distinct m.id) filter(where m.status='published' and exists(select 1 from public.xp_ledger x where x.student_id=e.student_id and x.module_id=m.id and x.xp_type='core' and x.metadata->>'component'='mastery'))::bigint proposed_published_mastered_count
+ from public.enrollments e join public.courses c on c.id=e.course_id
+ left join public.course_levels l on l.course_id=e.course_id and l.level_number=e.level
+ left join public.course_modules m on m.course_level_id=l.id
+ where c.slug='singing'
+ group by e.id,e.student_id,e.level,e.progress
+), singing_progress as(
+ select *,case when proposed_published_denominator=0 then 0::numeric else round(proposed_published_mastered_count::numeric/proposed_published_denominator*100,2) end proposed_published_progress
+ from singing_progress_base
+), piano_isolation as(
+ select c.slug course_slug,l.level_number,m.title,m.status,
+  (m.status<>'archived') counted_by_old_logic,(m.status='published') counted_by_proposed_logic
+ from public.courses c join public.course_levels l on l.course_id=c.id and l.level_number=1
+ join public.course_modules m on m.course_level_id=l.id and m.level_module_number=1
+ where c.slug='piano' and m.title='Piano Posture and Hand Position'
 ), findings as(
- select 'SDI-FUNCTIONS' finding,case when (select count(*) from f)=2 and (select count(*) from f where prosecdef and proconfig @> array['search_path=public'])=2 and (select sum((length(d)-length(replace(d,'m.status<>''archived''','')))/length('m.status<>''archived''')) from f)=4 and (select sum((length(d)-length(replace(d,'m.status=''published''','')))/length('m.status=''published''')) from f)=0 then 'PASS' else 'FAIL: prior function definitions or metadata differ' end result
- union all select 'SDI-TRIGGER',case when (select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_proc p on p.oid=t.tgfoid where t.tgname='enrollments_enforce_canonical_progress' and c.oid='public.enrollments'::regclass and p.proname='jpac_enforce_canonical_enrollment_progress' and not t.tgisinternal and t.tgenabled<>'D' and pg_get_triggerdef(t.oid,true) like '%BEFORE UPDATE OF progress ON %')=1 then 'PASS' else 'FAIL: expected trigger definition missing, ambiguous, or disabled' end
+ select 'SDI-FUNCTIONS' finding,case when (select count(*) from functions)=2
+   and (select count(*) from functions where security_definer and function_config like '%search_path=public%')=2
+   and (select sum((length(definition)-length(replace(definition,'m.status<>''archived''','')))/length('m.status<>''archived''')) from functions)=4
+   and (select sum((length(definition)-length(replace(definition,'m.status=''published''','')))/length('m.status=''published''')) from functions)=0
+  then 'PASS' else 'FAIL: prior function definitions or metadata differ' end result
+ union all select 'SDI-TRIGGER',case when (select count(*) from trigger_state where trigger_enabled<>'D' and trigger_function='jpac_enforce_canonical_enrollment_progress' and trigger_definition like '%BEFORE UPDATE OF progress ON %')=1 then 'PASS' else 'FAIL: expected trigger definition missing, ambiguous, or disabled' end
  union all select 'SDI-PRIVILEGES',case when not exists(select 1 from information_schema.routine_privileges where specific_schema='public' and routine_name in('jpac_sync_enrollment_progress','jpac_enforce_canonical_enrollment_progress') and grantee in('PUBLIC','anon','authenticated')) then 'PASS' else 'FAIL: unexpected direct execute privilege exists' end
- union all select 'SDI-PIANO',case when (select count(*) from public.course_modules m join public.course_levels l on l.id=m.course_level_id join public.courses c on c.id=m.course_id where c.slug='piano' and l.level_number=1 and m.level_module_number=1 and m.title='Piano Posture and Hand Position' and m.status='draft')=1 then 'PASS' else 'FAIL: exact draft Piano Module 1 not found' end
- union all select 'SDI-SINGING',case when (select count(*) from public.courses where slug='singing')=1 then 'PASS: REVIEW STATUS AND PROGRESS REPORTS' else 'FAIL: Singing identity missing or ambiguous' end
-), all_findings as(select * from findings)
-select * from all_findings
-union all select 'SDI-OVERALL',case when exists(select 1 from all_findings where result like 'FAIL:%') then 'FAIL' else 'PASS: READY FOR MANUAL BASELINE REVIEW' end;
+ union all select 'SDI-PIANO',case when (select count(*) from piano_isolation where status='draft' and counted_by_old_logic and not counted_by_proposed_logic)=1 then 'PASS' else 'FAIL: exact draft Piano Module 1 isolation invariant failed' end
+ union all select 'SDI-SINGING',case when (select count(*) from public.courses where slug='singing')=1 then 'PASS' else 'FAIL: Singing identity missing or ambiguous' end
+), blockers as(select * from findings where result like 'FAIL:%'), progress_changes as(
+ select * from singing_progress where proposed_published_progress is distinct from stored_progress
+), report as(
+ select 10 report_order,'SINGING_MODULE_STATUS' report_type,s.course_slug,s.level_number,s.status,
+  s.module_count,null::uuid enrollment_id,null::uuid student_id,null::integer current_level,null::numeric stored_progress,
+  null::bigint current_non_archived_denominator,null::bigint current_non_archived_mastered_count,
+  null::bigint proposed_published_denominator,null::bigint proposed_published_mastered_count,
+  null::numeric proposed_published_progress,null::numeric progress_difference,null::text piano_module_title,
+  null::boolean counted_by_old_logic,null::boolean counted_by_proposed_logic,null::text function_name,
+  null::text definition_hash,null::boolean security_definer,null::text function_config,null::text trigger_name,
+  null::text trigger_enabled,null::text trigger_function,null::text trigger_definition,'STATUS INVENTORY' review_status
+ from singing_status s
+ union all
+ select 20,'SINGING_PROGRESS_COMPARISON','singing',null,null,null,p.enrollment_id,p.student_id,p.current_level,p.stored_progress,
+  p.current_non_archived_denominator,p.current_non_archived_mastered_count,p.proposed_published_denominator,p.proposed_published_mastered_count,
+  p.proposed_published_progress,p.proposed_published_progress-p.stored_progress,null,null,null,null,null,null,null,null,null,null,null,
+  case when p.proposed_published_progress is distinct from p.stored_progress then 'NEEDS MANUAL REVIEW' else 'PASS: NO CHANGE' end
+ from singing_progress p
+ union all
+ select 30,'SINGING_PROGRESS_CHANGES','singing',null,null,null,p.enrollment_id,p.student_id,p.current_level,p.stored_progress,
+  p.current_non_archived_denominator,p.current_non_archived_mastered_count,p.proposed_published_denominator,p.proposed_published_mastered_count,
+  p.proposed_published_progress,p.proposed_published_progress-p.stored_progress,null,null,null,null,null,null,null,null,null,null,null,'NEEDS MANUAL REVIEW'
+ from progress_changes p
+ union all
+ select 30,'SINGING_PROGRESS_CHANGES','singing',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
+  'NO_PROGRESS_DIFFERENCES' where not exists(select 1 from progress_changes)
+ union all
+ select 40,'PIANO_DRAFT_ISOLATION',p.course_slug,p.level_number,p.status,null,null,null,null,null,null,null,null,null,null,null,p.title,
+  p.counted_by_old_logic,p.counted_by_proposed_logic,null,null,null,null,null,null,null,null,
+  case when p.status='draft' and p.counted_by_old_logic and not p.counted_by_proposed_logic then 'PASS: DRAFT EXCLUDED BY PROPOSED LOGIC' else 'FAIL: PIANO ISOLATION CONFLICT' end
+ from piano_isolation p
+ union all
+ select 50,'FUNCTION_PRESERVATION',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,f.function_name,f.definition_hash,
+  f.security_definer,f.function_config,null,null,null,null,
+  case when f.security_definer and f.function_config like '%search_path=public%' then 'PASS: PRIOR FUNCTION METADATA' else 'FAIL: FUNCTION METADATA' end
+ from functions f
+ union all
+ select 51,'TRIGGER_PRESERVATION',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
+  t.trigger_name,t.trigger_enabled,t.trigger_function,t.trigger_definition,
+  case when t.trigger_enabled<>'D' and t.trigger_function='jpac_enforce_canonical_enrollment_progress' and t.trigger_definition like '%BEFORE UPDATE OF progress ON %' then 'PASS' else 'FAIL: TRIGGER BINDING' end
+ from trigger_state t
+ union all
+ select 52,'PREFLIGHT_FINDING',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,f.finding,null,null,null,
+  null,null,null,null,f.result
+ from findings f
+ union all
+ select 60,'READINESS',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
+  case when exists(select 1 from blockers) then 'FAIL: BLOCKING PREFLIGHT FINDING'
+       when exists(select 1 from progress_changes) then 'NEEDS REVIEW: EXPLAIN PROGRESS DIFFERENCES BEFORE MIGRATION'
+       else 'PASS: READY FOR MIGRATION' end
+)
+select report_type,course_slug,level_number,status,module_count,enrollment_id,student_id,current_level,stored_progress,
+ current_non_archived_denominator,current_non_archived_mastered_count,proposed_published_denominator,
+ proposed_published_mastered_count,proposed_published_progress,progress_difference,piano_module_title,
+ counted_by_old_logic,counted_by_proposed_logic,function_name,definition_hash,security_definer,function_config,
+ trigger_name,trigger_enabled,trigger_function,trigger_definition,review_status
+from report order by report_order,level_number,status,enrollment_id,function_name;
 
 rollback;
