@@ -153,59 +153,74 @@ with functions as(
 ), blockers as(select * from findings where result like 'FAIL:%'), progress_changes as(
  select * from singing_progress where proposed_published_progress is distinct from stored_progress
 ), report as(
- select 10 report_order,'SINGING_MODULE_STATUS' report_type,s.course_slug,s.level_number,s.status,
-  s.module_count,null::uuid enrollment_id,null::uuid student_id,null::integer current_level,null::numeric stored_progress,
-  null::bigint current_non_archived_denominator,null::bigint current_non_archived_mastered_count,
-  null::bigint proposed_published_denominator,null::bigint proposed_published_mastered_count,
-  null::numeric proposed_published_progress,null::numeric progress_difference,null::text piano_module_title,
-  null::boolean counted_by_old_logic,null::boolean counted_by_proposed_logic,null::text function_name,
-  null::text definition_hash,null::boolean security_definer,null::text function_config,null::text trigger_name,
-  null::text trigger_enabled,null::text trigger_function,null::text trigger_definition,'STATUS INVENTORY' review_status
+ select 10::integer report_order,'SINGING_MODULE_STATUS'::text report_section,s.course_slug::text,
+  s.level_number::integer,s.status::text module_status,s.module_count::bigint,
+  null::uuid enrollment_id,null::uuid student_id,null::integer current_level,null::numeric stored_progress,
+  null::bigint current_denominator,null::bigint current_mastered_count,null::bigint proposed_denominator,
+  null::bigint proposed_mastered_count,null::numeric proposed_progress,null::numeric progress_difference,
+  'STATUS INVENTORY'::text review_status,null::text function_name,null::text definition_hash,
+  null::text trigger_name,null::text detail
  from singing_status s
  union all
- select 20,'SINGING_PROGRESS_COMPARISON','singing',null,null,null,p.enrollment_id,p.student_id,p.current_level,p.stored_progress,
-  p.current_non_archived_denominator,p.current_non_archived_mastered_count,p.proposed_published_denominator,p.proposed_published_mastered_count,
-  p.proposed_published_progress,p.proposed_published_progress-p.stored_progress,null,null,null,null,null,null,null,null,null,null,null,
-  case when p.proposed_published_progress is distinct from p.stored_progress then 'NEEDS MANUAL REVIEW' else 'PASS: NO CHANGE' end
+ select 20,'SINGING_PROGRESS_COMPARISON','singing',null,null,null,
+  p.enrollment_id,p.student_id,p.current_level,p.stored_progress,
+  p.current_non_archived_denominator,p.current_non_archived_mastered_count,
+  p.proposed_published_denominator,p.proposed_published_mastered_count,p.proposed_published_progress,
+  p.proposed_published_progress-p.stored_progress,
+  case when p.proposed_published_progress is distinct from p.stored_progress then 'NEEDS MANUAL REVIEW' else 'PASS: NO CHANGE' end,
+  null,null,null,null
  from singing_progress p
  union all
- select 30,'SINGING_PROGRESS_CHANGES','singing',null,null,null,p.enrollment_id,p.student_id,p.current_level,p.stored_progress,
-  p.current_non_archived_denominator,p.current_non_archived_mastered_count,p.proposed_published_denominator,p.proposed_published_mastered_count,
-  p.proposed_published_progress,p.proposed_published_progress-p.stored_progress,null,null,null,null,null,null,null,null,null,null,null,'NEEDS MANUAL REVIEW'
+ select 30,'SINGING_PROGRESS_CHANGES','singing',null,null,null,
+  p.enrollment_id,p.student_id,p.current_level,p.stored_progress,
+  p.current_non_archived_denominator,p.current_non_archived_mastered_count,
+  p.proposed_published_denominator,p.proposed_published_mastered_count,p.proposed_published_progress,
+  p.proposed_published_progress-p.stored_progress,'NEEDS MANUAL REVIEW',null,null,null,null
  from progress_changes p
  union all
- select 30,'SINGING_PROGRESS_CHANGES','singing',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
-  'NO_PROGRESS_DIFFERENCES' where not exists(select 1 from progress_changes)
+ select 30,'SINGING_PROGRESS_CHANGES','singing',null,null,null,
+  null,null,null,null,null,null,null,null,null,null,'NO_PROGRESS_DIFFERENCES',null,null,null,null
+ where not exists(select 1 from progress_changes)
  union all
- select 40,'PIANO_DRAFT_ISOLATION',p.course_slug,p.level_number,p.status,null,null,null,null,null,null,null,null,null,null,null,p.title,
-  p.counted_by_old_logic,p.counted_by_proposed_logic,null,null,null,null,null,null,null,null,
-  case when p.status='draft' and p.counted_by_old_logic and not p.counted_by_proposed_logic then 'PASS: DRAFT EXCLUDED BY PROPOSED LOGIC' else 'FAIL: PIANO ISOLATION CONFLICT' end
+ select 40,'PIANO_DRAFT_ISOLATION',p.course_slug,p.level_number,p.status,null,
+  null,null,null,null,null,null,null,null,null,null,
+  case when p.status='draft' and p.counted_by_old_logic and not p.counted_by_proposed_logic
+   then 'PASS: DRAFT EXCLUDED BY PROPOSED LOGIC' else 'FAIL: PIANO ISOLATION CONFLICT' end,
+  null,null,null,concat('module_title=',p.title,'; counted_by_old_logic=',p.counted_by_old_logic,
+   '; counted_by_proposed_logic=',p.counted_by_proposed_logic)
  from piano_isolation p
  union all
- select 50,'FUNCTION_PRESERVATION',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,f.function_name,f.definition_hash,
-  f.security_definer,f.function_config,null,null,null,null,
-  case when f.security_definer and f.function_config like '%search_path=public%' then 'PASS: PRIOR FUNCTION METADATA' else 'FAIL: FUNCTION METADATA' end
+ select 50,'FUNCTION_PRESERVATION',null,null,null,null,
+  null,null,null,null,null,null,null,null,null,null,
+  case when f.security_definer and f.function_config like '%search_path=public%'
+   then 'PASS: PRIOR FUNCTION METADATA' else 'FAIL: FUNCTION METADATA' end,
+  f.function_name,f.definition_hash,null,
+  concat('security_definer=',f.security_definer,'; function_config=',coalesce(f.function_config,''))
  from functions f
  union all
- select 51,'TRIGGER_PRESERVATION',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
-  t.trigger_name,t.trigger_enabled,t.trigger_function,t.trigger_definition,
-  case when t.trigger_enabled<>'D' and t.trigger_function='jpac_enforce_canonical_enrollment_progress' and t.trigger_definition like '%BEFORE UPDATE OF progress ON %' then 'PASS' else 'FAIL: TRIGGER BINDING' end
+ select 51,'TRIGGER_PRESERVATION',null,null,null,null,
+  null,null,null,null,null,null,null,null,null,null,
+  case when t.trigger_enabled<>'D' and t.trigger_function='jpac_enforce_canonical_enrollment_progress'
+    and t.trigger_definition like '%BEFORE UPDATE OF progress ON %'
+   then 'PASS' else 'FAIL: TRIGGER BINDING' end,
+  null,null,t.trigger_name,concat('enabled=',t.trigger_enabled,'; function=',t.trigger_function,
+   '; definition=',t.trigger_definition)
  from trigger_state t
  union all
- select 52,'PREFLIGHT_FINDING',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,f.finding,null,null,null,
-  null,null,null,null,f.result
+ select 52,'PREFLIGHT_FINDING',null,null,null,null,
+  null,null,null,null,null,null,null,null,null,null,f.result,null,null,null,f.finding
  from findings f
  union all
- select 60,'READINESS',null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
+ select 60,'READINESS',null,null,null,null,
+  null,null,null,null,null,null,null,null,null,null,
   case when exists(select 1 from blockers) then 'FAIL: BLOCKING PREFLIGHT FINDING'
        when exists(select 1 from progress_changes) then 'NEEDS REVIEW: EXPLAIN PROGRESS DIFFERENCES BEFORE MIGRATION'
-       else 'PASS: READY FOR MIGRATION' end
+       else 'PASS: READY FOR MIGRATION' end,
+  null,null,null,null
 )
-select report_type,course_slug,level_number,status,module_count,enrollment_id,student_id,current_level,stored_progress,
- current_non_archived_denominator,current_non_archived_mastered_count,proposed_published_denominator,
- proposed_published_mastered_count,proposed_published_progress,progress_difference,piano_module_title,
- counted_by_old_logic,counted_by_proposed_logic,function_name,definition_hash,security_definer,function_config,
- trigger_name,trigger_enabled,trigger_function,trigger_definition,review_status
-from report order by report_order,level_number,status,enrollment_id,function_name;
+select report_section,course_slug,level_number,module_status,module_count,enrollment_id,student_id,current_level,
+ stored_progress,current_denominator,current_mastered_count,proposed_denominator,proposed_mastered_count,
+ proposed_progress,progress_difference,review_status,function_name,definition_hash,trigger_name,detail
+from report order by report_order,level_number,module_status,enrollment_id,function_name;
 
 rollback;
