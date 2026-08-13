@@ -1,7 +1,7 @@
 import type{InstructionalMedia}from'../lib/instructionalMedia';
 
 export type CurriculumExportActivityRole='practice'|'core_challenge'|'other';
-export type CurriculumExportScopeType='module'|'level';
+export type CurriculumExportScopeType='module'|'level'|'course';
 export type CurriculumExportWarning={course_slug:string;level_number:number;module_number:number;code:string;message:string};
 
 export type CurriculumExportCourseInput={id:string;slug:string;title:string;description:string;status:string};
@@ -32,9 +32,11 @@ export type CurriculumExportInput={
   media:InstructionalMedia[];tool:CurriculumExportToolInput|null;
 };
 export type CurriculumLevelExportInput={course:CurriculumExportCourseInput;level:CurriculumExportLevelInput;modules:CurriculumExportInput[]};
+export type CurriculumCourseExportInput={course:CurriculumExportCourseInput;modules:CurriculumExportInput[]};
+export type CurriculumExportSummary={level_count:number;module_count:number;lesson_count:number;activity_count:number;warning_count:number};
 
 type CurriculumExportEnvelope={
-  contract:'jpac-curriculum-export';contract_version:'1.1.0';exported_at:string;
+  contract:'jpac-curriculum-export';contract_version:'1.2.0';exported_at:string;
   options:{include_database_ids:boolean};warnings:CurriculumExportWarning[];course:Record<string,unknown>;
 };
 export type CurriculumModuleExport=CurriculumExportEnvelope&{
@@ -45,4 +47,8 @@ export type CurriculumLevelExport=CurriculumExportEnvelope&{
   export_scope:{type:'level';course_slug:string;level_number:number};
   level:Record<string,unknown>&{modules:Record<string,unknown>[]};
 };
-export type CurriculumExportResult=CurriculumModuleExport|CurriculumLevelExport;
+export type CurriculumCourseExport=CurriculumExportEnvelope&{
+  export_scope:{type:'course';course_slug:string};summary:CurriculumExportSummary;
+  course:Record<string,unknown>&{levels:Array<Record<string,unknown>&{modules:Record<string,unknown>[]}>};
+};
+export type CurriculumExportResult=CurriculumModuleExport|CurriculumLevelExport|CurriculumCourseExport;

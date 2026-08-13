@@ -1,4 +1,4 @@
-import type{CurriculumExportActivityInput,CurriculumExportActivityRole,CurriculumExportInput,CurriculumExportResult,CurriculumExportWarning,CurriculumLevelExport,CurriculumLevelExportInput,CurriculumModuleExport}from'../types/curriculumExport';
+import type{CurriculumCourseExport,CurriculumCourseExportInput,CurriculumExportActivityInput,CurriculumExportActivityRole,CurriculumExportInput,CurriculumExportResult,CurriculumExportWarning,CurriculumLevelExport,CurriculumLevelExportInput,CurriculumModuleExport}from'../types/curriculumExport';
 
 const isCoreChallenge=(activity:CurriculumExportActivityInput)=>activity.required&&activity.xp_type==='core'||activity.xp_type==='core'&&activity.xp_reward>0&&['performance','assignment','quiz'].includes(activity.activity_type);
 const isPractice=(activity:CurriculumExportActivityInput)=>activity.activity_type==='practice'||!activity.required&&activity.xp_type!=='core';
@@ -32,7 +32,7 @@ function buildModulePayload(input:CurriculumExportInput,includeDatabaseIds:boole
   core.forEach(({activity})=>{const total=rubricTotal(activity.rubric);if(total!==null&&total!==100)warn('RUBRIC_TOTAL_INVALID',`${activity.title} rubric totals ${total}, not 100.`)});
   if(!input.media.some(item=>item.status==='active'))warn('MEDIA_NEEDS_REVIEW','No active approved instructional media is configured.');
   if(!input.tool||input.tool.status!=='ready')warn('TOOL_NEEDS_CATALOG_REVIEW','The module tool is missing or not catalog-ready.');
-  warn('CAREER_ATTACHMENTS_NOT_CONFIGURED','Career Path attachments are not configured in Curriculum Export v1.1.');
+  warn('CAREER_ATTACHMENTS_NOT_CONFIGURED','Career Path attachments are not configured in Curriculum Export v1.2.');
   const exportActivity=({activity,role}:{activity:CurriculumExportActivityInput;role:CurriculumExportActivityRole})=>({
     ...withId(includeDatabaseIds,activity.id),role,title:activity.title,description:activity.description,instructions:activity.instructions,
     activity_type:activity.activity_type,submission_type:activity.submission_type,status:activity.status,required:activity.required,
@@ -62,18 +62,33 @@ function buildModulePayload(input:CurriculumExportInput,includeDatabaseIds:boole
 
 export function buildModuleCurriculumExport(input:CurriculumExportInput,includeDatabaseIds=false,exportedAt=new Date().toISOString()):CurriculumModuleExport{
   const built=buildModulePayload(input,includeDatabaseIds);
-  return{contract:'jpac-curriculum-export',contract_version:'1.1.0',exported_at:exportedAt,export_scope:{type:'module',course_slug:input.course.slug,level_number:input.level.level_number,module_number:input.module.level_module_number},options:{include_database_ids:includeDatabaseIds},warnings:built.warnings,course:coursePayload(input,includeDatabaseIds),level:levelPayload(input,includeDatabaseIds),module:built.payload};
+  return{contract:'jpac-curriculum-export',contract_version:'1.2.0',exported_at:exportedAt,export_scope:{type:'module',course_slug:input.course.slug,level_number:input.level.level_number,module_number:input.module.level_module_number},options:{include_database_ids:includeDatabaseIds},warnings:built.warnings,course:coursePayload(input,includeDatabaseIds),level:levelPayload(input,includeDatabaseIds),module:built.payload};
+}
+
+function buildLevelPayload(input:CurriculumLevelExportInput,includeDatabaseIds:boolean){
+  const modules=[...input.modules].sort((a,b)=>a.module.sort_order-b.module.sort_order||a.module.level_module_number-b.module.level_module_number);
+  const built=modules.map(module=>buildModulePayload(module,includeDatabaseIds));
+  return{payload:{...withId(includeDatabaseIds,input.level.id),level_number:input.level.level_number,title:input.level.title,status:input.level.status,modules:built.map(item=>item.payload)},warnings:built.flatMap(item=>item.warnings)};
 }
 
 export function buildLevelCurriculumExport(input:CurriculumLevelExportInput,includeDatabaseIds=false,exportedAt=new Date().toISOString()):CurriculumLevelExport{
-  const modules=[...input.modules].sort((a,b)=>a.module.sort_order-b.module.sort_order||a.module.level_module_number-b.module.level_module_number);
-  const built=modules.map(module=>buildModulePayload(module,includeDatabaseIds));
-  const representative=modules[0];
+  const built=buildLevelPayload(input,includeDatabaseIds);
+  const representative=input.modules[0];
   const course=representative?coursePayload(representative,includeDatabaseIds):{...withId(includeDatabaseIds,input.course.id),course_slug:input.course.slug,title:input.course.title,description:input.course.description,status:input.course.status};
-  return{contract:'jpac-curriculum-export',contract_version:'1.1.0',exported_at:exportedAt,export_scope:{type:'level',course_slug:input.course.slug,level_number:input.level.level_number},options:{include_database_ids:includeDatabaseIds},warnings:built.flatMap(item=>item.warnings),course,level:{...withId(includeDatabaseIds,input.level.id),level_number:input.level.level_number,title:input.level.title,status:input.level.status,modules:built.map(item=>item.payload)}};
+  return{contract:'jpac-curriculum-export',contract_version:'1.2.0',exported_at:exportedAt,export_scope:{type:'level',course_slug:input.course.slug,level_number:input.level.level_number},options:{include_database_ids:includeDatabaseIds},warnings:built.warnings,course,level:built.payload};
+}
+
+export function buildCourseCurriculumExport(input:CurriculumCourseExportInput,includeDatabaseIds=false,exportedAt=new Date().toISOString()):CurriculumCourseExport{
+  const levelMap=new Map<string,CurriculumLevelExportInput>();
+  input.modules.forEach(module=>{const key=module.level.id;const current=levelMap.get(key);if(current)current.modules.push(module);else levelMap.set(key,{course:input.course,level:module.level,modules:[module]})});
+  const levels=[...levelMap.values()].sort((a,b)=>a.level.level_number-b.level.level_number||a.level.title.localeCompare(b.level.title));
+  const built=levels.map(level=>buildLevelPayload(level,includeDatabaseIds));
+  const warnings=built.flatMap(level=>level.warnings);
+  const summary={level_count:built.length,module_count:input.modules.length,lesson_count:input.modules.reduce((sum,module)=>sum+module.lessons.length,0),activity_count:input.modules.reduce((sum,module)=>sum+module.activities.length,0),warning_count:warnings.length};
+  return{contract:'jpac-curriculum-export',contract_version:'1.2.0',exported_at:exportedAt,export_scope:{type:'course',course_slug:input.course.slug},options:{include_database_ids:includeDatabaseIds},summary,warnings,course:{...withId(includeDatabaseIds,input.course.id),course_slug:input.course.slug,title:input.course.title,description:input.course.description,status:input.course.status,levels:built.map(level=>level.payload)}};
 }
 
 export const serializeCurriculumExport=(value:CurriculumExportResult)=>JSON.stringify(value,null,2)+'\n';
-export const curriculumExportFilename=(value:CurriculumExportResult)=>value.export_scope.type==='module'?`jpac-${value.export_scope.course_slug}-level-${value.export_scope.level_number}-module-${value.export_scope.module_number}-v${value.contract_version}.json`:`jpac-${value.export_scope.course_slug}-level-${value.export_scope.level_number}-v${value.contract_version}.json`;
+export const curriculumExportFilename=(value:CurriculumExportResult)=>value.export_scope.type==='module'?`jpac-${value.export_scope.course_slug}-level-${value.export_scope.level_number}-module-${value.export_scope.module_number}-v${value.contract_version}.json`:value.export_scope.type==='level'?`jpac-${value.export_scope.course_slug}-level-${value.export_scope.level_number}-v${value.contract_version}.json`:`jpac-${value.export_scope.course_slug}-full-course-v${value.contract_version}.json`;
 export async function copyCurriculumExport(text:string){await navigator.clipboard.writeText(text)}
 export function downloadCurriculumExport(filename:string,text:string){const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.click();URL.revokeObjectURL(url)}
