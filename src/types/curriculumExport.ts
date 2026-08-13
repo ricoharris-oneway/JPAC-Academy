@@ -1,7 +1,8 @@
 import type{InstructionalMedia}from'../lib/instructionalMedia';
 
 export type CurriculumExportActivityRole='practice'|'core_challenge'|'other';
-export type CurriculumExportWarning={code:string;message:string};
+export type CurriculumExportScopeType='module'|'level';
+export type CurriculumExportWarning={course_slug:string;level_number:number;module_number:number;code:string;message:string};
 
 export type CurriculumExportCourseInput={id:string;slug:string;title:string;description:string;status:string};
 export type CurriculumExportLevelInput={id:string;level_number:number;title:string;status:string};
@@ -30,10 +31,18 @@ export type CurriculumExportInput={
   lessons:CurriculumExportLessonInput[];activities:CurriculumExportActivityInput[];
   media:InstructionalMedia[];tool:CurriculumExportToolInput|null;
 };
+export type CurriculumLevelExportInput={course:CurriculumExportCourseInput;level:CurriculumExportLevelInput;modules:CurriculumExportInput[]};
 
-export type CurriculumModuleExport={
-  contract:'jpac-curriculum-export';contract_version:'1.0.0';exported_at:string;
-  export_scope:{type:'module';course_slug:string;level_number:number;module_number:number};
-  options:{include_database_ids:boolean};warnings:CurriculumExportWarning[];
-  course:Record<string,unknown>;level:Record<string,unknown>;module:Record<string,unknown>;
+type CurriculumExportEnvelope={
+  contract:'jpac-curriculum-export';contract_version:'1.1.0';exported_at:string;
+  options:{include_database_ids:boolean};warnings:CurriculumExportWarning[];course:Record<string,unknown>;
 };
+export type CurriculumModuleExport=CurriculumExportEnvelope&{
+  export_scope:{type:'module';course_slug:string;level_number:number;module_number:number};
+  level:Record<string,unknown>;module:Record<string,unknown>;
+};
+export type CurriculumLevelExport=CurriculumExportEnvelope&{
+  export_scope:{type:'level';course_slug:string;level_number:number};
+  level:Record<string,unknown>&{modules:Record<string,unknown>[]};
+};
+export type CurriculumExportResult=CurriculumModuleExport|CurriculumLevelExport;
