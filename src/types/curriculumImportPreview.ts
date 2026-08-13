@@ -2,6 +2,7 @@ export const CURRICULUM_IMPORT_MAX_BYTES=10*1024*1024;
 export type ImportPreviewStatus='WOULD_CREATE'|'WOULD_REUSE'|'POSSIBLE_CONFLICT'|'COURSE_MISMATCH'|'NOT_CHECKED';
 export type ImportPreviewFinding={severity:'ERROR'|'WARNING'|'INFO';code:string;message:string;level_number?:number;module_number?:number};
 export type ImportPreviewCounts={levels:number;modules:number;lessons:number;activities:number;warnings:number};
+export type ImportPreviewDecisionSummary={would_reuse:number;would_create:number;possible_conflicts:number;course_mismatch:number;not_checked:number;total:number;complete:boolean};
 export type ImportPreviewLoadedModule={level_number:number;module_number:number;title:string};
 export type ImportPreviewContext={selected_course_slug:string|null;modules:ImportPreviewLoadedModule[]};
 export type ImportPreviewLesson={sort_order:number|null;title:string;objective:string};

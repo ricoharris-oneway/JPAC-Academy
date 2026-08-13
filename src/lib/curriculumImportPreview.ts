@@ -1,5 +1,5 @@
 import{CURRICULUM_IMPORT_MAX_BYTES}from'../types/curriculumImportPreview';
-import type{CurriculumImportPreview,CurriculumImportPreviewResult,ImportPreviewActivity,ImportPreviewContext,ImportPreviewFinding,ImportPreviewLevel,ImportPreviewModule,ImportPreviewStatus}from'../types/curriculumImportPreview';
+import type{CurriculumImportPreview,CurriculumImportPreviewResult,ImportPreviewActivity,ImportPreviewContext,ImportPreviewDecisionSummary,ImportPreviewFinding,ImportPreviewLevel,ImportPreviewModule,ImportPreviewStatus}from'../types/curriculumImportPreview';
 
 type Row=Record<string,unknown>;
 const object=(value:unknown):value is Row=>Boolean(value)&&typeof value==='object'&&!Array.isArray(value);
@@ -15,6 +15,12 @@ export function validateCurriculumImportFile(name:string,size:number):ImportPrev
   if(!name.toLowerCase().endsWith('.json'))return{severity:'ERROR',code:'FILE_TYPE_UNSUPPORTED',message:'Choose a .json file.'};
   if(size>CURRICULUM_IMPORT_MAX_BYTES)return{severity:'ERROR',code:'FILE_TOO_LARGE',message:'The selected file exceeds the 10 MB preview limit.'};
   return null;
+}
+export function summarizeImportPreviewDecisions(preview:Pick<CurriculumImportPreview,'levels'|'counts'>):ImportPreviewDecisionSummary{
+  const summary={would_reuse:0,would_create:0,possible_conflicts:0,course_mismatch:0,not_checked:0};
+  preview.levels.flatMap(level=>level.modules).forEach(module=>{switch(module.comparison_status){case'WOULD_REUSE':summary.would_reuse++;break;case'WOULD_CREATE':summary.would_create++;break;case'POSSIBLE_CONFLICT':summary.possible_conflicts++;break;case'COURSE_MISMATCH':summary.course_mismatch++;break;default:summary.not_checked++}});
+  const total=Object.values(summary).reduce((sum,value)=>sum+value,0);
+  return{...summary,total,complete:total===preview.counts.modules};
 }
 
 function comparison(courseSlug:string,level:number,module:number,title:string,context:ImportPreviewContext):{status:ImportPreviewStatus;reason:string}{
@@ -66,5 +72,6 @@ export function parseCurriculumImportPreview(source:string,context:ImportPreview
   if(sourceWarnings.length)findings.push({severity:'WARNING',code:'SOURCE_WARNINGS_PRESENT',message:`The export contains ${sourceWarnings.length} source warning(s).`});
   if(hasDatabaseId(parsed))findings.push({severity:'INFO',code:'DATABASE_IDS_PRESENT',message:'Database IDs are present for administrative reference only.'});
   const preview:CurriculumImportPreview={contract:'jpac-curriculum-export',contract_version:'1.2.0',scope:{type:scopeType as 'module'|'level'|'course',course_slug:courseSlug,...(levelNumber===null?{}:{level_number:levelNumber}),...(moduleNumber===null?{}:{module_number:moduleNumber})},course:{course_slug:text(parsed.course.course_slug)||courseSlug,title:text(parsed.course.title),description:text(parsed.course.description),status:text(parsed.course.status)},levels:levels.sort((a,b)=>a.level_number-b.level_number||a.title.localeCompare(b.title)),counts,source_warnings:sourceWarnings,findings,contains_database_ids:hasDatabaseId(parsed)};
+  if(!summarizeImportPreviewDecisions(preview).complete)preview.findings.push({severity:'WARNING',code:'DECISION_SUMMARY_INCOMPLETE',message:'Local comparison totals do not match the normalized module count.'});
   return{ok:true,preview};
 }
