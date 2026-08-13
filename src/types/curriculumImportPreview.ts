@@ -19,3 +19,8 @@ export type CurriculumImportPreview={
   counts:ImportPreviewCounts;source_warnings:unknown[];findings:ImportPreviewFinding[];contains_database_ids:boolean;
 };
 export type CurriculumImportPreviewResult={ok:true;preview:CurriculumImportPreview}|{ok:false;findings:ImportPreviewFinding[]};
+export type SaveDraftBlocker={code:string;message:string};
+export type SaveDraftEligibility={eligible:boolean;blockers:SaveDraftBlocker[]};
+export type SaveDraftContext={selected_course_id:string|null;selected_course_slug:string|null;can_save_draft:boolean;acknowledged_warning_codes:string[];confirmed:boolean;pending:boolean};
+export type SaveDraftCreatedCounts={modules:number;lessons:number;activities:number};
+export type SaveDraftRpcResponse={operation_id:string;module_id:string;lesson_ids:string[];activity_ids:string[];status:'draft';created_counts:SaveDraftCreatedCounts;unresolved_review_statuses:string[]};

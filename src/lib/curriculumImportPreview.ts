@@ -55,6 +55,7 @@ export function parseCurriculumImportPreview(source:string,context:ImportPreview
   if((scopeType==='module'||scopeType==='level')&&levelNumber===null)return error('LEVEL_NUMBER_MISSING','This export scope requires a numeric level_number.');
   if(scopeType==='module'&&moduleNumber===null)return error('MODULE_NUMBER_MISSING','Module scope requires a numeric module_number.');
   if(!object(parsed.course))return error('COURSE_PAYLOAD_MISSING','A course payload is required.');
+  if(!Array.isArray(parsed.warnings))return error('WARNINGS_ARRAY_INVALID','The export warnings container must be an array.');
   const findings:ImportPreviewFinding[]=[];const levels:ImportPreviewLevel[]=[];
   const addLevel=(value:unknown)=>{if(!object(value)){findings.push({severity:'ERROR',code:'LEVEL_PAYLOAD_INVALID',message:'A level payload is not an object.'});return}const level=number(value.level_number);if(level===null){findings.push({severity:'ERROR',code:'LEVEL_NUMBER_MISSING',message:'A level payload is missing level_number.'});return}if(!Array.isArray(value.modules)){findings.push({severity:'ERROR',code:'MODULES_ARRAY_INVALID',message:'Level modules must be an array.',level_number:level});return}const modules=value.modules.map(item=>normalizeModule(item,level,courseSlug,context,findings)).filter((item):item is ImportPreviewModule=>item!==null);levels.push({level_number:level,title:text(value.title),status:text(value.status),modules})};
   if(scopeType==='module'){
