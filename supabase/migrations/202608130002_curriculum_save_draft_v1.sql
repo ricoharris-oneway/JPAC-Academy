@@ -18,9 +18,35 @@ begin
       and p.proname='jpac_enforce_canonical_enrollment_progress' and not t.tgisinternal and t.tgenabled<>'D')<>1 then
     raise exception 'Canonical enrollment progress trigger is missing or disabled';
   end if;
-  if exists(select 1 from pg_trigger t where t.tgrelid in(
-      'public.course_modules'::regclass,'public.lessons'::regclass,'public.activities'::regclass) and not t.tgisinternal) then
-    raise exception 'Unexpected curriculum insert trigger requires review';
+  if (select count(*) from pg_trigger t
+      join pg_class c on c.oid=t.tgrelid
+      join pg_namespace tn on tn.oid=c.relnamespace
+      join pg_proc p on p.oid=t.tgfoid
+      join pg_namespace fn on fn.oid=p.pronamespace
+      where tn.nspname='public' and c.relname in('course_modules','lessons','activities')
+        and not t.tgisinternal)<>3
+     or (select count(distinct c.relname) from pg_trigger t
+      join pg_class c on c.oid=t.tgrelid
+      join pg_namespace tn on tn.oid=c.relnamespace
+      join pg_proc p on p.oid=t.tgfoid
+      join pg_namespace fn on fn.oid=p.pronamespace
+      where tn.nspname='public' and c.relname in('course_modules','lessons','activities')
+        and not t.tgisinternal and t.tgname='set_updated_at'
+        and fn.nspname='public' and p.proname='set_updated_at'
+        and lower(regexp_replace(p.prosrc,'\s+','','g'))='beginnew.updated_at=now();returnnew;end;'
+        and t.tgenabled<>'D' and pg_get_triggerdef(t.oid,true) ilike '%BEFORE UPDATE ON %')<>3
+     or exists(select 1 from pg_trigger t
+      join pg_class c on c.oid=t.tgrelid
+      join pg_namespace tn on tn.oid=c.relnamespace
+      join pg_proc p on p.oid=t.tgfoid
+      join pg_namespace fn on fn.oid=p.pronamespace
+      where tn.nspname='public' and c.relname in('course_modules','lessons','activities')
+        and not t.tgisinternal and not(
+          t.tgname='set_updated_at' and fn.nspname='public' and p.proname='set_updated_at'
+          and lower(regexp_replace(p.prosrc,'\s+','','g'))='beginnew.updated_at=now();returnnew;end;'
+          and t.tgenabled<>'D' and pg_get_triggerdef(t.oid,true) ilike '%BEFORE UPDATE ON %'
+        )) then
+    raise exception 'Curriculum trigger baseline must contain only the three enabled public.set_updated_at BEFORE UPDATE triggers';
   end if;
 end;
 $$;

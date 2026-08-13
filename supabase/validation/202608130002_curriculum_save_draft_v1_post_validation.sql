@@ -18,7 +18,22 @@ with function_state as(
  ('SAD-DRAFT',case when coalesce((select d like '%''draft''%' and d not like '%status=''published''%' from normalized),false) then 'PASS' else 'FAIL' end,'RPC inserts and requires draft statuses only'),
  ('SAD-DRAFT-ISOLATION',case when coalesce((select count(*)=2 and bool_and((length(definition)-length(replace(definition,'m.status=''published''','')))/length('m.status=''published''')=2) and bool_and(strpos(definition,'m.status<>''archived''')=0) from progress_defs),false) then 'PASS' else 'FAIL' end,'Published-only progress predicates remain active'),
  ('SAD-TRIGGER',case when (select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_proc p on p.oid=t.tgfoid where t.tgname='enrollments_enforce_canonical_progress' and c.oid='public.enrollments'::regclass and p.proname='jpac_enforce_canonical_enrollment_progress' and not t.tgisinternal and t.tgenabled<>'D')=1 then 'PASS' else 'FAIL' end,'Canonical enrollment trigger remains enabled'),
- ('SAD-INSERT-TRIGGERS',case when not exists(select 1 from pg_trigger t where t.tgrelid in('public.course_modules'::regclass,'public.lessons'::regclass,'public.activities'::regclass) and not t.tgisinternal) then 'PASS' else 'FAIL' end,'No indirect curriculum insert triggers exist'),
+ ('SAD-INSERT-TRIGGERS',case when
+   (select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace tn on tn.oid=c.relnamespace
+     where tn.nspname='public' and c.relname in('course_modules','lessons','activities') and not t.tgisinternal)=3
+   and (select count(distinct c.relname) from pg_trigger t join pg_class c on c.oid=t.tgrelid
+     join pg_namespace tn on tn.oid=c.relnamespace join pg_proc p on p.oid=t.tgfoid join pg_namespace fn on fn.oid=p.pronamespace
+     where tn.nspname='public' and c.relname in('course_modules','lessons','activities') and not t.tgisinternal
+       and t.tgname='set_updated_at' and fn.nspname='public' and p.proname='set_updated_at'
+       and lower(regexp_replace(p.prosrc,'\s+','','g'))='beginnew.updated_at=now();returnnew;end;'
+       and t.tgenabled<>'D' and pg_get_triggerdef(t.oid,true) ilike '%BEFORE UPDATE ON %')=3
+   and not exists(select 1 from pg_trigger t join pg_class c on c.oid=t.tgrelid
+     join pg_namespace tn on tn.oid=c.relnamespace join pg_proc p on p.oid=t.tgfoid join pg_namespace fn on fn.oid=p.pronamespace
+     where tn.nspname='public' and c.relname in('course_modules','lessons','activities') and not t.tgisinternal
+       and not(t.tgname='set_updated_at' and fn.nspname='public' and p.proname='set_updated_at'
+         and lower(regexp_replace(p.prosrc,'\s+','','g'))='beginnew.updated_at=now();returnnew;end;'
+         and t.tgenabled<>'D' and pg_get_triggerdef(t.oid,true) ilike '%BEFORE UPDATE ON %'))
+   then 'PASS' else 'FAIL' end,'Exactly the three enabled public.set_updated_at BEFORE UPDATE baselines remain'),
  ('SAD-WORKFLOW',case when coalesce((select d not like '%jpac_finalize_module_mastery(%' and d not like '%jpac_sync_enrollment_progress(%'
    and d not like '%jpac_assess_module_submission(%' from normalized),false) then 'PASS' else 'FAIL' end,'No academic workflow function calls')
 )

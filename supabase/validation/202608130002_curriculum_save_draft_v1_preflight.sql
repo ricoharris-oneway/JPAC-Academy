@@ -147,18 +147,29 @@ career_paths_baseline as(
     md5(coalesce(string_agg(concat_ws('|',id,slug,name,status),',' order by id::text),'')) identity_hash
   from public.career_paths
 ),
-curriculum_insert_triggers as(
-  select count(*) trigger_count,
-    coalesce(jsonb_agg(jsonb_build_object(
-      'table_name',c.relname,'trigger_name',t.tgname,'function_name',p.proname,
-      'enabled',t.tgenabled,'definition',pg_get_triggerdef(t.oid,true)
-    ) order by c.relname,t.tgname),'[]'::jsonb) details
+curriculum_trigger_rows as(
+  select c.relname table_name,t.tgname trigger_name,p.proname function_name,
+    fn.nspname function_schema,t.tgenabled enabled,pg_get_triggerdef(t.oid,true) definition,
+    (t.tgname='set_updated_at' and fn.nspname='public' and p.proname='set_updated_at'
+      and lower(regexp_replace(p.prosrc,'\s+','','g'))='beginnew.updated_at=now();returnnew;end;'
+      and t.tgenabled<>'D' and pg_get_triggerdef(t.oid,true) ilike '%BEFORE UPDATE ON %') is_expected
   from pg_trigger t
   join pg_class c on c.oid=t.tgrelid
   join pg_namespace n on n.oid=c.relnamespace
   join pg_proc p on p.oid=t.tgfoid
+  join pg_namespace fn on fn.oid=p.pronamespace
   where n.nspname='public' and c.relname in('course_modules','lessons','activities')
     and not t.tgisinternal
+),
+curriculum_insert_triggers as(
+  select count(*) trigger_count,count(*) filter(where is_expected) expected_trigger_count,
+    count(distinct table_name) filter(where is_expected) expected_table_count,
+    count(*) filter(where not is_expected) unexpected_trigger_count,
+    coalesce(jsonb_agg(jsonb_build_object(
+      'table_name',table_name,'trigger_name',trigger_name,'function_schema',function_schema,
+      'function_name',function_name,'enabled',enabled,'is_expected',is_expected,'definition',definition
+    ) order by table_name,trigger_name),'[]'::jsonb) details
+  from curriculum_trigger_rows
 ),
 base_reports(sort_order,report_section,code,result,details) as(
   select 10,'REQUIRED_TABLES','SAD-TABLES',
@@ -212,8 +223,11 @@ base_reports(sort_order,report_section,code,result,details) as(
   select 130,'CAREER_PATHS_BASELINE','SAD-CAREER-PATHS','INFO',
     jsonb_build_object('path_count',path_count,'identity_hash',identity_hash)::text from career_paths_baseline
   union all
-  select 140,'CURRICULUM_INSERT_TRIGGER_BASELINE','SAD-CURRICULUM-TRIGGERS','INFO',
-    jsonb_build_object('trigger_count',trigger_count,'triggers',details)::text from curriculum_insert_triggers
+  select 140,'CURRICULUM_INSERT_TRIGGER_BASELINE','SAD-CURRICULUM-TRIGGERS',
+    case when trigger_count=3 and expected_trigger_count=3 and expected_table_count=3 and unexpected_trigger_count=0 then 'PASS' else 'BLOCK' end,
+    jsonb_build_object('trigger_count',trigger_count,'expected_trigger_count',expected_trigger_count,
+      'expected_table_count',expected_table_count,'unexpected_trigger_count',unexpected_trigger_count,'triggers',details)::text
+    from curriculum_insert_triggers
   union all
   select 150,'RPC_ABSENT','SAD-RPC-ABSENT',
     case when to_regprocedure('public.curriculum_save_module_as_draft_v1(jsonb)') is null then 'PASS' else 'BLOCK' end,
@@ -221,9 +235,9 @@ base_reports(sort_order,report_section,code,result,details) as(
 ),
 extra_blockers(code,details) as(
   select 'SAD-MIGRATION-TRIGGER-GUARD',
-    'The current migration rejects every user trigger on course_modules, lessons, or activities, but preflight found '
-      ||trigger_count||'. Review the migration guard before execution.'
-  from curriculum_insert_triggers where trigger_count>0
+    'Curriculum trigger baseline differs from the three expected enabled public.set_updated_at BEFORE UPDATE triggers.'
+  from curriculum_insert_triggers
+  where trigger_count<>3 or expected_trigger_count<>3 or expected_table_count<>3 or unexpected_trigger_count<>0
 ),
 all_blockers as(
   select code,details from base_reports where result='BLOCK'
