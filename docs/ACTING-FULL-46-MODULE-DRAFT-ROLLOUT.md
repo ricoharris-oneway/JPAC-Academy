@@ -32,6 +32,23 @@ Review-only artifact set. No SQL is authorized by this document. The rollout mus
 
 Global `sort_order` is dense from 1 through 46. Source-facing `level_module_number` preserves the gaps: Advanced has no Module 7, and Master has no Module 11.
 
+## Visual Review Clarification
+
+Visual review confirms that the 46-module rollout already preserves both intended culminating modules:
+
+- Advanced Module 12 exists as **Advanced Capstone: Master Performance**.
+- Master Module 12 exists as **Mastering the Art of Acting: Legacy, Leadership, and Inspiration**.
+- No 48-module correction or capstone correction migration is needed at this time.
+
+The verified level counts remain:
+
+- Beginner: 12 draft modules.
+- Intermediate: 12 draft modules.
+- Advanced: 11 draft modules because Module 7, **ACT English COMPLETE Walkthrough**, remains held for teacher review; the Module 12 capstone is present.
+- Master: 11 draft modules because the source contains no Module 11; the Module 12 capstone/legacy module is present.
+
+The remaining source-review items are limited to the unresolved Advanced Module 7 topic and the absent Master Module 11 source gap. Do not create a fake Master Module 11, and do not restore or replace Advanced Module 7 until teacher review resolves its source issue. Acting must remain draft-only.
+
 ## Curriculum contract
 
 Each module contains three draft lessons, one optional draft Practice, and one required draft performance Core Challenge. Every Core Challenge has a five-category rubric totaling 100 and requires teacher review.
