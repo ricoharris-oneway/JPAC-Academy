@@ -37,7 +37,7 @@ begin
   select id into v_level from public.course_levels where course_id=v_course and level_number=r.level;
   if v_level is null then
    insert into public.course_levels(id,course_id,level_number,title,description,learning_objectives,status,core_xp_target,review_notes)
-   values(gen_random_uuid(),v_course,r.level,v_levels[r.level],'Draft Acting level; source-aligned review only.','Develop source-aligned Acting performance skills.','draft',case when r.level=1 then 7500 when r.level=2 then 7500 when r.level=3 then 6875 else 6875 end,v_marker||'; batch-created level; metadata target reconciliation deferred.') returning id into v_level;
+   values(gen_random_uuid(),v_course,r.level,v_levels[r.level],'Draft Acting level; source-aligned review only.',array['Develop source-aligned Acting performance skills.'],'draft',case when r.level=1 then 7500 when r.level=2 then 7500 when r.level=3 then 6875 else 6875 end,v_marker||'; batch-created level; metadata target reconciliation deferred.') returning id into v_level;
   elsif not exists(select 1 from public.course_levels where id=v_level and title=v_levels[r.level] and status='draft' and approved_by is null and approved_at is null) then raise exception 'Incompatible Acting level %',r.level; end if;
 
   select id into v_module from public.course_modules where course_id=v_course and (sort_order=r.sort or (course_level_id=v_level and level_module_number=r.num));
