@@ -11,6 +11,6 @@ end $$;
 revoke execute on function public.curriculum_swap_module_assignment_v1(jsonb) from public, anon;
 revoke execute on function public.curriculum_rollback_assignment_swap_v1(uuid) from public, anon;
 grant execute on function public.curriculum_swap_module_assignment_v1(jsonb) to authenticated, service_role;
-grant execute on function public.curriculum_rollback_assignment_v1(uuid) to authenticated, service_role;
+grant execute on function public.curriculum_rollback_assignment_swap_v1(uuid) to authenticated, service_role;
 
 commit;
