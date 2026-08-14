@@ -137,3 +137,55 @@ The rollback does not touch the course shell, other courses, shared functions, o
 Stop immediately for duplicate course identity, incompatible curriculum, occupied global sort order, any Video Production student/evidence dependency, inactive Safe Draft Isolation, unexpected Master numbering, non-draft output, activated media/tool state, changed protected baselines, incorrect counts, rubric errors, or any SQL error.
 
 This artifact set does not authorize SQL execution, publication, student access, media/tool activation, or changes to protected courses and learning-engine logic.
+
+## Rollout completion
+
+### Execution and validation
+
+- The Video Production rollout SQL passed.
+- Post-validation passed.
+- The visual Curriculum Studio check passed.
+- No rollback was run.
+
+### Curriculum Studio verification
+
+- The **Video Production** course appears in Curriculum Studio.
+- The course shows **49 modules** in total.
+- Beginner contains **10 modules**.
+- Beginner Module 1, **CapCut Basics & Your First Edit**, appears with `draft` status.
+- Intermediate contains **12 modules**.
+- Advanced contains **15 modules**.
+- Master contains **12 actual module records**.
+
+Beginner readiness displays:
+
+| Readiness category | Verified result |
+|---|---|
+| Structure | **COMPLETE — 10/10** |
+| XP | **COMPLETE — 10/10** |
+| Draft safety | **DRAFT SAFE** |
+| Media | **NEEDS REVIEW — 0/10** |
+| Tools | **CONFIGURED — INACTIVE — 0/10** |
+| Publication | **NOT READY** |
+
+### Master numbering verification
+
+The Master level preserves the Program source numbering exactly as Modules **1–10, 20, and 24**:
+
+- Master Module 10, **Capstone: Short Film Production**, exists.
+- Master Module 20, **Visual Effects (VFX) Basics**, exists.
+- Master Module 24, **Festival Submission & Digital Distribution**, exists as the final distribution/launch module.
+- Missing Master numbers 11–19 and 21–23 remain intentionally absent.
+- No fabricated Master modules should be created.
+
+### Final safety and review status
+
+- All Video Production curriculum remains draft-only and not student-published.
+- No media rows were activated.
+- No tools or Lab bindings were created.
+- Repeated color-grading, VFX, lighting, and festival/distribution topics retain their possible-consolidation review flags.
+- Drone Cinematography retains **SAFETY/LEGAL REVIEW**.
+- Director Study: Spike Jonze retains **RIGHTS/CULTURAL REVIEW**.
+- Festival, financing, submission, and distribution modules retain **RIGHTS/DISTRIBUTION REVIEW**.
+
+The rollout is structurally complete and safely isolated as draft curriculum. Media, tool, teacher, safety, rights, cultural, and distribution reviews remain unresolved publication requirements; therefore, publication readiness correctly remains **NOT READY**.
