@@ -66,3 +66,45 @@ Stop if the canonical Dance course is missing or ambiguous; existing Dance struc
 ## Rollback boundary
 
 Rollback removes only modules marked as created by rollout `202608140003`, their exact draft children, and batch-created empty Dance levels. It refuses rollback when Dance has enrollment, progress, evidence, submissions, XP, certificates, portfolio, media, course-progress, curriculum revision/change-request, or Assignment Swap dependencies, or when a marked payload no longer matches the approved safe shape. It never deletes the Dance course or touches Singing, Piano, Guitar, Acting, shared learning-engine functions, or student state.
+
+## Rollout Completion
+
+### Execution and validation
+
+- Dance rollout SQL passed.
+- Post-validation passed.
+- Visual Curriculum Studio review passed.
+- No rollback was required.
+
+### Curriculum Studio verification
+
+- Course: **Dance** appears in Curriculum Studio.
+- Beginner contains 12 modules.
+- Beginner Module 1, **Rhythm & Body Awareness**, appears with status `draft`.
+- Intermediate contains 12 modules.
+- Advanced contains 12 modules.
+- Advanced Module 12 capstone/showcase exists.
+- Master contains 11 actual loaded records, displaying source-facing module numbers 1-10 and 12.
+- Master Module 11 remains intentionally absent.
+- Master Module 12, **Master's Magnum Opus: Dance Legacy**, exists as the final Master capstone.
+- No fake Master Module 11 should be created.
+
+### Beginner readiness verification
+
+| Readiness category | Verified display |
+|---|---|
+| Structure | `COMPLETE 12/12` |
+| XP | `COMPLETE 12/12` |
+| Draft safety | `DRAFT SAFE` |
+| Media | `NEEDS REVIEW 0/12` |
+| Tools | `CONFIGURED - INACTIVE 0/12` |
+| Publication | `NOT READY` |
+| Student enrollment/access | `NOT CHECKED` |
+
+### Preserved review and safety state
+
+- Dance remains draft-only and is not student-published.
+- No media rows were activated.
+- No tools or Lab records were bound.
+- Master Modules 8 and 9 remain separately loaded and review-flagged for possible future consolidation.
+- Publication remains `NOT READY` while media, tool, teacher, and other required reviews remain incomplete.
