@@ -138,3 +138,11 @@ Rollback does not remove the course shell, exact-compatible pre-existing records
 ## Publication boundary
 
 This rollout is not approved for publication. All levels, modules, lessons, and activities must remain draft. Media and tools remain unresolved and inactive. Teacher, rights/legal, collaboration/consent, ownership, accessibility, and scope review must be completed through a separate approval process before any future publication decision.
+
+## Rubric alignment blocker
+
+The initial post-validation returned `BLOCK` for rubric exactness with `challenges=48`, `criteria=240/240`, and `exact rubrics=0/48`. Structure, capstones, draft safety, media/tool isolation, protected baselines, and student-state checks passed.
+
+Static review found that the migration created the approved five rubric categories at 20 points each with complete bands. The blocker was an order-sensitive validation defect: the checker sorted names but compared them with an incorrectly ordered literal array, placing `Professional Delivery, Credits & Reflection` before `Production / Sound Selection / DAW Workflow`.
+
+The corrective rubric-alignment validation patch uses order-independent category membership, distinctness, exact weight, total-weight, and band-completeness checks. No rubric data update migration is required because the stored rubric contract is already correct. SQL execution of the corrective validation still requires approval after commit.
