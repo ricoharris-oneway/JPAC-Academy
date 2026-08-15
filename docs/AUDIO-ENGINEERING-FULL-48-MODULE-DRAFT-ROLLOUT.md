@@ -148,3 +148,45 @@ Rollback refuses deletion if any marked payload has changed or any Audio Enginee
 ## Authorization boundary
 
 These artifacts are approved for static review only. They do not authorize SQL execution, publication, student access, media activation, tool binding, Career Path activation, or changes to XP, mastery, progress, unlock, submission, teacher-review, or certificate logic.
+
+## Rollout completion
+
+The Audio Engineering rollout SQL passed, post-validation passed, and the visual Curriculum Studio check passed. Audio Engineering appears in Curriculum Studio with 48 total modules, distributed evenly across four levels:
+
+- Beginner: 12 modules
+- Intermediate: 12 modules
+- Advanced: 12 modules
+- Master: 12 modules
+
+Beginner readiness displays:
+
+- Structure: `COMPLETE 12/12`
+- XP: `COMPLETE 12/12`
+- Draft safety: `DRAFT SAFE`
+- Media: `NEEDS REVIEW 0/12`
+- Tools: `CONFIGURED — INACTIVE 0/12`
+- Publication: `NOT READY`
+- Student enrollment/access: `NOT CHECKED`
+
+Visible Beginner draft modules include:
+
+- Sound Waves, Frequency & Critical Listening
+- DAW Fundamentals & First Session
+- Drum Programming & Timing Foundations
+- Microphone Types & Safe Setup
+- Recording Your First Audio
+- Intro to EQ
+
+Advanced Module 12, **Full Band Recording Showcase**, exists as the Advanced capstone/showcase. Master Module 12, **Master Capstone: Complete Album Production**, exists as the final Master capstone. **Mix and Master an Album** is merged into the Master capstone as staged evidence and was not created as a standalone module.
+
+No `HOLD`, `OUT OF SCOPE`, or Tutor-only modules were rolled out. Audio Engineering remains draft-only. No media rows were activated, and no tools were bound. Publication remains `NOT READY`.
+
+The following review flags remain preserved:
+
+- `MEDIA NEEDS REVIEW`
+- `NEEDS CATALOG REVIEW`
+- `TOOL/ACCESSIBILITY REVIEW`
+- `AI/ETHICS REVIEW`
+- `BUSINESS/LEGAL REVIEW`
+- `RIGHTS/DISTRIBUTION REVIEW`
+- `SCOPE REVIEW`
