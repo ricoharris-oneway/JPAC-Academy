@@ -148,3 +148,65 @@ Static review found that the migration created the approved five rubric categori
 The corrective rubric-alignment validation patch uses order-independent category membership, distinctness, exact weight, total-weight, and band-completeness checks. No rubric data update migration is required because the stored rubric contract is already correct. SQL execution of the corrective validation still requires approval after commit.
 
 The first run of that corrective validation confirmed all Music Production/Songwriting rubric, structure, draft/XP, media/tool, and student-state checks. Its remaining blocker was an unrelated protected-course expectation: Piano was compared with 48 modules even though the previously approved Save as Draft test module makes the verified Piano baseline 49. The validation expectation now reflects that approved baseline; no Music Production/Songwriting or Piano data correction is required.
+
+## Rollout completion
+
+The Music Production/Songwriting rollout SQL passed. Initial post-validation passed structure, capstones, draft safety, media/tool isolation, student-state preservation, and protected baselines. Its rubric exactness blocker was caused by validation ordering, not bad stored rubric data.
+
+The corrected order-independent rubric alignment validation passed after the protected Piano module-count expectation was updated from 48 to the verified 49, reflecting the previously approved Piano Save as Draft test module. Final corrected validation confirmed:
+
+- Core Challenges: `48/48`
+- Rubric criteria: `240/240`
+- Exact rubrics: `48/48`
+- Protected course counts: preserved
+- Student state: preserved
+- Media and tools: inactive
+- Draft and XP contract: canonical
+- Overall: `PASS`
+
+Visual Curriculum Studio review also passed. The course appears as **Music Production / Songwriting** with 48 total modules:
+
+- Beginner: 12 modules
+- Intermediate: 12 modules
+- Advanced: 12 modules
+- Master: 12 modules
+
+Beginner readiness displays:
+
+- Structure: `COMPLETE 12/12`
+- XP: `COMPLETE 12/12`
+- Draft safety: `DRAFT SAFE`
+- Media: `NEEDS REVIEW 0/12`
+- Tools: `CONFIGURED — INACTIVE 0/12`
+- Publication: `NOT READY`
+- Student enrollment/access: `NOT CHECKED`
+
+Visible Beginner draft modules include:
+
+- Welcome to Music Production
+- Rhythm, Tempo & BPM
+- Build Your First Drum Beat
+- Recording Your Voice
+- Arranging Your First Song
+- Beginner Showcase: My First Original Song
+
+The four capstones were verified:
+
+- Level 1 Module 12: **Beginner Showcase: My First Original Song**
+- Level 2 Module 12: **Intermediate Showcase: Complete Song Production**
+- Level 3 Module 12: **Advanced Showcase: Artist Production Project**
+- Level 4 Module 12: **Master's Magnum Opus: The JPAC Record**
+
+Music Production/Songwriting remains draft-only. No media rows were activated, no tools were bound, and no certificate rows were created. The approved certificate names remain inactive level review intent only.
+
+The following review flags remain preserved:
+
+- `MEDIA NEEDS REVIEW`
+- `NEEDS CATALOG REVIEW`
+- `RIGHTS/LEGAL REVIEW`
+- `COLLABORATION/CONSENT REVIEW`
+- `THIRD-PARTY TOOL REVIEW`
+- `COPYRIGHT/OWNERSHIP REVIEW`
+- `SCOPE REVIEW`
+
+Publication remains `NOT READY`.
