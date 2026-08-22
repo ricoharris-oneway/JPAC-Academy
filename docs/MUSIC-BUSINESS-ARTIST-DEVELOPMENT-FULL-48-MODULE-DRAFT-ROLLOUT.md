@@ -109,3 +109,69 @@ Rollback is conservative and marker-scoped. It removes only exact batch-created 
 - Certificate names appear only as inactive intent; no certificate is created.
 - Legal, financial, contract, rights, privacy, collaboration, sponsorship, and touring cautions are visible where relevant.
 - No protected course, Assignment Swap, Career Path, student state, or learning-engine behavior changed.
+
+## Rollout completion
+
+### Artifact history
+
+- Source map committed: `461ff9cf3273982174f24e7665127b2e95567af9`
+- Initial rollout artifacts committed: `a6b732e58f18d376bc3f89c6aa71991bb8b421e7`
+- Existing course-shell correction committed: `bc8f85301aa1ebbb7b807d286b5f129b1e17b35e`
+- Assignment Swap RPC validation correction committed: `0fd598d8f74cae8414776cd147485608424ab9fb`
+
+### Execution result
+
+The existing Music Business course shell was reused with slug `music-business`, and its display title is now **Music Business / Artist Development**. No duplicate course was created. The preflight passed with zero blockers, the migration completed successfully, and post-validation passed with zero blockers. Rollback was not run.
+
+The completed draft rollout contains:
+
+- 4 levels
+- 48 modules
+- 144 lessons
+- 48 optional Practice activities
+- 48 required Core Challenges
+- 240 rubric criteria
+
+Level distribution is:
+
+- Beginner / Artist Explorer: 12 modules
+- Intermediate / Artist Builder: 12 modules
+- Advanced / Artist Strategist: 12 modules
+- Master / Creative Entrepreneur: 12 modules
+
+The verified capstones are:
+
+- Level 1 Module 12: **Beginner Showcase: My Artist Starter Kit**
+- Level 2 Module 12: **Intermediate Showcase: The Mock Single Release**
+- Level 3 Module 12: **Advanced Showcase: JPAC Artist Launch**
+- Level 4 Module 12: **Master's Magnum Opus: The JPAC Artist Enterprise**
+
+Final post-validation confirmed:
+
+- exact rubrics: 48/48
+- rubric criteria: 240/240
+- all curriculum remains draft
+- media rows and active/bound tool references: 0
+- certificate rows: 0
+- protected course baselines preserved
+- student state preserved
+- Assignment Swap RPCs and 2 audit rows preserved
+
+### Visual Curriculum Studio verification
+
+The visual Curriculum Studio check passed:
+
+- Course displays as **Music Business / Artist Development**.
+- Total modules displays 48.
+- Levels displays 4.
+- Beginner / Artist Explorer displays 12 modules.
+- Beginner readiness displays:
+  - Structure: `COMPLETE 12/12`
+  - XP: `COMPLETE 12/12`
+  - Draft safety: `DRAFT SAFE`
+  - Media: `NEEDS REVIEW 0/12`
+  - Tools: `CONFIGURED — INACTIVE 0/12`
+  - Publication: `NOT READY`
+- Module and capstone spot-checks passed.
+
+The course remains draft-only. No media was activated, no tools were bound, and no certificates were created. Publication remains `NOT READY`. Student enrollment and access were not changed.
