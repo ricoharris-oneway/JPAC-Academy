@@ -7,8 +7,9 @@ declare
  v_levels constant text[] := array['Beginner / Artist Explorer','Intermediate / Artist Builder','Advanced / Artist Strategist','Master / Creative Entrepreneur'];
  v_certificates constant text[] := array['JPAC Artist Explorer Certificate','JPAC Artist Builder Certificate','JPAC Artist Strategist Certificate','JPAC Master Artist Entrepreneur Certificate'];
 begin
- if (select count(*) from public.courses where slug='music-business-artist-development')<>1 then raise exception 'Expected exactly one canonical music-business-artist-development course'; end if;
- select id into v_course from public.courses where slug='music-business-artist-development' for share;
+ if (select count(*) from public.courses where slug='music-business')<>1 then raise exception 'Expected exactly one canonical music-business course'; end if;
+ select id into v_course from public.courses where slug='music-business' for share;
+ if not exists(select 1 from public.courses where id=v_course and title in('Music Business','Music Business / Artist Development')) then raise exception 'Existing music-business course title is incompatible with rollout'; end if;
  if exists(select 1 from public.enrollments where course_id=v_course)
  or exists(select 1 from public.submissions s join public.activities a on a.id=s.activity_id where a.course_id=v_course)
  or exists(select 1 from public.lesson_progress p join public.lessons l on l.id=p.lesson_id join public.course_modules m on m.id=l.module_id where m.course_id=v_course)
@@ -22,6 +23,8 @@ begin
  then raise exception 'Music Business / Artist Development student/evidence dependencies block rollout'; end if;
  if (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in('jpac_sync_enrollment_progress','jpac_enforce_canonical_enrollment_progress') and (select count(*) from regexp_matches(regexp_replace(lower(pg_get_functiondef(p.oid)),'\s+','','g'),'m\.status=''published''','g'))=2 and strpos(regexp_replace(lower(pg_get_functiondef(p.oid)),'\s+','','g'),'m.status<>''archived''')=0)<>2 then raise exception 'Safe Draft Isolation is not active'; end if;
  if (select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname='enrollments' and t.tgname='enrollments_enforce_canonical_progress' and not t.tgisinternal and t.tgenabled<>'D')<>1 then raise exception 'Canonical enrollment progress trigger missing'; end if;
+
+ update public.courses set title='Music Business / Artist Development' where id=v_course and slug='music-business' and title='Music Business';
 
  v_rubric:=jsonb_build_object('criteria',jsonb_build_array(
   jsonb_build_object('name','Artist Identity, Brand & Audience Strategy','weight',20,'bands',jsonb_build_object('Exceeds','Artist identity, brand, and audience strategy consistently exceed the approved standard.','Meets','Artist identity, brand, and audience strategy meet the approved standard.','Developing','Artist identity, brand, and audience strategy partially meet the standard.','Not Yet','Artist identity, brand, and audience strategy do not yet meet the standard.')),

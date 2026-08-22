@@ -3,8 +3,8 @@ begin;
 do $$
 declare v_course uuid; v_marker constant text:='Music Business / Artist Development full draft rollout 202608140008'; v_count int;
 begin
- if (select count(*) from public.courses where slug='music-business-artist-development')<>1 then raise exception 'Expected exactly one canonical music-business-artist-development course'; end if;
- select id into v_course from public.courses where slug='music-business-artist-development' for share;
+ if (select count(*) from public.courses where slug='music-business')<>1 then raise exception 'Expected exactly one canonical music-business course'; end if;
+ select id into v_course from public.courses where slug='music-business' for share;
  if exists(select 1 from public.enrollments where course_id=v_course)
  or exists(select 1 from public.submissions s join public.activities a on a.id=s.activity_id where a.course_id=v_course)
  or exists(select 1 from public.lesson_progress p join public.lessons l on l.id=p.lesson_id join public.course_modules m on m.id=l.module_id where m.course_id=v_course)
@@ -27,6 +27,7 @@ begin
  delete from public.lessons where module_id in(select id from public.course_modules where course_id=v_course and review_notes like v_marker||';%');
  delete from public.course_modules where course_id=v_course and review_notes like v_marker||';%';
  delete from public.course_levels l where l.course_id=v_course and l.review_notes like v_marker||'; batch-created level; canonical 12-module level; inactive certificate intent:%' and not exists(select 1 from public.course_modules m where m.course_level_id=l.id);
+ update public.courses set title='Music Business' where id=v_course and slug='music-business' and title='Music Business / Artist Development' and v_count>0;
  raise notice 'Removed % exact batch-created Music Business / Artist Development modules; compatible pre-existing rows preserved',v_count;
 end $$;
 commit;

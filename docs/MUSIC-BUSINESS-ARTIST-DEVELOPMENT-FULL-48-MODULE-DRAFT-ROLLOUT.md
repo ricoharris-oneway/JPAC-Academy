@@ -2,7 +2,7 @@
 
 ## Status and source authority
 
-This five-file artifact set prepares a controlled, draft-only rollout for the canonical `music-business-artist-development` course. Its authority is `docs/MUSIC-BUSINESS-ARTIST-DEVELOPMENT-FULL-PROGRAM-SOURCE-MAP.md`, committed as `461ff9cf3273982174f24e7665127b2e95567af9`.
+This five-file artifact set prepares a controlled, draft-only rollout by reusing the existing empty `music-business` course shell. The shell remains identified by slug `music-business`, while its display title becomes **Music Business / Artist Development**. Reusing this canonical shell avoids creating a duplicate course. The curriculum authority is `docs/MUSIC-BUSINESS-ARTIST-DEVELOPMENT-FULL-PROGRAM-SOURCE-MAP.md`, committed as `461ff9cf3273982174f24e7665127b2e95567af9`.
 
 Creating these artifacts does not authorize SQL execution, database changes, publication, student access, media activation, tool binding, or certificate issuance.
 
@@ -73,21 +73,21 @@ Students—especially minors—must not privately contact unknown adults. Collab
 
 ## Preflight
 
-The read-only preflight verifies exactly one canonical course shell; exact-compatible existing curriculum; the 48-entry manifest, 12/12/12/12 distribution, and sequential global sort order; no student/evidence or active media/tool dependencies; Safe Draft Isolation; protected curriculum counts (Singing 40, Piano 49, Guitar 50, Acting 46, Dance 47, Video Production 49, Audio Engineering 48, Music Production/Songwriting 48); Assignment Swap baseline; and student-state counts (`xp_ledger=5`, `enrollments=1`, `submissions=1`, `certificates=0`, `lesson_progress=5`). Stop unless every blocking finding passes.
+The read-only preflight requires exactly one canonical course with slug `music-business`. It verifies that the shell has zero actual modules, lessons, activities, enrollments, submissions, lesson progress, XP ledger rows, and certificates before rollout. The shell's legacy `module_count` metadata is not treated as curriculum evidence; actual related rows control the empty-shell decision. It also verifies the 48-entry manifest, 12/12/12/12 distribution, sequential global sort order, no active media/tool dependencies, Safe Draft Isolation, protected curriculum counts (Singing 40, Piano 49, Guitar 50, Acting 46, Dance 47, Video Production 49, Audio Engineering 48, Music Production/Songwriting 48), Assignment Swap baseline, and global student-state counts (`xp_ledger=5`, `enrollments=1`, `submissions=1`, `certificates=0`, `lesson_progress=5`). Stop unless every blocking finding passes.
 
 ## Migration
 
-The migration is scoped by canonical course ID and a rollout marker. It creates or reuses only exact-compatible draft levels and modules, and inserts three lessons plus two activities only for newly created marked modules. It follows the UUID and idempotency conventions of prior successful full-draft rollouts.
+The migration is scoped to the existing course row selected by slug `music-business` and a rollout marker. It does not insert a course row and never changes the slug. It accepts only the original title **Music Business** or the idempotent rollout title **Music Business / Artist Development**, and its only course-row mutation is changing the original title to the rollout display title. It then creates or reuses only exact-compatible draft levels and modules, inserting three lessons plus two activities only for newly created marked modules. It follows the UUID and idempotency conventions of prior successful full-draft rollouts.
 
 It does not touch other courses; publish records; create media, tools, certificates, enrollments, progress, submissions, evidence, XP, or portfolios; or invoke learning-engine or Assignment Swap workflows.
 
 ## Post-validation
 
-The read-only post-validation checks exact totals, manifest, capstones, certificate intent, draft status, canonical XP, exact order-independent rubrics, review flags, zero media/tool bindings, zero course-specific dependencies, Safe Draft Isolation, protected course counts, Assignment Swap baseline, and student-state counts. `OVERALL PASS` requires zero blockers; preservation hashes must be compared with preflight output.
+The read-only post-validation requires the slug to remain `music-business` and the display title to equal **Music Business / Artist Development**. It checks exact totals, manifest, capstones, certificate intent, draft status, canonical XP, exact order-independent rubrics, review flags, zero media/tool bindings, zero certificate rows, zero course-specific student/evidence dependencies, Safe Draft Isolation, protected course counts, Assignment Swap baseline, and student-state counts. `OVERALL PASS` requires zero blockers; preservation hashes must be compared with preflight output.
 
 ## Rollback scope
 
-Rollback is conservative and marker-scoped. It removes only exact batch-created Music Business / Artist Development activities, lessons, modules, and now-empty batch-created levels. It preserves the course shell and exact-compatible pre-existing records. It refuses to proceed if marked payloads changed or if student/evidence/progress/submission/XP/certificate/portfolio/media/tool/course-progress/revision/change-request/Assignment Swap dependencies exist. It never touches another course.
+Rollback is conservative and marker-scoped. It removes only exact batch-created Music Business / Artist Development activities, lessons, modules, and now-empty batch-created levels from the `music-business` course. It never deletes the course row or changes its slug. When rollout-marked modules were present and the title still matches the rollout title, rollback restores the display title to **Music Business**. It preserves exact-compatible pre-existing records and refuses to proceed if marked payloads changed or if student/evidence/progress/submission/XP/certificate/portfolio/media/tool/course-progress/revision/change-request/Assignment Swap dependencies exist. It never touches another course.
 
 ## Controlled usage order
 
