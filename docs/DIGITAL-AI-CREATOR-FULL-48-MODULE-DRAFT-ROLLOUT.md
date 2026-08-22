@@ -6,6 +6,10 @@ This five-file artifact set prepares a controlled, draft-only rollout for the ex
 
 Artifact creation does not authorize SQL execution, database changes, publication, student access, media activation, tool binding, or certificate issuance.
 
+### Course-shell prerequisite
+
+The rollout preflight found no existing course with slug `digital-ai-creator` and no likely duplicate candidate. Before the 48-module rollout can proceed, the separately controlled `202608140009a_digital_ai_creator_course_shell_seed.sql` artifact must create the missing launch-convention shell. That seed is limited to one published `public.courses` row with `module_count=10`; it creates no curriculum, media, tools, certificates, enrollment, progress, or XP records. The shell seed requires its own read-only preflight, explicit execution approval, and zero-blocker post-validation.
+
 ## Expected structure
 
 | Level | Title | Modules | Inactive certificate intent |
