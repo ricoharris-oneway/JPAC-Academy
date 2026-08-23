@@ -83,7 +83,7 @@ with expected_tables(table_name) as (
     (select count(*) from public.curriculum_assignment_swap_operations)::int audit_rows
 ), student_state as (
   select (select count(*) from public.xp_ledger)::int xp_ledger,(select count(*) from public.enrollments)::int enrollments,(select count(*) from public.submissions)::int submissions,(select count(*) from public.certificates)::int certificates,(select count(*) from public.lesson_progress)::int lesson_progress
-), findings as (
+), findings(report_section, code, result, details) as (
   select 'SCHEMA','FIVE_TABLES',case when found=5 then 'PASS' else 'BLOCK' end result,format('tables=%s/5; missing=%s',found,missing) details from table_state
   union all select 'SCHEMA','REQUIRED_COLUMNS',case when found=expected then 'PASS' else 'BLOCK' end,format('columns=%s/%s; missing=%s',found,expected,missing) from column_state
   union all select 'SCHEMA','CONSTRAINTS',case when primary_keys=5 and foreign_keys=17 and check_constraints>=23 and post_status_checks=1 and comment_status_checks=1 and reaction_type_checks=1 and action_checks>=1 and report_status_checks>=1 then 'PASS' else 'BLOCK' end,format('primary keys=%s/5; foreign keys=%s/17; checks=%s (minimum 23); status/action/reaction definitions=%s/%s/%s/%s/%s',primary_keys,foreign_keys,check_constraints,post_status_checks,comment_status_checks,reaction_type_checks,action_checks,report_status_checks) from constraint_state

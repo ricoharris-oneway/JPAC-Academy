@@ -124,6 +124,8 @@ The only reported blocker was the `SCHEMA / CONSTRAINTS` checker. The database c
 
 The corrected validator accepts one or more matching action checks and one or more matching report-status checks. Exact expectations remain unchanged for the five primary keys, 17 foreign keys, post-status check, comment-status check, and reaction-type check. The post-validation must be rerun through the approved read-only process to confirm `OVERALL PASS`; no migration repair or rollback is required for this validation-only mismatch.
 
+The next read-only rerun stopped before returning findings because the `findings` CTE did not explicitly name its four literal/union output columns, while the final query referenced `report_section`. This was a validation SQL alias error, not a migration or schema failure. The CTE now declares `findings(report_section, code, result, details)` explicitly; all schema, RLS, policy, index, no-seed, protected-curriculum, Assignment Swap, student-state, and certificate checks remain unchanged.
+
 ## Rollback scope
 
 The rollback drops only these five tables, in dependency-safe order:
