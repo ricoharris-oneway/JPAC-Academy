@@ -116,6 +116,14 @@ These policies provide database defense in depth. They do not replace server-sid
 6. Confirm protected curriculum, Assignment Swap, student-state, and certificate baselines remain unchanged.
 7. Treat any `BLOCK` or nonzero blocker count as a failed rollout.
 
+### Migration execution and validation correction
+
+The Community Wall v1 migration completed successfully. The first post-validation run confirmed all five tables, all 52 required columns, all 15 expected indexes, zero seed rows, RLS on all five tables, all 17 conservative policies, zero anonymous table privileges, and unchanged protected curriculum, Assignment Swap, student-state, and certificate baselines.
+
+The only reported blocker was the `SCHEMA / CONSTRAINTS` checker. The database correctly reported 5 primary keys, 17 foreign keys, and 24 check constraints against a minimum of 23. PostgreSQL catalog matching found two valid action-related checks and two valid report-status-related checks. The original validator required exactly one action match, so it produced a false blocker even though the schema was intact.
+
+The corrected validator accepts one or more matching action checks and one or more matching report-status checks. Exact expectations remain unchanged for the five primary keys, 17 foreign keys, post-status check, comment-status check, and reaction-type check. The post-validation must be rerun through the approved read-only process to confirm `OVERALL PASS`; no migration repair or rollback is required for this validation-only mismatch.
+
 ## Rollback scope
 
 The rollback drops only these five tables, in dependency-safe order:
