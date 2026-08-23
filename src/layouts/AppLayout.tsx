@@ -11,6 +11,7 @@ const nav = [
   ['My Academy', '/courses', '🎓', ['student']],
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
+  ['Community', '/community', '💜', ['student', 'teacher', 'admin', 'developer']],
   ['Teacher Studio', '/teacher', '👥', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
   ['Certificates & Portfolio', '/certificates', '📜', ['student', 'teacher', 'admin', 'developer']],
