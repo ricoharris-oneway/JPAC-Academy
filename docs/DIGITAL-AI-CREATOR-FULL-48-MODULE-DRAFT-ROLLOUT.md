@@ -83,3 +83,87 @@ Rollback is conservative and marker-scoped. It refuses to run if student, eviden
 - Certificate intent appears only in level review metadata; certificate rows remain zero.
 - AI safety, privacy, likeness, copyright/IP, disclosure, platform-policy, and under-18 constraints are visible in the review material.
 - Student enrollment, access, progress, evidence, submissions, and XP are unchanged.
+
+## Rollout completion
+
+### Committed artifacts and execution
+
+- Source map committed: `eea82bba3ecf22f6ef5fc6e590acc2abb1f3d328`
+- Full rollout artifacts committed: `07805885a089878cbc410ff7bb468a610503f88d`
+- Course-shell seed artifacts committed: `ba86cdea4973b085a37b09fa2c89e129b875a439`
+- The Digital AI Creator source-shell preflight initially blocked because no course shell existed.
+- The course-shell seed completed successfully.
+- The shell was created with title **Digital AI Creator**, slug `digital-ai-creator`, status `published`, and `module_count=10`.
+- Shell post-validation passed with zero blockers.
+- Full rollout preflight passed with zero blockers after the shell seed.
+- The full migration completed successfully.
+- Full post-validation passed with zero blockers.
+- Rollback was not run.
+
+### Verified course structure
+
+- 4 levels
+- 48 modules
+- 144 lessons
+- 48 optional Practice activities
+- 48 required Core Challenges
+- 240 rubric criteria
+
+Level distribution:
+
+- AI Explorer: 12 modules
+- AI Creator: 12 modules
+- AI Creative Director: 12 modules
+- AI Production Master: 12 modules
+
+Verified capstones:
+
+- Level 1 Module 12: **Level 1 Showcase: My First AI Mini Story**
+- Level 2 Module 12: **Level 2 Showcase: AI Commercial or Music Campaign**
+- Level 3 Module 12: **Level 3 Showcase: AI Director Project**
+- Level 4 Module 12: **Master's Magnum Opus: The JPAC AI Production**
+
+### Final validation
+
+- Exact rubrics: 48/48
+- Rubric criteria: 240/240
+- Required review flags: 48/48
+- All curriculum remains draft.
+- Noncanonical XP modules: 0
+- Media/tool bindings: 0
+- Certificate rows: 0
+- Student/evidence dependencies: 0
+- Protected-course and preservation hashes remained unchanged.
+- Assignment Swap RPCs and two audit rows were preserved.
+- Global student-state counts were preserved.
+
+### Visual Curriculum Studio verification
+
+- Course displays as **Digital AI Creator**.
+- Total modules show 48 and levels show 4.
+- AI Explorer shows 12 modules.
+- AI Creator shows 12 modules.
+- AI Creative Director shows 12 modules.
+- AI Production Master shows 12 modules.
+- AI Explorer readiness shows:
+  - Structure `COMPLETE 12/12`
+  - XP `COMPLETE 12/12`
+  - Draft safety `DRAFT SAFE`
+  - Media `NEEDS REVIEW 0/12`
+  - Tools `CONFIGURED — INACTIVE 0/12`
+  - Publication `NOT READY`
+- Visible module checks passed for:
+  - **Character Consistency**
+  - **Creating Environments & Worlds**
+  - **From Image to Video**
+  - **Camera Movement in Veo**
+  - **Sound, Dialogue & Atmosphere**
+  - **Level 1 Showcase: My First AI Mini Story**
+  - **Level 2 Showcase: AI Commercial or Music Campaign**
+  - **Level 3 Showcase: AI Director Project**
+  - **AI Creator Portfolio**
+  - **Professional AI Creator Pitch**
+  - **Master's Magnum Opus: The JPAC AI Production**
+- Instructor-Guided AI Lab language was visible in Curriculum Studio.
+
+The course remains draft-only. No media was activated, no tools were bound, and no certificates were created. Publication remains `NOT READY`. Student enrollment and access were not changed.
