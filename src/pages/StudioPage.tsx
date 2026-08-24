@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { premiumCreatorTools } from '../features/creative-tools/creativeToolRegistry';
+import '../styles/jpac-premium-tools.css';
 import { loadMyCourses } from '../lib/studentAccess';
 import { supabase } from '../lib/supabase';
 
@@ -183,16 +186,30 @@ export function StudioPage() {
 
     {message ? <div className="admin-message">{message}</div> : null}
 
+    <section className="studio-premium-section" aria-labelledby="jpac-creator-tools-title">
+      <div className="studio-premium-heading">
+        <div><div className="eyebrow">Premium local practice</div><h2 id="jpac-creator-tools-title">JPAC Creator Tools</h2></div>
+        <small>No uploads, recording, XP, or assignment submission.</small>
+      </div>
+      <div className="studio-premium-grid">
+        {premiumCreatorTools.map((tool) => <Link className="studio-premium-card" to={`/studio/tools/${tool.slug}`} key={tool.slug}>
+          <span className="icon" aria-hidden="true">{tool.icon}</span><strong>{tool.title}</strong><span>{tool.description}</span><b>Open tool →</b>
+        </Link>)}
+      </div>
+    </section>
+
     <section className="studio-lab-intro">
-      <div><div className="eyebrow">Guided practice templates</div><h2>Your Creator Lab is ready.</h2></div>
+      <div><div className="eyebrow">Plan your practice</div><h2>Guided Practice Templates</h2></div>
       <p>Use these guided templates to practice, prepare assignments, and build creative confidence.</p>
     </section>
+
+    <div className="studio-guided-heading"><div className="eyebrow">Eight guided workflows</div><h2>Choose a Guided Practice Template</h2></div>
 
     <div className="studio-category-filters" role="group" aria-label="Filter Creator Lab tools">
       {studioCategories.map((item) => <button type="button" key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
     </div>
 
-    <section className="studio-template-grid" aria-label="Creator workflow templates">
+    <section className="studio-template-grid" aria-label="Guided Practice Templates">
       {filteredTools.map((tool) => <button
         type="button"
         className={`studio-template-card studio-visual-${tool.visual} ${selectedId === tool.id ? 'selected' : ''}`}
