@@ -1,0 +1,33 @@
+import { useState } from 'react';
+import { ToolShell } from '../shared/ToolShell';
+import { noteAnswers, notesByClef, positionAnswers, randomItem, rhythms, type Clef, type NoteChallenge, type PracticeMode } from './notationTheory';
+
+type ScoreMark = '♩' | '𝅗𝅥' | '𝅝' | '♪' | '𝄽';
+const modes: PracticeMode[] = ['Note Names', 'Staff Position', 'Rhythm Values'];
+const scoreMarks: { label: string; mark: ScoreMark }[] = [{ label: 'Quarter note', mark: '♩' }, { label: 'Half note', mark: '𝅗𝅥' }, { label: 'Whole note', mark: '𝅝' }, { label: 'Eighth note', mark: '♪' }, { label: 'Quarter rest', mark: '𝄽' }];
+
+export function NotationTrainerTool() {
+  const [clef, setClef] = useState<Clef>('Treble'); const [mode, setMode] = useState<PracticeMode>('Note Names');
+  const [note, setNote] = useState<NoteChallenge>(() => randomItem(notesByClef.Treble)); const [rhythm, setRhythm] = useState(() => randomItem(rhythms));
+  const [feedback, setFeedback] = useState('Choose an answer when you are ready.'); const [answered, setAnswered] = useState(false); const [score, setScore] = useState(0); const [streak, setStreak] = useState(0);
+  const [scoreBars, setScoreBars] = useState<(ScoreMark | null)[]>(() => Array.from({ length: 64 }, () => null));
+
+  function nextChallenge(nextClef = clef, nextMode = mode) { setAnswered(false); setFeedback('Choose an answer when you are ready.'); if (nextMode === 'Rhythm Values') setRhythm((current) => randomItem(rhythms, current)); else setNote((current) => randomItem(notesByClef[nextClef], current)); }
+  const explanation = mode === 'Rhythm Values' ? rhythm.explanation : note.explanation;
+  function chooseAnswer(answer: string) { if (answered) return; const correct = mode === 'Rhythm Values' ? rhythm.name : mode === 'Staff Position' ? note.location : note.name; const isCorrect = answer === correct; setAnswered(true); if (isCorrect) { setScore((value) => value + 1); setStreak((value) => value + 1); setFeedback(`Great reading! ${explanation}`); } else { setStreak(0); setFeedback(`Good try. The answer is ${correct}. ${explanation}`); } }
+  function reset() { setScore(0); setStreak(0); setClef('Treble'); setMode('Note Names'); setNote(randomItem(notesByClef.Treble)); setRhythm(randomItem(rhythms)); setAnswered(false); setFeedback('Choose an answer when you are ready.'); }
+  function addScoreMark(mark: ScoreMark) { setScoreBars((current) => { const index = current.findIndex((item) => item === null); if (index < 0) return current; const next = [...current]; next[index] = mark; return next; }); }
+  const answers = mode === 'Rhythm Values' ? rhythms.map((item) => item.name) : mode === 'Staff Position' ? positionAnswers : noteAnswers;
+
+  return <ToolShell title="Notation Trainer Pro" eyebrow="JPAC Creator Tool" description="Read treble and bass clef notes, learn rhythm values, and sketch a 64-bar musical idea.">
+    <section className="premium-tool-panel notation-trainer">
+      <div className="notation-stats" aria-label="Practice score"><div><span>Score</span><strong>{score}</strong></div><div><span>Streak</span><strong>{streak}</strong></div></div>
+      <div className="premium-control-grid"><label>Practice mode<select value={mode} onChange={(event) => { const value = event.target.value as PracticeMode; setMode(value); nextChallenge(clef, value); }}>{modes.map((item) => <option key={item}>{item}</option>)}</select></label><label>Clef<select value={clef} disabled={mode === 'Rhythm Values'} onChange={(event) => { const value = event.target.value as Clef; setClef(value); nextChallenge(value, mode); }}><option>Treble</option><option>Bass</option></select></label><button type="button" className="button button-secondary" onClick={reset}>Reset practice</button></div>
+      <section className="notation-challenge" aria-labelledby="notation-question"><div className="notation-question-copy"><div className="eyebrow">Random challenge</div><h2 id="notation-question">{mode === 'Rhythm Values' ? 'What rhythm value is this?' : mode === 'Staff Position' ? 'Where is this note on the staff?' : 'What is the name of this note?'}</h2></div>{mode === 'Rhythm Values' ? <div className="rhythm-symbol" aria-label={answered ? rhythm.name : 'Music rhythm symbol'}>{rhythm.symbol}</div> : <StaffDisplay note={note} clef={clef} />}<div className="notation-answer-grid">{answers.map((answer) => <button type="button" key={answer} disabled={answered} onClick={() => chooseAnswer(answer)}>{answer}</button>)}</div><div className={`notation-feedback ${answered ? 'answered' : ''}`} role="status">{feedback}</div>{answered ? <button type="button" className="button button-primary notation-next" onClick={() => nextChallenge()}>Next challenge</button> : null}</section>
+      <section className="notation-explanation"><h2>Beginner guide</h2><p>{answered ? explanation : mode === 'Rhythm Values' ? 'Rhythm symbols tell you how long to play a sound—or when to stay silent.' : `${clef} clef helps musicians know which note belongs on each line and space.`}</p>{mode === 'Rhythm Values' && answered ? <strong>{rhythm.beats}</strong> : null}</section>
+      <section className="score-writer-preview" aria-labelledby="score-writer-title"><header><div><div className="eyebrow">Local composition sketch</div><h2 id="score-writer-title">64-Bar Score Writer Preview</h2><p>Add simple note and rest symbols from left to right. This preview is not saved.</p></div><button type="button" className="button button-secondary" onClick={() => setScoreBars(Array.from({ length: 64 }, () => null))}>Clear score</button></header><div className="score-mark-controls" role="group" aria-label="Add a notation symbol">{scoreMarks.map((item) => <button type="button" key={item.label} onClick={() => addScoreMark(item.mark)}><span aria-hidden="true">{item.mark}</span>{item.label}</button>)}</div><div className="score-bar-grid" aria-label="64 score bars">{scoreBars.map((mark, index) => <div className="score-bar" key={index}><small>{index + 1}</small><span aria-label={mark ? `Bar ${index + 1} contains ${mark}` : `Bar ${index + 1} is empty`}>{mark || ''}</span></div>)}</div></section>
+    </section>
+  </ToolShell>;
+}
+
+function StaffDisplay({ note, clef }: { note: NoteChallenge; clef: Clef }) { const bottom = 16 + note.position * 10; return <div className="notation-staff" role="img" aria-label={`${clef} clef staff with a mystery note`}><span className="notation-clef" aria-hidden="true">{clef === 'Treble' ? '𝄞' : '𝄢'}</span>{Array.from({ length: 5 }, (_, index) => <span className="staff-line" style={{ bottom: `${16 + index * 20}%` }} key={index} />)}<span className="staff-note" style={{ bottom: `${bottom}%` }} aria-hidden="true">●<i /></span></div>; }
