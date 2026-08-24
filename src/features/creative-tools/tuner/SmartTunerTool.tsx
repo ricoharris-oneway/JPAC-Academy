@@ -7,7 +7,7 @@ type Reading = { note: string; cents: number; frequency: number };
 
 export function SmartTunerTool() {
   const [mode, setMode] = useState<'Vocal' | 'Instrument'>('Vocal'); const [permission, setPermission] = useState<PermissionState>('idle'); const [reading, setReading] = useState<Reading | null>(null); const [stable, setStable] = useState(false); const [message, setMessage] = useState('Your microphone is off.');
-  const streamRef = useRef<MediaStream | null>(null); const contextRef = useRef<AudioContext | null>(null); const referenceContextRef = useRef<AudioContext | null>(null); const animationRef = useRef<number | null>(null); const historyRef = useRef<number[]>([]); const lastDetectionRef = useRef(0);
+  const streamRef = useRef<MediaStream | null>(null); const contextRef = useRef<AudioContext | null>(null); const referenceContextRef = useRef<AudioContext | null>(null); const animationRef = useRef<number | null>(null); const historyRef = useRef<number[]>([]); const lastDetectionRef = useRef(0); const mountedRef = useRef(true);
 
   const stopMic = useCallback(() => {
     if (animationRef.current !== null) cancelAnimationFrame(animationRef.current); animationRef.current = null;
@@ -19,7 +19,7 @@ export function SmartTunerTool() {
     setPermission('requesting'); setMessage('Waiting for microphone permission…');
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('Microphone access is not supported in this browser.');
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false }); streamRef.current = stream;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }, video: false }); if (!mountedRef.current) { stream.getTracks().forEach((track) => track.stop()); return; } streamRef.current = stream;
       const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext; if (!AudioCtor) throw new Error('Web Audio is not supported in this browser.');
       const context = new AudioCtor(); contextRef.current = context; if (context.state === 'suspended') await context.resume(); const analyser = context.createAnalyser(); analyser.fftSize = 4096; analyser.smoothingTimeConstant = .2; context.createMediaStreamSource(stream).connect(analyser); const buffer = new Float32Array(analyser.fftSize);
       setPermission('active'); setMessage('Listening locally…');
@@ -33,7 +33,7 @@ export function SmartTunerTool() {
       };
       animationRef.current = requestAnimationFrame(analyze);
     } catch (error) {
-      streamRef.current?.getTracks().forEach((track) => track.stop()); streamRef.current = null; const denied = error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError'); setPermission(denied ? 'denied' : 'error'); setMessage(denied ? 'Microphone permission was denied. You can update browser permissions and try again.' : error instanceof Error ? error.message : 'The microphone could not start.');
+      streamRef.current?.getTracks().forEach((track) => track.stop()); streamRef.current = null; if (!mountedRef.current) return; const denied = error instanceof DOMException && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError'); setPermission(denied ? 'denied' : 'error'); setMessage(denied ? 'Microphone permission was denied. You can update browser permissions and try again.' : error instanceof Error ? error.message : 'The microphone could not start.');
     }
   }
 
@@ -43,7 +43,7 @@ export function SmartTunerTool() {
   }
 
   function reset() { stopMic(); if (referenceContextRef.current) void referenceContextRef.current.close(); referenceContextRef.current = null; setMode('Vocal'); setMessage('Reset complete. Your microphone is off.'); }
-  useEffect(() => () => { if (animationRef.current !== null) cancelAnimationFrame(animationRef.current); streamRef.current?.getTracks().forEach((track) => track.stop()); if (contextRef.current) void contextRef.current.close(); if (referenceContextRef.current) void referenceContextRef.current.close(); }, []);
+  useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; if (animationRef.current !== null) cancelAnimationFrame(animationRef.current); streamRef.current?.getTracks().forEach((track) => track.stop()); if (contextRef.current) void contextRef.current.close(); if (referenceContextRef.current) void referenceContextRef.current.close(); }; }, []);
   const feedback = tuningFeedback(reading?.cents ?? null, stable); const meter = reading ? Math.max(-50, Math.min(50, reading.cents)) : 0;
 
   return <ToolShell title="Smart Tuner" eyebrow="JPAC Creator Tool" description="Practice matching pitch with encouraging, browser-local microphone feedback.">
