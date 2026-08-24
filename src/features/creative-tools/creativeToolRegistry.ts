@@ -4,6 +4,7 @@ import { SmartMetronomeTool } from './metronome/SmartMetronomeTool';
 import { NotationTrainerTool } from './notation/NotationTrainerTool';
 import { LoopBuilderTool } from './loop/LoopBuilderTool';
 import { SmartTunerTool } from './tuner/SmartTunerTool';
+import { VirtualGuitarTool } from './guitar/VirtualGuitarTool';
 import { VirtualPianoTool } from './piano/VirtualPianoTool';
 
 export type PremiumToolDefinition = { slug: string; title: string; icon: string; description: string; component: ComponentType };
@@ -14,6 +15,7 @@ export const premiumCreatorTools: PremiumToolDefinition[] = [
   { slug: 'notation-trainer', title: 'Notation Trainer Pro', icon: '🎵', description: 'Practice treble and bass clef notes, rhythm values, and sketch a 64-bar score.', component: NotationTrainerTool },
   { slug: 'loop-builder', title: 'Loop Builder / Beat Lab', icon: '🥁', description: 'Create a 16-step groove with synthesized drums, bass, presets, and a live playhead.', component: LoopBuilderTool },
   { slug: 'smart-tuner', title: 'Smart Tuner', icon: '🎙️', description: 'Practice pitch with opt-in, browser-local microphone feedback and reference notes.', component: SmartTunerTool },
+  { slug: 'virtual-guitar', title: 'Virtual Guitar / Instrument Studio', icon: '🎸', description: 'Play six strings and twelve frets, explore chord shapes, and try guitar-style effects.', component: VirtualGuitarTool },
 ];
-const aliases: Record<string, string> = { 'harmony-stack-pad': 'harmony-builder', 'jpac-virtual-piano': 'virtual-piano', metronome: 'smart-metronome', 'notation-trainer-pro': 'notation-trainer', 'music-reading-tool': 'notation-trainer', 'rhythm-reading': 'notation-trainer', 'beat-lab': 'loop-builder', 'loop-builder-songwriter': 'loop-builder', 'jpac-loop-builder': 'loop-builder', 'drum-sequencer': 'loop-builder', 'voice-instrument-tuner': 'smart-tuner', 'jpac-smart-tuner': 'smart-tuner', tuner: 'smart-tuner', 'pitch-trainer': 'smart-tuner' };
+const aliases: Record<string, string> = { 'harmony-stack-pad': 'harmony-builder', 'jpac-virtual-piano': 'virtual-piano', metronome: 'smart-metronome', 'notation-trainer-pro': 'notation-trainer', 'music-reading-tool': 'notation-trainer', 'rhythm-reading': 'notation-trainer', 'beat-lab': 'loop-builder', 'loop-builder-songwriter': 'loop-builder', 'jpac-loop-builder': 'loop-builder', 'drum-sequencer': 'loop-builder', 'voice-instrument-tuner': 'smart-tuner', 'jpac-smart-tuner': 'smart-tuner', tuner: 'smart-tuner', 'pitch-trainer': 'smart-tuner', 'jpac-virtual-guitar': 'virtual-guitar', 'instrument-studio': 'virtual-guitar', 'jpac-instrument-studio': 'virtual-guitar', 'guitar-lab': 'virtual-guitar' };
 export function getPremiumCreatorTool(slug?: string) { const canonical = slug ? aliases[slug] || slug : ''; return premiumCreatorTools.find((tool) => tool.slug === canonical); }
