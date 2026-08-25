@@ -43,6 +43,24 @@ function displayDate(value: string) {
     : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+function dashboardProgress(course: AcademyCourse) {
+  const numericProgress = Number(course.progress);
+  const known = course.progress !== null && Number.isFinite(numericProgress);
+  if (!known) return { bar: 0, label: `Course progress syncing · Level ${course.enrollment_level}`, started: false };
+
+  const percent = Math.max(0, Math.min(100, numericProgress));
+  const pilotScope = course.slug === 'singing' && course.published_module_count === 1;
+  if (pilotScope) {
+    return {
+      bar: percent,
+      label: percent >= 100 ? `Pilot module complete · Level ${course.enrollment_level}` : `${Math.round(percent)}% pilot module progress · Level ${course.enrollment_level}`,
+      started: percent > 0,
+    };
+  }
+
+  return { bar: percent, label: `${Math.round(percent)}% active-level mastery · Level ${course.enrollment_level}`, started: percent > 0 };
+}
+
 async function loadApprovedCommunityPreview() {
   if (!supabase) return { data: [] as CommunityPreviewPost[], unavailable: true };
 
@@ -174,14 +192,17 @@ export function StudentDashboardPage() {
         <Link className="text-link" to="/courses">View all →</Link>
       </div>
       {loading ? <p className="muted">Loading your programs…</p> : courses.length ? <div className="dashboard-course-list">
-        {courses.slice(0, 4).map((course) => <article key={course.course_id}>
-          <div>
-            <strong>{course.title}</strong>
-            <small>{Math.round(Number(course.progress || 0))}% active-level mastery · Level {course.enrollment_level}</small>
-          </div>
-          <div className="access-progress"><i style={{ width: `${Math.min(100, Number(course.progress || 0))}%` }} /></div>
-          <Link className="button button-secondary" to={`/courses/${course.course_id}`}>{Number(course.progress) > 0 ? 'Continue' : 'Open'}</Link>
-        </article>)}
+        {courses.slice(0, 4).map((course) => {
+          const progress = dashboardProgress(course);
+          return <article key={course.course_id}>
+            <div>
+              <strong>{course.title}</strong>
+              <small>{progress.label}</small>
+            </div>
+            <div className="access-progress"><i style={{ width: `${progress.bar}%` }} /></div>
+            <Link className="button button-secondary" to={`/courses/${course.course_id}`}>{progress.started ? 'Continue' : 'Open'}</Link>
+          </article>;
+        })}
       </div> : <div className="access-empty">
         <span>🔒</span>
         <h3>No active courses yet</h3>
