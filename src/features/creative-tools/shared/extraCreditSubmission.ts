@@ -1,0 +1,13 @@
+import { supabase } from '../../../lib/supabase';
+
+export type ExtraCreditStatus = 'pending_review' | 'needs_revision' | 'approved' | 'rejected' | 'withdrawn';
+export type ExtraCreditSubmission = { id:string; student_id:string; tool_slug:string; tool_name:string; project_title:string; project_summary:string; project_snapshot:Record<string,unknown>; student_notes:string|null; status:ExtraCreditStatus; teacher_feedback:string|null; submitted_at:string; reviewed_at:string|null; profiles?:{display_name:string|null}|{display_name:string|null}[]|null };
+
+export async function createExtraCreditSubmission(input:{studentId:string;toolSlug:string;toolName:string;projectTitle:string;projectSummary:string;studentNotes:string}) {
+  if(!supabase)return{error:new Error('JPAC submission services are not configured.')};
+  return supabase.from('creator_tool_extra_credit_submissions').insert({student_id:input.studentId,tool_slug:input.toolSlug,tool_name:input.toolName,project_title:input.projectTitle.trim(),project_summary:input.projectSummary,project_snapshot:{version:1,summary:input.projectSummary},student_notes:input.studentNotes.trim()||null,status:'pending_review'});
+}
+export async function listMyExtraCreditSubmissions(studentId:string,toolSlug:string){if(!supabase)return{data:[] as ExtraCreditSubmission[],error:new Error('JPAC submission services are not configured.')};const{data,error}=await supabase.from('creator_tool_extra_credit_submissions').select('*').eq('student_id',studentId).eq('tool_slug',toolSlug).order('submitted_at',{ascending:false}).limit(10);return{data:(data as ExtraCreditSubmission[]|null)||[],error};}
+export async function withdrawExtraCreditSubmission(id:string){if(!supabase)return{error:new Error('JPAC submission services are not configured.')};return supabase.rpc('creator_tool_extra_credit_withdraw',{submission_target:id});}
+export async function listExtraCreditReviewQueue(){if(!supabase)return{data:[] as ExtraCreditSubmission[],error:new Error('JPAC submission services are not configured.')};const{data,error}=await supabase.from('creator_tool_extra_credit_submissions').select('*,profiles!creator_tool_extra_credit_submissions_student_id_fkey(display_name)').in('status',['pending_review','needs_revision']).order('submitted_at',{ascending:true});return{data:(data as unknown as ExtraCreditSubmission[]|null)||[],error};}
+export async function reviewExtraCreditSubmission(id:string,status:'approved'|'needs_revision'|'rejected',feedback:string){if(!supabase)return{error:new Error('JPAC submission services are not configured.')};return supabase.rpc('creator_tool_extra_credit_review',{submission_target:id,review_status:status,review_feedback:feedback.trim()||null});}
