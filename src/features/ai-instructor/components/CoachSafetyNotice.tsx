@@ -1,0 +1,1 @@
+export function CoachSafetyNotice(){return <div className="coach-safety-notice" style={{margin:'0 1.2rem 1.2rem'}}><strong>Teacher review required</strong><span>This does not award XP or update progress</span><small>Phase 1 guidance is deterministic and uses only the context already available on this page.</small></div>}

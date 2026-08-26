@@ -4,6 +4,8 @@ import{loadCourseContent,type CourseModule}from'../lib/studentAccess';
 import{supabase}from'../lib/supabase';
 import{useAuth}from'../context/AuthContext';
 import{AriaFeedback,LearnSection,LevelUpCard,MasteryChecklist,MissionBrief,MissionProgress,PracticeChallenge,SubmissionHistory,WatchSection,type MissionActivity,type MissionAttempt,type MissionCompletion}from'../components/MissionExperience';
+import{JPACCoachPanel}from'../features/ai-instructor/components/JPACCoachPanel';
+import{buildModuleCoachContext}from'../features/ai-instructor/contextBuilder';
 
 type CourseRecord={id:string;title:string};
 type BonusAward={source_id:string|null;amount:number};
@@ -49,6 +51,7 @@ export function ModulePage(){
     <div className="eyebrow">Level {module.level_number||1} · Mission {module.level_module_number||module.sort_order}</div>
     <MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/>
     <MissionBrief module={module} requiredActivity={requiredActivity} bonusAvailable={bonusAvailable} onStart={()=>void completeIntro()} busy={busy} started={Boolean(completion?.intro_complete)}/>
+    <JPACCoachPanel context={buildModuleCoachContext({courseId:course.id,module,instructions:requiredActivity?.instructions,rubric:requiredActivity?.rubric,teacherFeedback:requiredAttempts[0]?.teacher_feedback,hasPreparedEvidence:Boolean(file)})}/>
     <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
     <WatchSection videoUrl={module.primary_video_url} percent={Number(completion?.video_percent||0)} onTimeUpdate={trackVideo}/>
     <div className="mission-practice-grid"><PracticeChallenge kind="practice" activity={realWorldActivity} moduleData={module.real_world_activity} busy={busy} earned={Boolean(realWorldActivity&&awardedSources.has(realWorldActivity.id))} onComplete={activity=>void completePractice(activity)}/><PracticeChallenge kind="lab" activity={labActivity} moduleData={module.jpac_tool_activity} busy={busy} earned={Boolean(labActivity&&awardedSources.has(labActivity.id))} onComplete={activity=>void completePractice(activity)}/>{otherPractice.map(activity=><PracticeChallenge key={activity.id} kind="practice" activity={activity} busy={busy} earned={awardedSources.has(activity.id)} onComplete={item=>void completePractice(item)}/>)}</div>
