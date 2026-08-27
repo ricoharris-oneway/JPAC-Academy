@@ -82,7 +82,7 @@ export default async function handler(req: APIRequest, res: APIResponse): Promis
   }
 
   const config = readAIInstructorConfig();
-  if (!config.liveAIEnabled) {
+  if (!config.serverEnabled) {
     res.status(200).json(createPhase1Fallback(parsed.body.mode));
     return;
   }
@@ -92,8 +92,8 @@ export default async function handler(req: APIRequest, res: APIResponse): Promis
     (parsed.body.context ?? {}) as AIInstructorPromptContext,
     config.maxPromptCharacters,
   );
-  // Phase 2C intentionally supplies no executable provider transport. The adapter
-  // remains fallback-only until verified auth and a separately approved provider release exist.
+  // Provider transport remains unreachable unless the server-only kill switch and
+  // required server configuration are deliberately enabled. Current Coach UI does not call this endpoint.
   const result = await requestAIInstructorProvider(config, prompt);
   res.status(200).json(result.response);
 }

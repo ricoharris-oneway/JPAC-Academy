@@ -65,7 +65,7 @@ export function createPhase1Fallback(mode: AIInstructorMode): AIInstructorAdviso
 const PROHIBITED_OUTPUT_KEYS = new Set([
   'score', 'grade', 'approval', 'approved', 'rejection', 'rejected', 'finalDecision', 'final_decision',
 ]);
-const PROTECTED_OUTPUT_LANGUAGE = /\b(?:score|grade|approval|rejection|final\s+decision|award\s+xp|update\s+progress|issue\s+(?:a\s+)?certificate|change\s+enrollment|publish\s+curriculum|invoke\s+(?:a\s+)?review|approve(?:d|s)?\s+(?:the\s+)?submission|reject(?:ed|s)?\s+(?:the\s+)?submission)\b/i;
+const PROTECTED_OUTPUT_LANGUAGE = /\b(?:score|grade|approval|rejection|review\s+decision|final\s+decision|award\s+xp|xp\s+award|update\s+progress|progress\s+update|certificate|change\s+enrollment|publish\s+curriculum|invoke\s+(?:a\s+)?review|approve(?:d|s)?\s+(?:the\s+)?submission|reject(?:ed|s)?\s+(?:the\s+)?submission)\b/i;
 
 export function validateAIInstructorProviderOutput(value: unknown): AIInstructorProviderOutput | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;

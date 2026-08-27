@@ -1,7 +1,7 @@
 export type AIInstructorProvider = 'none' | 'vercel_ai_gateway' | 'openai';
 
 export type AIInstructorConfig = {
-  liveAIEnabled: boolean;
+  serverEnabled: boolean;
   provider: AIInstructorProvider;
   model: string;
   requestTimeoutMs: number;
@@ -38,7 +38,7 @@ export function readAIInstructorConfig(
       : '';
 
   return {
-    liveAIEnabled: source.JPAC_LIVE_AI_ENABLED === 'true',
+    serverEnabled: source.JPAC_AI_SERVER_ENABLED === 'true',
     provider,
     model: source.JPAC_AI_MODEL?.trim() ?? '',
     requestTimeoutMs: boundedInteger(source.JPAC_AI_REQUEST_TIMEOUT_MS, DEFAULT_TIMEOUT_MS, 1_000, 15_000),
@@ -53,7 +53,7 @@ export function readAIInstructorConfig(
 }
 
 export function isProviderConfigured(config: AIInstructorConfig): boolean {
-  return config.liveAIEnabled
+  return config.serverEnabled
     && config.provider !== 'none'
     && config.model.length > 0
     && config.providerCredential.length > 0;
