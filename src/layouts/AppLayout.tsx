@@ -8,6 +8,7 @@ import { resolveDisplayName } from '../lib/displayName';
 const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
   ['JPAC Coach', '/coach', '🧭', ['student', 'teacher', 'admin', 'developer']],
+  ['Career Pathing', '/career-pathing', '🚀', ['student']],
   ['My Academy', '/courses', '🎓', ['student']],
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
