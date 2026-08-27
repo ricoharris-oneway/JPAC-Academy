@@ -1,8 +1,8 @@
-import { isAIInstructorMode } from './_lib/ai-instructor-policy.ts';
-import { createAIInstructorError, createPhase1Fallback } from './_lib/ai-instructor-output.ts';
-import { readAIInstructorConfig } from './_lib/ai-instructor-config.ts';
-import { buildAIInstructorPrompt, type AIInstructorPromptContext } from './_lib/ai-instructor-prompt.ts';
-import { requestAIInstructorProvider } from './_lib/ai-instructor-provider.ts';
+import { isAIInstructorMode } from './_lib/ai-instructor-policy.js';
+import { createAIInstructorError, createPhase1Fallback } from './_lib/ai-instructor-output.js';
+import { readAIInstructorConfig } from './_lib/ai-instructor-config.js';
+import { buildAIInstructorPrompt, type AIInstructorPromptContext } from './_lib/ai-instructor-prompt.js';
+import { requestAIInstructorProvider } from './_lib/ai-instructor-provider.js';
 
 type HeaderValue = string | string[] | undefined;
 type APIRequest = {

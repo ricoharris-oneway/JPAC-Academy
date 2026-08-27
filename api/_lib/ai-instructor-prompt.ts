@@ -1,4 +1,4 @@
-import type { AIInstructorMode } from './ai-instructor-policy.ts';
+import type { AIInstructorMode } from './ai-instructor-policy.js';
 
 export type AIInstructorPromptContext = {
   pageTitle?: string;
