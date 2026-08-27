@@ -136,7 +136,12 @@ section('Suggested lane');
 let lane = 'frontend-only release';
 if (sqlFiles.length || databaseLifecycleFiles.length || supabaseFiles.length) lane = 'SQL/migration release';
 else if (packageFiles.length || lockfiles.length || workspaceFiles.length || configFiles.length) lane = 'package/config release';
-else if (releaseScope.length && releaseScope.every((file) => file.startsWith('docs/') || file.startsWith('scripts/'))) lane = 'docs-only release';
+else if (releaseScope.length && releaseScope.every((file) => file.startsWith('docs/'))) lane = 'docs-only release';
+else if (
+  releaseScope.length
+  && releaseScope.every((file) => file.startsWith('docs/') || file === 'scripts/jpac-release-check.mjs')
+  && releaseScope.some((file) => file === 'scripts/jpac-release-check.mjs')
+) lane = 'tooling-only release';
 if (implementationFindings.length) lane += ' + protected academic review required';
 console.log(lane);
 
