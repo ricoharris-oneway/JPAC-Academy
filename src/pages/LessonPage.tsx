@@ -1,6 +1,6 @@
 import{useEffect,useState}from'react';
 import{Link,useParams}from'react-router-dom';
-import{CompactLessonHeader,LessonCoach,LessonCompletion,LessonFlow,LessonLearnSection}from'../components/LessonExperience';
+import{LessonCoach,LessonCompletion,LessonFlow,LessonIntro,LessonLearnSection}from'../components/LessonExperience';
 import{loadCourseContent,markLessonProgress,type CourseLesson,type CourseModule,type LessonProgress}from'../lib/studentAccess';
 
 type CourseRecord={id:string;title:string};
@@ -12,5 +12,5 @@ export function LessonPage(){
   if(loading)return <div className="card card-pad">Loading lesson…</div>;
   if(!course||!module||!lesson)return <section className="card card-pad locked-course"><span>🔒</span><h1>Lesson unavailable</h1><p>{message||'Your account cannot open this lesson.'}</p><Link className="button button-secondary" to="/courses">Return to My Academy</Link></section>;
   const completeState=progress?.status==='completed';
-  return <article className="guided-lesson"><CompactLessonHeader courseId={course.id} module={module} lesson={lesson} lessonNumber={lessonNumber} progress={progress}/><LessonFlow complete={completeState}/><LessonLearnSection lesson={lesson}/><LessonCoach courseId={course.id} module={module} lesson={lesson} nextLesson={nextLesson}/><LessonCompletion complete={completeState} busy={busy} nextLesson={nextLesson} courseId={course.id} onComplete={()=>void complete()}/>{message&&<div className="auth-message" role="status">{message}</div>}</article>
+  return <article className="guided-lesson"><LessonIntro courseId={course.id} module={module} lesson={lesson} lessonNumber={lessonNumber} progress={progress}/><LessonFlow complete={completeState}/><LessonLearnSection lesson={lesson}/><LessonCoach courseId={course.id} module={module} lesson={lesson} nextLesson={nextLesson}/><LessonCompletion complete={completeState} busy={busy} nextLesson={nextLesson} courseId={course.id} onComplete={()=>void complete()}/>{message&&<div className="auth-message" role="status">{message}</div>}</article>
 }
