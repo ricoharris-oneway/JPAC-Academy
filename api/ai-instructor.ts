@@ -1,5 +1,8 @@
 import { isAIInstructorMode } from './_lib/ai-instructor-policy.ts';
 import { createAIInstructorError, createPhase1Fallback } from './_lib/ai-instructor-output.ts';
+import { readAIInstructorConfig } from './_lib/ai-instructor-config.ts';
+import { buildAIInstructorPrompt, type AIInstructorPromptContext } from './_lib/ai-instructor-prompt.ts';
+import { requestAIInstructorProvider } from './_lib/ai-instructor-provider.ts';
 
 type HeaderValue = string | string[] | undefined;
 type APIRequest = {
@@ -38,7 +41,12 @@ function requestBody(value: unknown): ParsedRequestBody {
   }
   const body = parsed as Record<string, unknown>;
   const keys = Object.keys(body);
-  if (keys.length !== 1 || keys[0] !== 'mode') return { body: null, error: 'invalid_request' };
+  if (keys.some((key) => key !== 'mode' && key !== 'context') || !keys.includes('mode')) {
+    return { body: null, error: 'invalid_request' };
+  }
+  if (body.context !== undefined && (!body.context || typeof body.context !== 'object' || Array.isArray(body.context))) {
+    return { body: null, error: 'invalid_request' };
+  }
   try {
     if (JSON.stringify(body).length > MAX_REQUEST_CHARACTERS) return { body: null, error: 'request_too_large' };
   } catch {
@@ -47,7 +55,7 @@ function requestBody(value: unknown): ParsedRequestBody {
   return { body, error: null };
 }
 
-export default function handler(req: APIRequest, res: APIResponse): void {
+export default async function handler(req: APIRequest, res: APIResponse): Promise<void> {
   res.setHeader?.('Cache-Control', 'no-store');
 
   if (req.method !== 'POST') {
@@ -73,7 +81,19 @@ export default function handler(req: APIRequest, res: APIResponse): void {
     return;
   }
 
-  // Intentionally no provider branch exists in Phase 2A. The environment flag is not
-  // sufficient to enable live AI without a separately reviewed authentication/provider implementation.
-  res.status(200).json(createPhase1Fallback(parsed.body.mode));
+  const config = readAIInstructorConfig();
+  if (!config.liveAIEnabled) {
+    res.status(200).json(createPhase1Fallback(parsed.body.mode));
+    return;
+  }
+
+  const prompt = buildAIInstructorPrompt(
+    parsed.body.mode,
+    (parsed.body.context ?? {}) as AIInstructorPromptContext,
+    config.maxPromptCharacters,
+  );
+  // Phase 2C intentionally supplies no executable provider transport. The adapter
+  // remains fallback-only until verified auth and a separately approved provider release exist.
+  const result = await requestAIInstructorProvider(config, prompt);
+  res.status(200).json(result.response);
 }
