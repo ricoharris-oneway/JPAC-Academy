@@ -1,8 +1,8 @@
-import { readAIInstructorConfig } from '../ai-instructor-config.ts';
-import { buildAIInstructorPrompt } from '../ai-instructor-prompt.ts';
-import { requestAIInstructorProvider } from '../ai-instructor-provider.ts';
-import { createNativeProviderExecutor } from '../ai-instructor-provider.ts';
-import { validateAIInstructorProviderOutput } from '../ai-instructor-output.ts';
+import { readAIInstructorConfig } from '../ai-instructor-config.js';
+import { buildAIInstructorPrompt } from '../ai-instructor-prompt.js';
+import { requestAIInstructorProvider } from '../ai-instructor-provider.js';
+import { createNativeProviderExecutor } from '../ai-instructor-provider.js';
+import { validateAIInstructorProviderOutput } from '../ai-instructor-output.js';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);

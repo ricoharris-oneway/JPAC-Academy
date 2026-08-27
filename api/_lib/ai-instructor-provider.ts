@@ -1,12 +1,12 @@
-import type { AIInstructorConfig } from './ai-instructor-config.ts';
-import { isProviderConfigured } from './ai-instructor-config.ts';
-import type { AIInstructorPrompt } from './ai-instructor-prompt.ts';
-import type { AIInstructorAdvisoryResponse } from './ai-instructor-output.ts';
+import type { AIInstructorConfig } from './ai-instructor-config.js';
+import { isProviderConfigured } from './ai-instructor-config.js';
+import type { AIInstructorPrompt } from './ai-instructor-prompt.js';
+import type { AIInstructorAdvisoryResponse } from './ai-instructor-output.js';
 import {
   createPhase1Fallback,
   createProviderAdvisory,
   validateAIInstructorProviderOutput,
-} from './ai-instructor-output.ts';
+} from './ai-instructor-output.js';
 
 export type AIInstructorProviderExecutor = (
   config: Readonly<AIInstructorConfig>,
