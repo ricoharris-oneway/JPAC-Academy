@@ -37,9 +37,9 @@ export type LiveCoachRequest = {
 export type LiveCoachAdvisoryResponse = {
   ok: true;
   schemaVersion: 'phase-2a-v1';
-  source: 'phase_1_deterministic_fallback';
+  source: 'phase_1_deterministic_fallback' | 'live_ai_provider';
   mode: LiveCoachMode;
-  liveAIEnabled: false;
+  liveAIEnabled: boolean;
   advisoryOnly: true;
   teacherReviewRequired: true;
   completenessCheckOnly: true;
@@ -49,12 +49,14 @@ export type LiveCoachAdvisoryResponse = {
   nextStep: string;
 };
 
-export type LiveCoachClientResult = {
-  usedLiveAI: false;
-  fallbackRequired: true;
-  reason: 'disabled' | 'authentication_required' | 'server_unavailable' | 'invalid_response';
-  response: LiveCoachAdvisoryResponse | null;
-};
+export type LiveCoachClientResult =
+  | { usedLiveAI: true; fallbackRequired: false; reason: null; response: LiveCoachAdvisoryResponse }
+  | {
+    usedLiveAI: false;
+    fallbackRequired: true;
+    reason: 'disabled' | 'authentication_required' | 'server_unavailable' | 'invalid_response';
+    response: LiveCoachAdvisoryResponse | null;
+  };
 
 export type LiveCoachClientOptions = {
   accessToken?: string;
@@ -62,7 +64,15 @@ export type LiveCoachClientOptions = {
 };
 
 export function isLiveAIRequested(): boolean {
-  return import.meta.env.VITE_JPAC_LIVE_AI_ENABLED === 'true';
+  return shouldShowLiveLessonHelp(import.meta.env.VITE_JPAC_LIVE_AI_ENABLED);
+}
+
+export function shouldShowLiveLessonHelp(flag?: string): boolean {
+  return flag === 'true';
+}
+
+export function createLessonExplanationRequest(): LiveCoachRequest {
+  return { mode: 'lesson_explanation' };
 }
 
 function isAdvisoryResponse(value: unknown): value is LiveCoachAdvisoryResponse {
@@ -70,8 +80,8 @@ function isAdvisoryResponse(value: unknown): value is LiveCoachAdvisoryResponse 
   const response = value as Partial<LiveCoachAdvisoryResponse>;
   return response.ok === true
     && response.schemaVersion === 'phase-2a-v1'
-    && response.source === 'phase_1_deterministic_fallback'
-    && response.liveAIEnabled === false
+    && ((response.source === 'phase_1_deterministic_fallback' && response.liveAIEnabled === false)
+      || (response.source === 'live_ai_provider' && response.liveAIEnabled === true))
     && response.advisoryOnly === true
     && response.teacherReviewRequired === true
     && response.completenessCheckOnly === true
@@ -112,7 +122,10 @@ export async function requestLiveCoach(
     if (!isAdvisoryResponse(payload)) {
       return { usedLiveAI: false, fallbackRequired: true, reason: 'invalid_response', response: null };
     }
-    return { usedLiveAI: false, fallbackRequired: true, reason: 'disabled', response: payload };
+    const usedLiveAI = payload.source === 'live_ai_provider' && payload.liveAIEnabled;
+    return usedLiveAI
+      ? { usedLiveAI: true, fallbackRequired: false, reason: null, response: payload }
+      : { usedLiveAI: false, fallbackRequired: true, reason: 'disabled', response: payload };
   } catch {
     return { usedLiveAI: false, fallbackRequired: true, reason: 'server_unavailable', response: null };
   }

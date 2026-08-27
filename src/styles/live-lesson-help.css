@@ -1,0 +1,11 @@
+.live-lesson-help{display:grid;gap:1rem;padding:1.2rem;border:1px solid rgba(214,177,79,.3);border-radius:20px;background:linear-gradient(135deg,rgba(36,17,57,.98),rgba(13,10,20,.98));color:#fff}
+.live-lesson-help-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.live-lesson-help-heading span,.live-lesson-help-response>span{color:#e8c96b;font-size:.76rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.live-lesson-help-heading h2{margin:.25rem 0}
+.live-lesson-help-heading p,.live-lesson-help-message,.live-lesson-help-response p{color:#d9cfe3}
+.live-lesson-help-safety{display:flex;flex-wrap:wrap;gap:.55rem}
+.live-lesson-help-safety strong{padding:.42rem .68rem;border:1px solid rgba(255,255,255,.15);border-radius:999px;background:rgba(255,255,255,.06);font-size:.78rem}
+.live-lesson-help-response{padding:1rem;border-radius:14px;background:rgba(255,255,255,.07)}
+.live-lesson-help-response h3{margin:.35rem 0}
+.live-lesson-help-response p:last-child{margin-bottom:0}
+@media(max-width:720px){.live-lesson-help-heading{align-items:stretch;flex-direction:column}.live-lesson-help-heading .button{width:100%}}
