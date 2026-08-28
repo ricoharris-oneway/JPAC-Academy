@@ -9,4 +9,5 @@
 .guided-walkthrough-safety{padding:.85rem;border-left:3px solid #d6b14f;background:rgba(255,255,255,.06);font-size:.9rem}
 .guided-walkthrough-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.65rem;margin-top:1.15rem}.guided-walkthrough-actions .button-primary{margin-left:auto}.guided-walkthrough-text-button{border:0;background:transparent;color:#e8c96b;text-decoration:underline;cursor:pointer}
 .guided-walkthrough-secondary-action{width:100%}
+.guided-walkthrough-actions .guided-walkthrough-tour-button{margin-left:0;box-shadow:0 0 0 2px rgba(228,189,87,.2)}
 @media(max-width:640px){.guided-walkthrough{right:.75rem;bottom:.75rem}.guided-walkthrough-bubble{display:none}.guided-walkthrough-trigger{padding:.25rem}.guided-walkthrough-backdrop{align-items:end}.guided-walkthrough-dialog{max-height:90vh;overflow:auto}.guided-walkthrough-actions{display:grid;grid-template-columns:1fr 1fr}.guided-walkthrough-actions .button-primary{grid-column:1/-1;margin-left:0}.guided-walkthrough-text-button{grid-column:1/-1;padding:.6rem}}

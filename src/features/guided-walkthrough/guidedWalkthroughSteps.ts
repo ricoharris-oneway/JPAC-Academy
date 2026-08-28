@@ -71,3 +71,13 @@ export const guidedWalkthroughSteps: readonly GuidedWalkthroughStep[] = [
     route: '/certificates',
   },
 ] as const;
+
+export const ariaOnboardingSteps: readonly GuidedWalkthroughStep[] = [
+  { title: 'Welcome to JPAC Academy', message: 'Hi, I’m Aria, your JPAC Guide. I’ll help you find your path, continue your lessons, practice your skills, and build your portfolio.', action: 'Start with Career Pathing', route: '/career-pathing' },
+  { title: 'Choose your creative path', message: 'Career Pathing helps you choose the creative direction you want to grow into. Your path connects your learning, practice tools, and portfolio goals.', action: 'Go to Career Pathing', route: '/career-pathing' },
+  { title: 'Continue your learning', message: 'My Academy is where you continue your course, open your next mission, and follow your lesson steps.', action: 'Go to My Academy', route: '/courses' },
+  { title: 'Practice your skills', message: 'Creative Studio gives you tools and practice games that help you build confidence before submitting work.', action: 'Go to Creative Studio', route: '/studio' },
+  { title: 'Submit when assigned', message: 'Practice tools help you improve, but assignments should be submitted only when your lesson asks for them.', action: 'Go to Practice Submissions', route: '/practice-coach' },
+  { title: 'Build your portfolio', message: 'Your reviewed work, progress, and achievements help prepare your portfolio and certificate readiness.', action: 'Go to Portfolio', route: '/certificates' },
+  { title: 'You’re ready to begin', message: 'Start with Career Pathing, then continue your course. Aria will stay here when you need help.', action: 'Start now', route: '/career-pathing' },
+] as const;
