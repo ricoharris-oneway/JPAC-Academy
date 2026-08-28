@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { GuidedWalkthrough, guidedWalkthroughReducer, takeGuidedStepThere } from './GuidedWalkthrough';
-import { guidanceForPath, guidedWalkthroughSteps } from './guidedWalkthroughSteps';
+import { ariaOnboardingSteps, guidanceForPath, guidedWalkthroughSteps } from './guidedWalkthroughSteps';
 import { GuidedAvatar } from './GuidedAvatar';
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -11,9 +11,14 @@ function assert(condition: unknown, message: string): asserts condition {
 export function runGuidedWalkthroughTests(): number {
   const closedMarkup = renderToStaticMarkup(<MemoryRouter><GuidedWalkthrough /></MemoryRouter>);
   const openMarkup = renderToStaticMarkup(<MemoryRouter><GuidedWalkthrough initialOpen /></MemoryRouter>);
+  const onboardingMarkup = renderToStaticMarkup(<MemoryRouter><GuidedWalkthrough initialOpen initialView="onboarding" /></MemoryRouter>);
   const fallbackMarkup = renderToStaticMarkup(<GuidedAvatar forceFallback />);
   const opened = guidedWalkthroughReducer({ open: false, view: 'page', stepIndex: 0 }, { type: 'open' });
   const pathway = guidedWalkthroughReducer({ open: true, view: 'page', stepIndex: 0 }, { type: 'show-pathway' });
+  const onboarding = guidedWalkthroughReducer({ open: true, view: 'page', stepIndex: 0 }, { type: 'show-onboarding' });
+  const onboardingNext = guidedWalkthroughReducer(onboarding, { type: 'next' });
+  const onboardingBack = guidedWalkthroughReducer(onboardingNext, { type: 'back' });
+  const onboardingClosed = guidedWalkthroughReducer(onboardingBack, { type: 'close' });
   const next = guidedWalkthroughReducer(pathway, { type: 'next' });
   const back = guidedWalkthroughReducer(next, { type: 'back' });
   const closed = guidedWalkthroughReducer(back, { type: 'close' });
@@ -29,6 +34,14 @@ export function runGuidedWalkthroughTests(): number {
   assert(!closedMarkup.includes('role="dialog"'), 'Guide must not open automatically.');
   assert(openMarkup.includes('role="dialog"') && openMarkup.includes('Start your JPAC journey'), 'Open action must reveal page guidance.');
   assert(openMarkup.includes('Hi, I’m Aria, your JPAC Guide. I’ll show you what to do next.'), 'Open guide must include Aria’s introduction.');
+  assert(openMarkup.includes('Start JPAC Tour'), 'Page guide must offer the manual Start JPAC Tour action.');
+  assert(onboarding.view === 'onboarding' && onboarding.stepIndex === 0, 'Start JPAC Tour action must open onboarding at step one.');
+  assert(onboardingMarkup.includes('JPAC Welcome Tour · Step 1 of 7'), 'Onboarding must show progress as Step 1 of 7.');
+  assert(onboardingMarkup.includes('src="/images/aria/aria-guide.png"'), 'Onboarding header must use the approved Aria image.');
+  assert(onboardingNext.stepIndex === 1 && onboardingBack.stepIndex === 0, 'Onboarding Next and Back controls must move one step.');
+  assert(!onboardingClosed.open, 'Onboarding Close action must dismiss the guide.');
+  assert(ariaOnboardingSteps.length === 7, 'Onboarding must contain exactly seven reviewed steps.');
+  assert(ariaOnboardingSteps.map((step) => step.route).join(',') === '/career-pathing,/career-pathing,/courses,/studio,/practice-coach,/certificates,/career-pathing', 'Onboarding Take me there routes must match existing JPAC destinations.');
   assert(guidanceForPath('/').title === 'Start your JPAC journey', 'Dashboard route must use dashboard guidance.');
   assert(guidanceForPath('/career-pathing').title === 'Choose your creative path', 'Career route must use Career Pathing guidance.');
   assert(guidanceForPath('/courses').title === 'Continue your course', 'My Academy route must use course guidance.');
@@ -46,5 +59,5 @@ export function runGuidedWalkthroughTests(): number {
   assert(openMarkup.includes('Take me there'), 'Open guide must provide explicit navigation control.');
   assert(guidedWalkthroughSteps.every((step) => step.route.startsWith('/')), 'Every guide target must be an internal route.');
   assert(['/career-pathing', '/courses', '/studio', '/practice-coach', '/certificates'].includes(guidanceForPath('/courses/course-1/lessons/lesson-1').route), 'Page guidance must use an existing safe route.');
-  return 26;
+  return 34;
 }
