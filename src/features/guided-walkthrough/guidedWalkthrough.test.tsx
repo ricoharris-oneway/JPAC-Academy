@@ -4,7 +4,7 @@ import { GuidedWalkthrough, guidedWalkthroughReducer, takeGuidedStepThere } from
 import { ariaOnboardingSteps, guidanceForPath, guidedWalkthroughSteps } from './guidedWalkthroughSteps';
 import { GuidedAvatar } from './GuidedAvatar';
 import { ARIA_ONBOARDING_PROMPT_DISMISSED_KEY, ARIA_ONBOARDING_PROMPT_DISMISSED_VALUE, dismissAriaOnboardingPrompt, isAriaOnboardingPromptDismissed } from './ariaOnboardingPromptStorage';
-import { cancelAriaVoice, speakAriaGuidance, type AriaVoiceEnvironment } from './ariaVoice';
+import { cancelAriaVoice, selectPreferredAriaVoice, speakAriaGuidance, type AriaVoiceEnvironment } from './ariaVoice';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -30,9 +30,12 @@ export function runGuidedWalkthroughTests(): number {
   const storage = { getItem: (key: string) => stored.get(key) ?? null, setItem: (key: string, value: string) => { stored.set(key, value); } };
   const unavailableStorage = { getItem: () => { throw new Error('unavailable'); }, setItem: () => { throw new Error('unavailable'); } };
   const voiceObservations: { speakCalls: number; cancelCalls: number; spoken: SpeechSynthesisUtterance | null } = { speakCalls: 0, cancelCalls: 0, spoken: null };
+  const voice = (name: string, lang: string) => ({ name, lang } as SpeechSynthesisVoice);
+  const defaultEnglishVoice = voice('Alex', 'en-US');
+  const preferredVoice = voice('Microsoft Zira Desktop', 'en-US');
   const voiceEnvironment: AriaVoiceEnvironment = {
-    synthesis: { speak: (utterance) => { voiceObservations.speakCalls += 1; voiceObservations.spoken = utterance; }, cancel: () => { voiceObservations.cancelCalls += 1; } },
-    createUtterance: (text) => ({ text, rate: 1, pitch: 1, volume: 1, onend: null, onerror: null } as unknown as SpeechSynthesisUtterance),
+    synthesis: { speak: (utterance) => { voiceObservations.speakCalls += 1; voiceObservations.spoken = utterance; }, cancel: () => { voiceObservations.cancelCalls += 1; }, getVoices: () => [defaultEnglishVoice, preferredVoice] },
+    createUtterance: (text) => ({ text, voice: null, rate: 1, pitch: 1, volume: 1, onend: null, onerror: null } as unknown as SpeechSynthesisUtterance),
   };
   takeGuidedStepThere(guidedWalkthroughSteps[4], (route) => { destination = route; });
 
@@ -56,9 +59,13 @@ export function runGuidedWalkthroughTests(): number {
   assert(!isAriaOnboardingPromptDismissed(unavailableStorage) && !dismissAriaOnboardingPrompt(unavailableStorage), 'Unavailable localStorage must not crash the guide.');
   assert(openMarkup.includes('Hear Aria') && openMarkup.includes('Hear Aria read this guidance'), 'Open guide must render the accessible Hear Aria control.');
   assert(voiceObservations.speakCalls === 0, 'Aria speech must not autoplay on render.');
+  assert(selectPreferredAriaVoice([voice('Samantha', 'fr-FR'), defaultEnglishVoice, preferredVoice]) === preferredVoice, 'Aria must prefer a named English warmer voice.');
+  assert(selectPreferredAriaVoice([voice('Thomas', 'fr-FR'), defaultEnglishVoice]) === defaultEnglishVoice, 'Aria must fall back to an available English voice.');
+  assert(selectPreferredAriaVoice([]) === undefined, 'Aria must safely fall back to the browser default when no voices are available.');
   assert(speakAriaGuidance(guidanceForPath('/').message, () => undefined, voiceEnvironment), 'Hear Aria click helper must start supported browser speech.');
   assert(Number(voiceObservations.speakCalls) === 1 && voiceObservations.spoken?.text === 'Start with your career path, then continue your course.', 'Voice must receive only the current deterministic Aria guidance message.');
-  assert(voiceObservations.spoken?.rate === 0.95 && voiceObservations.spoken.pitch === 1 && voiceObservations.spoken.volume === 1, 'Voice must use the approved comfortable speech defaults.');
+  assert(voiceObservations.spoken?.voice === preferredVoice, 'Hear Aria must assign the selected preferred browser voice when available.');
+  assert(voiceObservations.spoken?.rate === 0.95 && voiceObservations.spoken.pitch === 1.08 && voiceObservations.spoken.volume === 1, 'Voice must use the approved comfortable speech defaults.');
   assert(cancelAriaVoice(voiceEnvironment.synthesis) && voiceObservations.cancelCalls === 2, 'Stop must cancel current speech safely.');
   assert(!speakAriaGuidance('Safe guidance', () => undefined, null) && !cancelAriaVoice(null), 'Unavailable speech synthesis must not crash the guide.');
   assert(onboarding.view === 'onboarding' && onboarding.stepIndex === 0, 'Start JPAC Tour action must open onboarding at step one.');
@@ -85,5 +92,5 @@ export function runGuidedWalkthroughTests(): number {
   assert(openMarkup.includes('Take me there'), 'Open guide must provide explicit navigation control.');
   assert(guidedWalkthroughSteps.every((step) => step.route.startsWith('/')), 'Every guide target must be an internal route.');
   assert(['/career-pathing', '/courses', '/studio', '/practice-coach', '/certificates'].includes(guidanceForPath('/courses/course-1/lessons/lesson-1').route), 'Page guidance must use an existing safe route.');
-  return 49;
+  return 53;
 }
