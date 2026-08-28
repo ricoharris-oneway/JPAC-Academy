@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { GuidedWalkthrough, guidedWalkthroughReducer, takeGuidedStepThere } from './GuidedWalkthrough';
 import { guidanceForPath, guidedWalkthroughSteps } from './guidedWalkthroughSteps';
+import { GuidedAvatar } from './GuidedAvatar';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -10,6 +11,8 @@ function assert(condition: unknown, message: string): asserts condition {
 export function runGuidedWalkthroughTests(): number {
   const closedMarkup = renderToStaticMarkup(<MemoryRouter><GuidedWalkthrough /></MemoryRouter>);
   const openMarkup = renderToStaticMarkup(<MemoryRouter><GuidedWalkthrough initialOpen /></MemoryRouter>);
+  const fallbackMarkup = renderToStaticMarkup(<GuidedAvatar forceFallback />);
+  const opened = guidedWalkthroughReducer({ open: false, view: 'page', stepIndex: 0 }, { type: 'open' });
   const pathway = guidedWalkthroughReducer({ open: true, view: 'page', stepIndex: 0 }, { type: 'show-pathway' });
   const next = guidedWalkthroughReducer(pathway, { type: 'next' });
   const back = guidedWalkthroughReducer(next, { type: 'back' });
@@ -20,7 +23,9 @@ export function runGuidedWalkthroughTests(): number {
   assert(closedMarkup.includes('Open Aria, your JPAC Guide'), 'Aria avatar button must have an accessible student label.');
   assert(closedMarkup.includes('Aria, your JPAC Guide'), 'Aria name and label must render.');
   assert(closedMarkup.includes('Need help? I can guide you.'), 'Aria speech bubble must render.');
-  assert(closedMarkup.includes('<svg'), 'CSS/SVG Aria avatar must render without an image request.');
+  assert(closedMarkup.includes('src="/images/aria/aria-guide.png"'), 'Aria must use the approved image asset as the primary avatar.');
+  assert(fallbackMarkup.includes('<svg') && fallbackMarkup.includes('aria-label="Aria, your JPAC Guide"'), 'SVG fallback must retain an accessible Aria label.');
+  assert(opened.open && opened.view === 'page', 'Click-triggered open action must reveal the Guided Pop-Up Coach.');
   assert(!closedMarkup.includes('role="dialog"'), 'Guide must not open automatically.');
   assert(openMarkup.includes('role="dialog"') && openMarkup.includes('Start your JPAC journey'), 'Open action must reveal page guidance.');
   assert(openMarkup.includes('Hi, I’m Aria, your JPAC Guide. I’ll show you what to do next.'), 'Open guide must include Aria’s introduction.');
@@ -41,5 +46,5 @@ export function runGuidedWalkthroughTests(): number {
   assert(openMarkup.includes('Take me there'), 'Open guide must provide explicit navigation control.');
   assert(guidedWalkthroughSteps.every((step) => step.route.startsWith('/')), 'Every guide target must be an internal route.');
   assert(['/career-pathing', '/courses', '/studio', '/practice-coach', '/certificates'].includes(guidanceForPath('/courses/course-1/lessons/lesson-1').route), 'Page guidance must use an existing safe route.');
-  return 24;
+  return 26;
 }
