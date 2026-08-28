@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ariaOnboardingSteps, guidanceForPath, guidedWalkthroughSteps, type GuidedWalkthroughStep } from './guidedWalkthroughSteps';
 import { GuidedAvatar } from './GuidedAvatar';
 import { dismissAriaOnboardingPrompt, isAriaOnboardingPromptDismissed } from './ariaOnboardingPromptStorage';
+import { cancelAriaVoice, speakAriaGuidance } from './ariaVoice';
 import '../../styles/guided-walkthrough.css';
 
 export type GuidedWalkthroughState = { open: boolean; view: 'page' | 'pathway' | 'onboarding'; stepIndex: number };
@@ -33,6 +34,8 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
   const location = useLocation();
   const [state, dispatch] = useReducer(guidedWalkthroughReducer, { open: initialOpen, view: initialView, stepIndex: 0 });
   const [promptVisible, setPromptVisible] = useState(initialPromptVisible);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceUnavailable, setVoiceUnavailable] = useState(false);
   const page = guidanceForPath(location.pathname);
   const activeSteps = state.view === 'onboarding' ? ariaOnboardingSteps : guidedWalkthroughSteps;
   const step = state.view === 'page' ? page : activeSteps[state.stepIndex];
@@ -40,6 +43,28 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
   useEffect(() => {
     if (!initialPromptVisible) setPromptVisible(!isAriaOnboardingPromptDismissed());
   }, [initialPromptVisible]);
+  useEffect(() => () => { cancelAriaVoice(); }, [location.pathname, state.view, state.stepIndex]);
+
+  function stopVoice(): void {
+    cancelAriaVoice();
+    setIsSpeaking(false);
+  }
+
+  function toggleVoice(): void {
+    if (isSpeaking) {
+      stopVoice();
+      return;
+    }
+    setVoiceUnavailable(false);
+    const started = speakAriaGuidance(step.message, () => setIsSpeaking(false));
+    setIsSpeaking(started);
+    if (!started) setVoiceUnavailable(true);
+  }
+
+  function changeGuide(action: GuidedWalkthroughAction): void {
+    stopVoice();
+    dispatch(action);
+  }
 
   function rememberPromptDismissal(): void {
     setPromptVisible(false);
@@ -48,15 +73,17 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
 
   function startOnboarding(): void {
     setPromptVisible(false);
-    dispatch({ type: 'show-onboarding' });
+    changeGuide({ type: 'show-onboarding' });
   }
 
   function closeGuide(): void {
+    stopVoice();
     if (state.view === 'onboarding') rememberPromptDismissal();
     dispatch({ type: 'close' });
   }
 
   function takeMeThere(): void {
+    stopVoice();
     if (state.view === 'onboarding') rememberPromptDismissal();
     dispatch({ type: 'close' });
     takeGuidedStepThere(step, navigate);
@@ -81,13 +108,15 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
         <p className="guided-walkthrough-safety">This guide does not award XP, complete lessons, submit assignments, or change your academic record.</p>
         <div className="guided-walkthrough-actions">
           {state.view !== 'page' ? <>
-            <button className="button button-secondary" type="button" disabled={state.stepIndex === 0} onClick={() => dispatch({ type: 'back' })}>Back</button>
-            <button className="button button-secondary" type="button" disabled={state.stepIndex === activeSteps.length - 1} onClick={() => dispatch({ type: 'next' })}>Next</button>
-          </> : <><button className="button button-primary guided-walkthrough-tour-button" type="button" onClick={startOnboarding}>Start JPAC Tour</button><button className="button button-secondary" type="button" onClick={() => dispatch({ type: 'show-pathway' })}>View full pathway</button></>}
+            <button className="button button-secondary" type="button" disabled={state.stepIndex === 0} onClick={() => changeGuide({ type: 'back' })}>Back</button>
+            <button className="button button-secondary" type="button" disabled={state.stepIndex === activeSteps.length - 1} onClick={() => changeGuide({ type: 'next' })}>Next</button>
+          </> : <><button className="button button-primary guided-walkthrough-tour-button" type="button" onClick={startOnboarding}>Start JPAC Tour</button><button className="button button-secondary" type="button" onClick={() => changeGuide({ type: 'show-pathway' })}>View full pathway</button></>}
+          <button className="button button-secondary guided-walkthrough-voice-button" type="button" aria-label={isSpeaking ? 'Stop Aria voice' : 'Hear Aria read this guidance'} onClick={toggleVoice}>{isSpeaking ? 'Stop' : 'Hear Aria'}</button>
           <button className="button button-primary" type="button" onClick={takeMeThere}>Take me there · {step.action}</button>
-          {state.view === 'page' ? <button className="button button-secondary guided-walkthrough-secondary-action" type="button" onClick={() => { dispatch({ type: 'close' }); navigate(page.secondaryRoute); }}>{page.secondaryAction}</button> : <button className="guided-walkthrough-text-button" type="button" onClick={() => { if (state.view === 'onboarding') rememberPromptDismissal(); dispatch({ type: 'show-page' }); }}>Back to page guidance</button>}
+          {state.view === 'page' ? <button className="button button-secondary guided-walkthrough-secondary-action" type="button" onClick={() => { stopVoice(); dispatch({ type: 'close' }); navigate(page.secondaryRoute); }}>{page.secondaryAction}</button> : <button className="guided-walkthrough-text-button" type="button" onClick={() => { if (state.view === 'onboarding') rememberPromptDismissal(); changeGuide({ type: 'show-page' }); }}>Back to page guidance</button>}
           <button className="guided-walkthrough-text-button" type="button" onClick={closeGuide}>Close</button>
         </div>
+        {voiceUnavailable ? <p className="guided-walkthrough-voice-status" role="status">Voice playback is not available in this browser.</p> : null}
       </section>
     </div> : null}
   </div>;
