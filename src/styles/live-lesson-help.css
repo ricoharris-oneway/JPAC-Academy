@@ -8,4 +8,11 @@
 .live-lesson-help-response{padding:1rem;border-radius:14px;background:rgba(255,255,255,.07)}
 .live-lesson-help-response h3{margin:.35rem 0}
 .live-lesson-help-response p:last-child{margin-bottom:0}
+.live-ai-client-diagnostic{display:grid;gap:.7rem;padding:1rem;border:1px solid rgba(232,201,107,.45);border-radius:14px;background:rgba(36,17,57,.92);color:#fff}
+.live-ai-client-diagnostic>strong{color:#e8c96b}
+.live-ai-client-diagnostic dl{display:grid;gap:.4rem;margin:0}
+.live-ai-client-diagnostic dl div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.5rem}
+.live-ai-client-diagnostic dt{color:#d9cfe3}
+.live-ai-client-diagnostic dd{margin:0;font-weight:700}
+.live-ai-client-diagnostic p{margin:0;color:#f4df9c}
 @media(max-width:720px){.live-lesson-help-heading{align-items:stretch;flex-direction:column}.live-lesson-help-heading .button{width:100%}}

@@ -1,7 +1,7 @@
 import{Link}from'react-router-dom';
 import type{CourseLesson,CourseModule,LessonProgress}from'../lib/studentAccess';
 import{JPACCoachPanel}from'../features/ai-instructor/components/JPACCoachPanel';
-import{LiveLessonHelpPanel}from'../features/ai-instructor/components/LiveLessonHelpPanel';
+import{LiveAIClientFlagDiagnostic,LiveLessonHelpPanel}from'../features/ai-instructor/components/LiveLessonHelpPanel';
 import{buildLessonCoachContext}from'../features/ai-instructor/contextBuilder';
 
 const readableType=(value:string)=>value.replaceAll('_',' ').replace(/\b\w/g,letter=>letter.toUpperCase());
@@ -11,8 +11,8 @@ export function CompactLessonHeader({courseId,module,lesson,lessonNumber,progres
   return <header className="lesson-header"><Link className="text-link" to={`/courses/${courseId}/modules/${module.id}`}>← Back to module</Link><div className="lesson-location">Level {module.level_number||1}<span>•</span>Module {module.level_module_number||module.sort_order}<span>•</span>Lesson {lessonNumber}</div><div className="lesson-header-main"><div><h1>{lesson.title}</h1><p>{readableType(lesson.lesson_type)}{lesson.duration_minutes?` • ${lesson.duration_minutes} min`:''}</p></div><div className={`lesson-status ${complete?'complete':''}`}><strong>{complete?'Complete':`${Math.round(percent)}%`}</strong><small>{complete?'Lesson finished':'Lesson progress'}</small></div></div><div className="lesson-progress-track" aria-label={`${Math.round(percent)}% lesson progress`}><i style={{width:`${percent}%`}}/></div></header>
 }
 
-export function LessonIntro({courseId,module,lesson,lessonNumber,progress,liveAIEnabled}:{courseId:string;module:CourseModule;lesson:CourseLesson;lessonNumber:number;progress:LessonProgress|null;liveAIEnabled?:boolean}){
-  return <><CompactLessonHeader courseId={courseId} module={module} lesson={lesson} lessonNumber={lessonNumber} progress={progress}/><LiveLessonHelpPanel enabled={liveAIEnabled}/></>
+export function LessonIntro({courseId,module,lesson,lessonNumber,progress,liveAIEnabled,liveAIDebugEnabled,buildMode}:{courseId:string;module:CourseModule;lesson:CourseLesson;lessonNumber:number;progress:LessonProgress|null;liveAIEnabled?:boolean;liveAIDebugEnabled?:boolean;buildMode?:string}){
+  return <><CompactLessonHeader courseId={courseId} module={module} lesson={lesson} lessonNumber={lessonNumber} progress={progress}/><LiveAIClientFlagDiagnostic debugEnabled={liveAIDebugEnabled} liveAIEnabled={liveAIEnabled} buildMode={buildMode}/><LiveLessonHelpPanel enabled={liveAIEnabled}/></>
 }
 
 export function LessonFlow({complete}:{complete:boolean}){

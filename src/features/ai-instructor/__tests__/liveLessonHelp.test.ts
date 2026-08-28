@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { LessonIntro } from '../../../components/LessonExperience';
-import { createLessonExplanationRequest, shouldShowLiveLessonHelp } from '../liveCoachClient';
+import { createLessonExplanationRequest, isLiveAIDebugRequested, shouldShowLiveLessonHelp } from '../liveCoachClient';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -26,11 +26,15 @@ export function runLiveLessonHelpUnitTests(): number {
   const visible = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LessonIntro, { ...introProps, liveAIEnabled: true })));
   const hidden = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LessonIntro, { ...introProps, liveAIEnabled: false })));
   const hiddenByDefault = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LessonIntro, introProps)));
+  const debugDisabled = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LessonIntro, { ...introProps, liveAIEnabled: false, liveAIDebugEnabled: true, buildMode: 'production' })));
+  const debugEnabled = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LessonIntro, { ...introProps, liveAIEnabled: true, liveAIDebugEnabled: true, buildMode: 'production' })));
   globalThis.fetch = originalFetch;
   assert(!shouldShowLiveLessonHelp(), 'Panel must be hidden when the client flag is undefined.');
   assert(!shouldShowLiveLessonHelp('false'), 'Panel must be hidden when the client flag is false.');
   assert(shouldShowLiveLessonHelp('true'), 'Panel must be visible only when the client flag is exactly true.');
   assert(!shouldShowLiveLessonHelp('TRUE'), 'Panel must reject non-exact flag values.');
+  assert(isLiveAIDebugRequested('?jpacLiveAiDebug=1'), 'The exact debug query must enable the diagnostic.');
+  assert(!isLiveAIDebugRequested('?jpacLiveAiDebug=true'), 'Non-exact debug query values must not enable the diagnostic.');
   assert(request.mode === 'lesson_explanation', 'Lesson help must use lesson_explanation only.');
   assert(Object.keys(request).length === 1, 'Lesson help must not send student, role, history, review, or media data.');
   assert(visible.includes('Live AI Lesson Help'), 'Enabled lesson intro must render Live AI Lesson Help.');
@@ -40,5 +44,12 @@ export function runLiveLessonHelpUnitTests(): number {
   assert(requestCount === 0, 'Rendering the lesson intro must not issue a live AI request.');
   assert(!hidden.includes('Live AI Lesson Help'), 'Explicitly disabled lesson intro must hide the panel.');
   assert(!hiddenByDefault.includes('Live AI Lesson Help'), 'Lesson intro must hide the panel when the client flag is unset.');
-  return 13;
+  assert(debugDisabled.includes('Live AI client flag detected</dt><dd>no'), 'Diagnostic must report a missing client flag safely.');
+  assert(debugDisabled.includes('The client bundle does not see VITE_JPAC_LIVE_AI_ENABLED=true. Redeploy Preview after setting the variable.'), 'Diagnostic must explain the Preview redeploy requirement.');
+  assert(debugDisabled.includes('Current build mode</dt><dd>production'), 'Diagnostic may expose only the safe build mode.');
+  assert(!debugDisabled.includes('Ask for lesson explanation'), 'Debug query must not bypass the Live AI feature flag.');
+  assert(debugEnabled.includes('Panel should render</dt><dd>yes'), 'Diagnostic must report when the panel should render.');
+  assert(debugEnabled.indexOf('Live AI client flag diagnostic') < debugEnabled.indexOf('Live AI Lesson Help'), 'Diagnostic must appear near the lesson top before the panel.');
+  assert(requestCount === 0, 'Diagnostic rendering must not issue a live AI request.');
+  return 22;
 }
