@@ -67,6 +67,11 @@ export function isLiveAIRequested(): boolean {
   return shouldShowLiveLessonHelp(import.meta.env.VITE_JPAC_LIVE_AI_ENABLED);
 }
 
+export function isLiveAIDebugRequested(search?: string): boolean {
+  const query = search ?? (typeof window === 'undefined' ? '' : window.location.search);
+  return new URLSearchParams(query).get('jpacLiveAiDebug') === '1';
+}
+
 export function shouldShowLiveLessonHelp(flag?: string): boolean {
   return flag === 'true';
 }

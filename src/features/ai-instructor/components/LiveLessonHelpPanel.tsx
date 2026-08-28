@@ -1,7 +1,32 @@
 import { useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { createLessonExplanationRequest, isLiveAIRequested, requestLiveCoach, type LiveCoachAdvisoryResponse } from '../liveCoachClient';
+import { createLessonExplanationRequest, isLiveAIDebugRequested, isLiveAIRequested, requestLiveCoach, type LiveCoachAdvisoryResponse } from '../liveCoachClient';
 import '../../../styles/live-lesson-help.css';
+
+export function LiveAIClientFlagDiagnostic({
+  debugEnabled = isLiveAIDebugRequested(),
+  liveAIEnabled = isLiveAIRequested(),
+  buildMode = import.meta.env.MODE,
+}: {
+  debugEnabled?: boolean;
+  liveAIEnabled?: boolean;
+  buildMode?: string;
+} = {}): JSX.Element | null {
+  if (!debugEnabled) return null;
+
+  const detected = liveAIEnabled ? 'yes' : 'no';
+  return <aside className="live-ai-client-diagnostic" aria-label="Live AI client flag diagnostic">
+    <strong>Live AI client flag diagnostic</strong>
+    <dl>
+      <div><dt>Live AI client flag detected</dt><dd>{detected}</dd></div>
+      <div><dt>Expected flag key</dt><dd>VITE_JPAC_LIVE_AI_ENABLED</dd></div>
+      <div><dt>Expected value</dt><dd>true</dd></div>
+      <div><dt>Panel should render</dt><dd>{detected}</dd></div>
+      <div><dt>Current build mode</dt><dd>{buildMode || 'unknown'}</dd></div>
+    </dl>
+    {!liveAIEnabled ? <p>The client bundle does not see VITE_JPAC_LIVE_AI_ENABLED=true. Redeploy Preview after setting the variable.</p> : null}
+  </aside>;
+}
 
 export function LiveLessonHelpPanel({ enabled = isLiveAIRequested() }: { enabled?: boolean } = {}): JSX.Element | null {
   const [response, setResponse] = useState<LiveCoachAdvisoryResponse | null>(null);
