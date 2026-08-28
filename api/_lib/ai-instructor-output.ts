@@ -6,6 +6,13 @@ export type AIInstructorSafetyLabel =
   | 'Completeness check only'
   | 'This does not award XP or update progress';
 
+export type AIInstructorSafeFallbackReason =
+  | 'ai_disabled'
+  | 'provider_config_missing'
+  | 'provider_timeout'
+  | 'provider_failure'
+  | 'invalid_provider_output';
+
 export type AIInstructorAdvisoryResponse = {
   ok: true;
   schemaVersion: 'phase-2a-v1';
@@ -19,6 +26,7 @@ export type AIInstructorAdvisoryResponse = {
   headline: string;
   guidance: string;
   nextStep: string;
+  fallbackReason?: AIInstructorSafeFallbackReason;
 };
 
 export type AIInstructorProviderOutput = {
@@ -45,7 +53,10 @@ const SAFETY_LABELS: AIInstructorSafetyLabel[] = [
   'This does not award XP or update progress',
 ];
 
-export function createPhase1Fallback(mode: AIInstructorMode): AIInstructorAdvisoryResponse {
+export function createPhase1Fallback(
+  mode: AIInstructorMode,
+  fallbackReason: AIInstructorSafeFallbackReason = 'ai_disabled',
+): AIInstructorAdvisoryResponse {
   return {
     ok: true,
     schemaVersion: 'phase-2a-v1',
@@ -59,6 +70,7 @@ export function createPhase1Fallback(mode: AIInstructorMode): AIInstructorAdviso
     headline: 'Phase 1 JPAC Coach is active',
     guidance: 'Live AI is not enabled. Continue with the current deterministic JPAC Coach guidance.',
     nextStep: 'Use the authorized page guidance and ask your teacher for final review when required.',
+    fallbackReason,
   };
 }
 

@@ -1,7 +1,7 @@
 import type { AIInstructorConfig } from './ai-instructor-config.js';
 import { isProviderConfigured } from './ai-instructor-config.js';
 import type { AIInstructorPrompt } from './ai-instructor-prompt.js';
-import type { AIInstructorAdvisoryResponse } from './ai-instructor-output.js';
+import type { AIInstructorAdvisoryResponse, AIInstructorSafeFallbackReason } from './ai-instructor-output.js';
 import {
   createPhase1Fallback,
   createProviderAdvisory,
@@ -16,6 +16,15 @@ export type AIInstructorProviderExecutor = (
 export type AIInstructorProviderResult = {
   response: AIInstructorAdvisoryResponse;
   fallbackReason: 'disabled' | 'missing_config' | 'transport_unavailable' | 'timeout' | 'provider_error' | 'invalid_output' | null;
+};
+
+const SAFE_FALLBACK_REASONS: Record<NonNullable<AIInstructorProviderResult['fallbackReason']>, AIInstructorSafeFallbackReason> = {
+  disabled: 'ai_disabled',
+  missing_config: 'provider_config_missing',
+  transport_unavailable: 'provider_config_missing',
+  timeout: 'provider_timeout',
+  provider_error: 'provider_failure',
+  invalid_output: 'invalid_provider_output',
 };
 
 const unavailableTransport: AIInstructorProviderExecutor = async () => null;
@@ -137,7 +146,7 @@ export async function requestAIInstructorProvider(
   executor: AIInstructorProviderExecutor = nativeProviderTransport,
 ): Promise<AIInstructorProviderResult> {
   const fallback = (fallbackReason: NonNullable<AIInstructorProviderResult['fallbackReason']>): AIInstructorProviderResult => ({
-    response: createPhase1Fallback(prompt.mode),
+    response: createPhase1Fallback(prompt.mode, SAFE_FALLBACK_REASONS[fallbackReason]),
     fallbackReason,
   });
 
