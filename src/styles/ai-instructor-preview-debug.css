@@ -1,0 +1,10 @@
+.live-ai-preview-debug{max-width:820px;margin:0 auto}
+.live-ai-preview-debug .card{display:grid;gap:1rem}
+.live-ai-preview-debug h1{margin:0}
+.live-ai-preview-debug dl{display:grid;gap:.55rem;margin:0}
+.live-ai-preview-debug dl div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem;padding-bottom:.55rem;border-bottom:1px solid rgba(255,255,255,.1)}
+.live-ai-preview-debug dt{color:var(--muted)}
+.live-ai-preview-debug dd{margin:0;font-weight:700;text-align:right}
+.live-ai-preview-debug-reminder{margin:0;color:var(--muted)}
+.live-ai-preview-debug-status{padding:1rem;border-radius:14px;background:rgba(255,255,255,.06)}
+.live-ai-preview-debug-status p{margin:.35rem 0}

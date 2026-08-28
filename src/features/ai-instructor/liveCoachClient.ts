@@ -47,14 +47,22 @@ export type LiveCoachAdvisoryResponse = {
   headline: string;
   guidance: string;
   nextStep: string;
+  fallbackReason?: LiveCoachSafeFallbackReason;
 };
+
+export type LiveCoachSafeFallbackReason =
+  | 'ai_disabled'
+  | 'provider_config_missing'
+  | 'provider_timeout'
+  | 'provider_failure'
+  | 'invalid_provider_output';
 
 export type LiveCoachClientResult =
   | { usedLiveAI: true; fallbackRequired: false; reason: null; response: LiveCoachAdvisoryResponse }
   | {
     usedLiveAI: false;
     fallbackRequired: true;
-    reason: 'disabled' | 'authentication_required' | 'server_unavailable' | 'invalid_response';
+    reason: 'disabled' | 'authentication_required' | 'server_unavailable' | 'invalid_response' | LiveCoachSafeFallbackReason;
     response: LiveCoachAdvisoryResponse | null;
   };
 
@@ -96,7 +104,10 @@ function isAdvisoryResponse(value: unknown): value is LiveCoachAdvisoryResponse 
     && REQUIRED_SAFETY_LABELS.every((label) => response.labels?.includes(label))
     && typeof response.headline === 'string'
     && typeof response.guidance === 'string'
-    && typeof response.nextStep === 'string';
+    && typeof response.nextStep === 'string'
+    && (response.fallbackReason === undefined || [
+      'ai_disabled', 'provider_config_missing', 'provider_timeout', 'provider_failure', 'invalid_provider_output',
+    ].includes(response.fallbackReason));
 }
 
 export async function requestLiveCoach(
@@ -130,7 +141,7 @@ export async function requestLiveCoach(
     const usedLiveAI = payload.source === 'live_ai_provider' && payload.liveAIEnabled;
     return usedLiveAI
       ? { usedLiveAI: true, fallbackRequired: false, reason: null, response: payload }
-      : { usedLiveAI: false, fallbackRequired: true, reason: 'disabled', response: payload };
+      : { usedLiveAI: false, fallbackRequired: true, reason: payload.fallbackReason ?? 'disabled', response: payload };
   } catch {
     return { usedLiveAI: false, fallbackRequired: true, reason: 'server_unavailable', response: null };
   }

@@ -25,11 +25,13 @@ export async function runAIInstructorProviderTests(): Promise<number> {
 
   const none = await requestAIInstructorProvider(readAIInstructorConfig({}), prompt);
   assert(none.fallbackReason === 'disabled', 'Default configuration must be disabled.');
+  assert(none.response.fallbackReason === 'ai_disabled', 'Disabled fallback must expose only the safe diagnostic reason.');
 
   const missing = await requestAIInstructorProvider(readAIInstructorConfig({
     JPAC_AI_SERVER_ENABLED: 'true', JPAC_AI_PROVIDER: 'openai', JPAC_AI_MODEL: 'test-model',
   }), prompt, async () => validOutput);
   assert(missing.fallbackReason === 'missing_config', 'Missing provider credentials must use fallback.');
+  assert(missing.response.fallbackReason === 'provider_config_missing', 'Missing configuration must expose only the safe diagnostic reason.');
 
   const enabled = readAIInstructorConfig({
     JPAC_AI_SERVER_ENABLED: 'true', JPAC_AI_PROVIDER: 'openai', JPAC_AI_MODEL: 'test-model',
@@ -37,9 +39,11 @@ export async function runAIInstructorProviderTests(): Promise<number> {
   });
   const invalid = await requestAIInstructorProvider(enabled, prompt, async () => ({ ...validOutput, score: 100 }));
   assert(invalid.fallbackReason === 'invalid_output', 'Protected output fields must use fallback.');
+  assert(invalid.response.fallbackReason === 'invalid_provider_output', 'Invalid output must expose only the safe diagnostic reason.');
 
   const timedOut = await requestAIInstructorProvider(enabled, prompt, async () => new Promise(() => undefined));
   assert(timedOut.fallbackReason === 'timeout', 'Provider timeout must use fallback.');
+  assert(timedOut.response.fallbackReason === 'provider_timeout', 'Timeout must expose only the safe diagnostic reason.');
 
   const accepted = await requestAIInstructorProvider(enabled, prompt, async () => validOutput);
   assert(accepted.response.source === 'live_ai_provider', 'Valid advisory DTO should cross the adapter boundary.');
@@ -105,5 +109,5 @@ export async function runAIInstructorProviderTests(): Promise<number> {
   assert(validateAIInstructorProviderOutput({ ...validOutput, guidance: 'Approval granted.' }) === null, 'Approval language must be rejected.');
   assert(validateAIInstructorProviderOutput({ ...validOutput, guidance: 'This review decision is final.' }) === null, 'Review-decision language must be rejected.');
   assert(validateAIInstructorProviderOutput({ ...validOutput, guidance: 'A certificate is ready.' }) === null, 'Certificate language must be rejected.');
-  return 23;
+  return 27;
 }

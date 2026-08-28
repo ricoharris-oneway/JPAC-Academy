@@ -83,7 +83,7 @@ export default async function handler(req: APIRequest, res: APIResponse): Promis
 
   const config = readAIInstructorConfig();
   if (!config.serverEnabled) {
-    res.status(200).json(createPhase1Fallback(parsed.body.mode));
+    res.status(200).json(createPhase1Fallback(parsed.body.mode, 'ai_disabled'));
     return;
   }
 
