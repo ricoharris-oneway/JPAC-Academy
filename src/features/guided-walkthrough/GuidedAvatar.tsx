@@ -1,8 +1,14 @@
+import { useState } from 'react';
 import '../../styles/guided-avatar.css';
 
-export function GuidedAvatar({ speaking = false, size = 'large' }: { speaking?: boolean; size?: 'small' | 'large' }): JSX.Element {
-  return <span className={`guided-avatar guided-avatar-${size} ${speaking ? 'is-speaking' : ''}`} aria-hidden="true">
-    <svg viewBox="0 0 96 96" role="img">
+type GuidedAvatarProps = { speaking?: boolean; size?: 'small' | 'large'; forceFallback?: boolean };
+
+export function GuidedAvatar({ speaking = false, size = 'large', forceFallback = false }: GuidedAvatarProps): JSX.Element {
+  const [imageFailed, setImageFailed] = useState(false);
+  const showFallback = forceFallback || imageFailed;
+
+  return <span className={`guided-avatar guided-avatar-${size} ${speaking ? 'is-speaking' : ''}`} role="img" aria-label="Aria, your JPAC Guide">
+    {!showFallback ? <img src="/images/aria/aria-guide.png" alt="" onError={() => setImageFailed(true)} /> : <svg viewBox="0 0 96 96" aria-hidden="true">
       <defs>
         <linearGradient id="aria-jpac-bg" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#5b2a82"/><stop offset="1" stopColor="#24112f"/></linearGradient>
       </defs>
@@ -16,7 +22,7 @@ export function GuidedAvatar({ speaking = false, size = 'large' }: { speaking?: 
       <path d="M41 60c4 4 10 4 15 0" fill="none" stroke="#fff0e6" strokeWidth="2.5" strokeLinecap="round"/>
       <path d="M31 53c-6 0-6 12 0 12M66 53c6 0 6 12 0 12" fill="none" stroke="#e4bd57" strokeWidth="2"/>
       <path d="M21 91c3-14 13-22 27-22s24 8 27 22" fill="#6a3291"/><path d="M44 71l4 9 5-9" fill="#e4bd57"/>
-    </svg>
+    </svg>}
     {speaking ? <i className="guided-avatar-speaking"><b/><b/><b/></i> : null}
   </span>;
 }

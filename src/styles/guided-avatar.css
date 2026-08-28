@@ -1,5 +1,5 @@
-.guided-avatar{position:relative;display:inline-grid;flex:0 0 auto;place-items:center;border-radius:50%;filter:drop-shadow(0 7px 12px rgba(8,4,13,.3))}
-.guided-avatar svg{display:block;width:100%;height:100%}.guided-avatar-large{width:64px;height:64px;animation:aria-gentle-bounce 3.2s ease-in-out infinite}.guided-avatar-small{width:48px;height:48px}
+.guided-avatar{position:relative;display:inline-grid;flex:0 0 auto;place-items:center;border:2px solid #e4bd57;border-radius:50%;background:#32194f;box-shadow:0 0 0 3px rgba(91,42,130,.35);filter:drop-shadow(0 7px 12px rgba(8,4,13,.3))}
+.guided-avatar img,.guided-avatar svg{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover}.guided-avatar-large{width:64px;height:64px;animation:aria-gentle-bounce 3.2s ease-in-out infinite}.guided-avatar-small{width:48px;height:48px}
 .guided-avatar-speaking{position:absolute;right:-5px;bottom:2px;display:flex;align-items:center;gap:2px;height:18px;padding:0 5px;border:2px solid #2c1545;border-radius:10px;background:#e4bd57}
 .guided-avatar-speaking b{display:block;width:3px;height:3px;border-radius:50%;background:#2c1545;animation:aria-speaking-dot 1s ease-in-out infinite}.guided-avatar-speaking b:nth-child(2){animation-delay:.15s}.guided-avatar-speaking b:nth-child(3){animation-delay:.3s}
 @keyframes aria-gentle-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}@keyframes aria-speaking-dot{0%,100%{transform:translateY(0);opacity:.55}50%{transform:translateY(-3px);opacity:1}}

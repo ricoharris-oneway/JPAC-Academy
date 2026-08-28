@@ -2,7 +2,7 @@
 
 ## Aria identity
 
-Aria is a warm, encouraging, polished, and student-friendly JPAC Guide. Her lightweight inline SVG presents a friendly African American performing arts guide with curly hair, a warm smile, hoop earrings, and purple-and-gold JPAC styling. The illustration is a frontend placeholder until separately approved portrait assets are available.
+Aria is a warm, encouraging, polished, and student-friendly JPAC Guide. As of v1.1, her approved character image is displayed from `/images/aria/aria-guide.png`; the original lightweight inline SVG remains only as a load-error fallback.
 
 ## What the Avatar Guide does
 
@@ -25,7 +25,7 @@ The shared authenticated layout continues to render the guide only when the curr
 - React component-memory state only
 - No AI, API, voice, speech synthesis, Supabase, database, upload, or browser storage behavior
 - No XP awards, lesson completion, assignment submission, or academic-record changes
-- Inline SVG and CSS only; no new media asset is committed
+- The approved repository image is displayed directly; no media is generated, uploaded, or modified by the app
 
 ## Not included
 
