@@ -1,6 +1,7 @@
 import { useReducer } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { guidanceForPath, guidedWalkthroughSteps, type GuidedWalkthroughStep } from './guidedWalkthroughSteps';
+import { GuidedAvatar } from './GuidedAvatar';
 import '../../styles/guided-walkthrough.css';
 
 export type GuidedWalkthroughState = { open: boolean; view: 'page' | 'pathway'; stepIndex: number };
@@ -35,12 +36,14 @@ export function GuidedWalkthrough({ initialOpen = false }: { initialOpen?: boole
   }
 
   return <div className="guided-walkthrough">
-    <button className="guided-walkthrough-trigger" type="button" onClick={() => dispatch({ type: 'open' })}>
-      <span aria-hidden="true">🧭</span><span><strong>Guide Me</strong><small>Need help? I can guide you.</small></span>
+    <button className="guided-walkthrough-trigger" type="button" aria-label="Open Aria, your JPAC Guide" onClick={() => dispatch({ type: 'open' })}>
+      <GuidedAvatar speaking={state.open} />
+      <span className="guided-walkthrough-bubble"><strong>Aria, your JPAC Guide</strong><small>Need help? I can guide you.</small></span>
     </button>
     {state.open ? <div className="guided-walkthrough-backdrop" role="presentation">
       <section className="guided-walkthrough-dialog" role="dialog" aria-modal="true" aria-labelledby="guided-walkthrough-title" aria-describedby="guided-walkthrough-message">
         <button className="guided-walkthrough-close" type="button" aria-label="Close guide" onClick={() => dispatch({ type: 'close' })}>×</button>
+        <header className="guided-walkthrough-aria-header"><GuidedAvatar speaking size="small"/><span><strong>Aria, your JPAC Guide</strong><small>Hi, I’m Aria, your JPAC Guide. I’ll show you what to do next.</small></span></header>
         <span className="guided-walkthrough-kicker">{state.view === 'page' ? 'You are here · Page guidance' : `Full pathway · Step ${state.stepIndex + 1} of ${guidedWalkthroughSteps.length}`}</span>
         <h2 id="guided-walkthrough-title">{step.title}</h2>
         <p id="guided-walkthrough-message">{step.message}</p>
