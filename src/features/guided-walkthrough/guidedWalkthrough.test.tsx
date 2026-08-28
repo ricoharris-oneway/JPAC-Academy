@@ -17,9 +17,13 @@ export function runGuidedWalkthroughTests(): number {
   let destination = '';
   takeGuidedStepThere(guidedWalkthroughSteps[4], (route) => { destination = route; });
 
-  assert(closedMarkup.includes('Guide Me') && closedMarkup.includes('Need help? I can guide you.'), 'Student guide trigger must render.');
+  assert(closedMarkup.includes('Open Aria, your JPAC Guide'), 'Aria avatar button must have an accessible student label.');
+  assert(closedMarkup.includes('Aria, your JPAC Guide'), 'Aria name and label must render.');
+  assert(closedMarkup.includes('Need help? I can guide you.'), 'Aria speech bubble must render.');
+  assert(closedMarkup.includes('<svg'), 'CSS/SVG Aria avatar must render without an image request.');
   assert(!closedMarkup.includes('role="dialog"'), 'Guide must not open automatically.');
   assert(openMarkup.includes('role="dialog"') && openMarkup.includes('Start your JPAC journey'), 'Open action must reveal page guidance.');
+  assert(openMarkup.includes('Hi, I’m Aria, your JPAC Guide. I’ll show you what to do next.'), 'Open guide must include Aria’s introduction.');
   assert(guidanceForPath('/').title === 'Start your JPAC journey', 'Dashboard route must use dashboard guidance.');
   assert(guidanceForPath('/career-pathing').title === 'Choose your creative path', 'Career route must use Career Pathing guidance.');
   assert(guidanceForPath('/courses').title === 'Continue your course', 'My Academy route must use course guidance.');
@@ -37,5 +41,5 @@ export function runGuidedWalkthroughTests(): number {
   assert(openMarkup.includes('Take me there'), 'Open guide must provide explicit navigation control.');
   assert(guidedWalkthroughSteps.every((step) => step.route.startsWith('/')), 'Every guide target must be an internal route.');
   assert(['/career-pathing', '/courses', '/studio', '/practice-coach', '/certificates'].includes(guidanceForPath('/courses/course-1/lessons/lesson-1').route), 'Page guidance must use an existing safe route.');
-  return 20;
+  return 24;
 }
