@@ -16,6 +16,7 @@ const nav = [
   ['Teacher Studio', '/teacher', '👥', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
   ['Video Finder Helper', '/staff/video-finder', '🎬', ['teacher', 'admin', 'developer']],
+  ['Singing Pilot Enrollment', '/staff/singing-pilot-enrollment', '🎤', ['teacher', 'admin', 'developer']],
   ['Certificates & Portfolio', '/certificates', '📜', ['student', 'teacher', 'admin', 'developer']],
   ['Creative Studio', '/studio', '🎨', ['student', 'teacher', 'admin', 'developer']],
   ['Enrollment Manager', '/enrollment', '🚪', ['admin', 'developer']],
