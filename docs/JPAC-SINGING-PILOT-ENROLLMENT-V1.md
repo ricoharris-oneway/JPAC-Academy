@@ -85,6 +85,8 @@ The migration is intentionally not applied by this PR. Before deployment:
 5. Re-run post-validation and confirm XP, lesson progress, submissions, certificates, and curriculum status are unchanged.
 6. Use `supabase/rollbacks/202608310001_singing_pilot_enrollment_rollback.sql` only if rollback is approved. Rolling back removes the RPC, not enrollments already deliberately approved.
 
+Live enrollment validation is intentionally deferred to the first controlled enrollment of a real pilot student after production course content is ready. Do not create a fake test student for validation.
+
 ## Future Bronze/Silver/Gold path
 
 Do not extend this RPC with package branching. After at least three launch courses have reviewed published content, define stable package IDs and explicit course mappings, add a pending intake/approval model, and build a separate reviewed multi-course approval workflow. Keep canonical Academy enrollments as the final access authority.
