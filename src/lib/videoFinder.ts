@@ -43,6 +43,34 @@ export function youtubeSearchUrl(searchTerm: string): string {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(clean(searchTerm))}`;
 }
 
+export type ApprovedYouTubeVideo = { normalizedUrl: string; videoId: string };
+
+export function normalizeApprovedYouTubeUrl(value: string): ApprovedYouTubeVideo | null {
+  const source = value.trim();
+  if (!source || /[<>]/.test(source)) return null;
+  let url: URL;
+  try { url = new URL(source); } catch { return null; }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+  const host = url.hostname.toLowerCase();
+  let videoId = '';
+  if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(host) && url.pathname === '/watch') videoId = url.searchParams.get('v') || '';
+  else if (host === 'youtu.be' && url.pathname.split('/').filter(Boolean).length === 1) videoId = url.pathname.slice(1);
+  else if (['youtube.com', 'www.youtube.com', 'www.youtube-nocookie.com'].includes(host) && /^\/embed\/[A-Za-z0-9_-]{11}$/.test(url.pathname)) videoId = url.pathname.split('/')[2] || '';
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
+  return { normalizedUrl: `https://www.youtube.com/watch?v=${videoId}`, videoId };
+}
+
+export type VideoFinderRpcClient = { rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> };
+
+export async function saveApprovedYouTubeVideo(client: VideoFinderRpcClient, input: { moduleId: string; url: string; title: string; durationSeconds: number }): Promise<string> {
+  const normalized = normalizeApprovedYouTubeUrl(input.url);
+  if (!normalized) return 'Enter a valid YouTube watch, youtu.be, or YouTube embed URL.';
+  if (!input.title.trim()) return 'Enter the reviewed video title.';
+  if (!Number.isInteger(input.durationSeconds) || input.durationSeconds < 1 || input.durationSeconds > 7200) return 'Enter a duration between 1 and 7200 seconds.';
+  const { error } = await client.rpc('video_finder_save_approved_youtube', { target_module: input.moduleId, media_url: normalized.normalizedUrl, media_title: input.title.trim(), media_duration_seconds: input.durationSeconds });
+  return error?.message || '';
+}
+
 const csvCell = (value: string | number | null) => `"${String(value ?? '').replaceAll('"', '""')}"`;
 
 export function videoFinderCsv(rows: VideoFinderRow[]): string {

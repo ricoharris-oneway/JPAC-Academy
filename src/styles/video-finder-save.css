@@ -1,0 +1,1 @@
+.video-save-form{display:grid;gap:9px;min-width:290px}.video-save-form label{display:grid;gap:4px;font-size:.75rem;font-weight:800}.video-save-form input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:#10071a;color:#fff}.video-save-error{color:#ff9caa}.video-save-success{color:var(--cyan)}
