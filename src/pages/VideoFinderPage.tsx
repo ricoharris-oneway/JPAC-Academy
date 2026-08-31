@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { buildVideoFinderRows, normalizeApprovedYouTubeUrl, saveApprovedYouTubeVideo, suggestedYouTubeSearchTerm, videoFinderCsv, youtubeSearchUrl } from '../lib/videoFinder';
+import { buildVideoFinderRows, normalizeApprovedYouTubeUrl, patchVideoFinderDraft, saveApprovedYouTubeVideo, setVideoFinderRowValue, suggestedYouTubeSearchTerm, videoFinderCsv, videoFinderDraftFor, youtubeSearchUrl, type VideoFinderDrafts, type VideoFinderRow } from '../lib/videoFinder';
 import '../styles/video-finder.css';
 import '../styles/video-finder-save.css';
 
@@ -21,8 +21,8 @@ export function VideoFinderPage() {
   const [courseFilter, setCourseFilter] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [drafts, setDrafts] = useState<Record<string, { url: string; title: string; duration: string }>>({});
-  const [savingModule, setSavingModule] = useState('');
+  const [drafts, setDrafts] = useState<VideoFinderDrafts>({});
+  const [savingRows, setSavingRows] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
 
   useEffect(() => { void (async () => {
@@ -47,20 +47,20 @@ export function VideoFinderPage() {
     catch { setMessage('Copy was blocked by the browser. Select and copy the text manually.'); }
   };
 
-  const draftFor = (row: { moduleId: string; existingVideoUrl: string }) => drafts[row.moduleId] || { url: row.existingVideoUrl, title: '', duration: '' };
-  const patchDraft = (moduleId: string, current: { url: string; title: string; duration: string }, patch: Partial<{ url: string; title: string; duration: string }>) => setDrafts((values) => ({ ...values, [moduleId]: { ...current, ...patch } }));
-  const saveVideo = async (row: { moduleId: string; existingVideoUrl: string }) => {
+  const draftFor = (row: VideoFinderRow) => videoFinderDraftFor(drafts, row);
+  const patchDraft = (row: VideoFinderRow, patch: Partial<{ url: string; title: string; duration: string }>) => setDrafts((values) => patchVideoFinderDraft(values, row, patch));
+  const saveVideo = async (row: VideoFinderRow) => {
     if (!supabase) return;
     const draft = draftFor(row);
-    setSavingModule(row.moduleId);
-    setSaveStatus((values) => ({ ...values, [row.moduleId]: '' }));
+    setSavingRows((values) => setVideoFinderRowValue(values, row, true));
+    setSaveStatus((values) => setVideoFinderRowValue(values, row, ''));
     const error = await saveApprovedYouTubeVideo(supabase, { moduleId: row.moduleId, url: draft.url, title: draft.title, durationSeconds: Number(draft.duration) });
-    setSavingModule('');
-    if (error) { setSaveStatus((values) => ({ ...values, [row.moduleId]: error })); return; }
+    setSavingRows((values) => setVideoFinderRowValue(values, row, false));
+    if (error) { setSaveStatus((values) => setVideoFinderRowValue(values, row, error)); return; }
     const normalized = normalizeApprovedYouTubeUrl(draft.url);
     setModules((values) => values.map((module) => module.id === row.moduleId ? { ...module, primary_video_url: normalized?.normalizedUrl || module.primary_video_url } : module));
-    setDrafts((values) => ({ ...values, [row.moduleId]: { ...draft, url: normalized?.normalizedUrl || draft.url } }));
-    setSaveStatus((values) => ({ ...values, [row.moduleId]: 'Saved. The approved video is now available on published student lessons in this module.' }));
+    setDrafts((values) => ({ ...values, [row.rowKey]: { ...draft, url: normalized?.normalizedUrl || draft.url } }));
+    setSaveStatus((values) => setVideoFinderRowValue(values, row, 'Saved. The approved video is now available on published student lessons in this module.'));
   };
 
   return <div className="video-finder-page">
@@ -68,7 +68,7 @@ export function VideoFinderPage() {
     <section className="card card-pad video-review-guide" aria-labelledby="video-review-title"><h2 id="video-review-title">Review every video before use</h2><p>Before approving a video, confirm:</p><ul><li>Age appropriate</li><li>Clean language</li><li>Skill level matches the lesson</li><li>Instruction is accurate</li><li>No confusing or inappropriate content</li><li>Video can be embedded or linked safely</li><li>Comments, ads, and branding risk is acceptable</li></ul></section>
     <section className="card card-pad video-finder-controls"><label>Filter by course<select value={courseFilter} onChange={(event) => setCourseFilter(event.target.value)}><option value="">All courses</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label><button className="button button-secondary" type="button" disabled={!rows.length} onClick={() => void copy(videoFinderCsv(rows), 'CSV template copied. Paste it into a .csv file or spreadsheet.')}>Copy CSV Template</button><span>{rows.length} lesson/module rows</span></section>
     {message && <div className="admin-message" role="status">{message}</div>}
-    {loading ? <div className="card card-pad">Loading curriculum…</div> : <div className="video-finder-table-wrap card"><table><thead><tr><th>Course</th><th>Level / module</th><th>Lesson or module</th><th>Existing video</th><th>Suggested search</th><th>Approved video</th></tr></thead><tbody>{rows.map((row) => { const term = suggestedYouTubeSearchTerm(row); const url = youtubeSearchUrl(term); const draft = draftFor(row); const normalized = normalizeApprovedYouTubeUrl(draft.url); const status = saveStatus[row.moduleId]; return <tr key={`${row.moduleId}:${row.lessonTitle}`}><td>{row.courseName}</td><td>{row.levelNumber ?? '—'} / {row.moduleNumber ?? '—'}</td><td><strong>{row.lessonTitle || row.moduleTitle}</strong>{row.lessonTitle && <small>Module: {row.moduleTitle}</small>}</td><td>{row.existingVideoUrl ? <a href={row.existingVideoUrl} target="_blank" rel="noreferrer">Open existing</a> : <span className="muted">None</span>}</td><td><div>{term}</div><div className="video-finder-actions"><a className="button button-primary" href={url} target="_blank" rel="noreferrer">Open YouTube Search</a><button className="button button-secondary" type="button" onClick={() => void copy(term, 'Search term copied.')}>Copy Search Term</button></div></td><td><div className="video-save-form"><label>Selected YouTube URL<input type="url" value={draft.url} onChange={(event) => patchDraft(row.moduleId, draft, { url: event.target.value })} placeholder="https://www.youtube.com/watch?v=…" /></label><label>Reviewed video title<input value={draft.title} onChange={(event) => patchDraft(row.moduleId, draft, { title: event.target.value })} /></label><label>Duration in seconds<input type="number" min="1" max="7200" value={draft.duration} onChange={(event) => patchDraft(row.moduleId, draft, { duration: event.target.value })} /></label>{draft.url && !normalized && <small className="video-save-error">Enter a valid YouTube watch, youtu.be, or embed URL.</small>}<div className="video-finder-actions">{normalized && <a className="button button-secondary" href={normalized.normalizedUrl} target="_blank" rel="noreferrer">Preview</a>}<button className="button button-primary" type="button" disabled={savingModule === row.moduleId || !normalized} onClick={() => void saveVideo(row)}>{savingModule === row.moduleId ? 'Saving…' : 'Save Video'}</button></div>{status && <small className={status.startsWith('Saved.') ? 'video-save-success' : 'video-save-error'} role="status">{status}</small>}<small>Only save videos reviewed for age appropriateness, clean language, accurate instruction, and lesson fit.</small></div></td></tr>; })}</tbody></table>{!rows.length && <p className="video-finder-empty">No curriculum rows match this filter.</p>}</div>}
+    {loading ? <div className="card card-pad">Loading curriculum…</div> : <div className="video-finder-table-wrap card"><table><thead><tr><th>Course</th><th>Level / module</th><th>Lesson or module</th><th>Existing video</th><th>Suggested search</th><th>Approved video</th></tr></thead><tbody>{rows.map((row) => { const term = suggestedYouTubeSearchTerm(row); const url = youtubeSearchUrl(term); const draft = draftFor(row); const normalized = normalizeApprovedYouTubeUrl(draft.url); const status = saveStatus[row.rowKey]; const saving = Boolean(savingRows[row.rowKey]); return <tr key={row.rowKey}><td>{row.courseName}</td><td>{row.levelNumber ?? '—'} / {row.moduleNumber ?? '—'}</td><td><strong>{row.lessonTitle || row.moduleTitle}</strong>{row.lessonTitle && <small>Module: {row.moduleTitle}</small>}</td><td>{row.existingVideoUrl ? <a href={row.existingVideoUrl} target="_blank" rel="noreferrer">Open existing</a> : <span className="muted">None</span>}</td><td><div>{term}</div><div className="video-finder-actions"><a className="button button-primary" href={url} target="_blank" rel="noreferrer">Open YouTube Search</a><button className="button button-secondary" type="button" onClick={() => void copy(term, 'Search term copied.')}>Copy Search Term</button></div></td><td><div className="video-save-form"><label>Selected YouTube URL<input type="url" value={draft.url} onChange={(event) => patchDraft(row, { url: event.target.value })} placeholder="https://www.youtube.com/watch?v=…" /></label><label>Reviewed video title<input value={draft.title} onChange={(event) => patchDraft(row, { title: event.target.value })} /></label><label>Duration in seconds<input type="number" min="1" max="7200" value={draft.duration} onChange={(event) => patchDraft(row, { duration: event.target.value })} /></label>{draft.url && !normalized && <small className="video-save-error">Enter a valid YouTube watch, youtu.be, or embed URL.</small>}<div className="video-finder-actions">{normalized && <a className="button button-secondary" href={normalized.normalizedUrl} target="_blank" rel="noreferrer">Preview</a>}<button className="button button-primary" type="button" disabled={saving || !normalized} onClick={() => void saveVideo(row)}>{saving ? 'Saving…' : 'Save Video'}</button></div>{status && <small className={status.startsWith('Saved.') ? 'video-save-success' : 'video-save-error'} role="status">{status}</small>}<small>Only save videos reviewed for age appropriateness, clean language, accurate instruction, and lesson fit.</small></div></td></tr>; })}</tbody></table>{!rows.length && <p className="video-finder-empty">No curriculum rows match this filter.</p>}</div>}
     <p className="video-finder-safety">Saving updates only approved instructional-video fields. No YouTube API, scraping, automatic approval, or curriculum publication occurs here.</p>
   </div>;
 }
