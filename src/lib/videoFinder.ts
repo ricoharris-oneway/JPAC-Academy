@@ -5,12 +5,14 @@ export const VIDEO_FINDER_CSV_COLUMNS = [
 ] as const;
 
 export type VideoFinderRow = {
+  rowKey: string;
   courseName: string;
   courseId: string;
   levelNumber: number | null;
   moduleNumber: number | null;
   moduleId: string;
   moduleTitle: string;
+  lessonId: string | null;
   lessonTitle: string;
   existingVideoUrl: string;
 };
@@ -23,13 +25,28 @@ export type VideoFinderModule = { id: string; course_id: string; level_number: n
 export type VideoFinderLesson = { id: string; module_id: string; title: string; sort_order: number };
 
 export function buildVideoFinderRows(courses: VideoFinderCourse[], modules: VideoFinderModule[], lessons: VideoFinderLesson[], courseFilter = ''): VideoFinderRow[] {
-  return modules.flatMap((module) => {
+  return modules.flatMap<VideoFinderRow>((module) => {
     const course = courses.find((item) => item.id === module.course_id);
     if (!course || (courseFilter && course.id !== courseFilter)) return [];
     const moduleLessons = lessons.filter((lesson) => lesson.module_id === module.id).sort((a, b) => a.sort_order - b.sort_order);
     const base = { courseName: course.title, courseId: course.id, levelNumber: module.level_number, moduleNumber: module.module_number, moduleId: module.id, moduleTitle: module.title, existingVideoUrl: module.existing_video_url };
-    return moduleLessons.length ? moduleLessons.map((lesson) => ({ ...base, lessonTitle: lesson.title })) : [{ ...base, lessonTitle: '' }];
+    return moduleLessons.length ? moduleLessons.map((lesson) => ({ ...base, rowKey: `lesson:${lesson.id}`, lessonId: lesson.id, lessonTitle: lesson.title })) : [{ ...base, rowKey: `module:${module.id}`, lessonId: null, lessonTitle: '' }];
   });
+}
+
+export type VideoFinderDraft = { url: string; title: string; duration: string };
+export type VideoFinderDrafts = Record<string, VideoFinderDraft>;
+
+export function videoFinderDraftFor(drafts: VideoFinderDrafts, row: Pick<VideoFinderRow, 'rowKey' | 'existingVideoUrl'>): VideoFinderDraft {
+  return drafts[row.rowKey] || { url: row.existingVideoUrl, title: '', duration: '' };
+}
+
+export function patchVideoFinderDraft(drafts: VideoFinderDrafts, row: Pick<VideoFinderRow, 'rowKey' | 'existingVideoUrl'>, patch: Partial<VideoFinderDraft>): VideoFinderDrafts {
+  return { ...drafts, [row.rowKey]: { ...videoFinderDraftFor(drafts, row), ...patch } };
+}
+
+export function setVideoFinderRowValue<T>(values: Record<string, T>, row: Pick<VideoFinderRow, 'rowKey'>, value: T): Record<string, T> {
+  return { ...values, [row.rowKey]: value };
 }
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim();
