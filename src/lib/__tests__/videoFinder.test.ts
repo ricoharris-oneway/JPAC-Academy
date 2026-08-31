@@ -1,4 +1,4 @@
-import { VIDEO_FINDER_CSV_COLUMNS, buildVideoFinderRows, canAccessVideoFinder, suggestedYouTubeSearchTerm, videoFinderCsv, youtubeSearchUrl, type VideoFinderRow } from '../videoFinder';
+import { VIDEO_FINDER_CSV_COLUMNS, buildVideoFinderRows, canAccessVideoFinder, normalizeApprovedYouTubeUrl, saveApprovedYouTubeVideo, suggestedYouTubeSearchTerm, videoFinderCsv, youtubeSearchUrl, type VideoFinderRow } from '../videoFinder';
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
 
@@ -18,5 +18,21 @@ export function runVideoFinderTests(): number {
   assert(youtubeSearchUrl(suggestedYouTubeSearchTerm(rows[0])) === url, 'Open YouTube Search must use the generated URL.');
   assert(buildVideoFinderRows([{ id: 'course-1', title: 'Singing' }], [{ id: 'module-2', course_id: 'course-1', level_number: 1, module_number: 2, title: 'Vocal Foundations', existing_video_url: '' }], [], 'different-course').length === 0, 'Course filtering must be deterministic.');
   assert(Object.keys(row).every((key) => !['selectedYouTubeUrl', 'approved', 'notes'].includes(key)), 'Finder rows must not contain writable approval state.');
+  return 10;
+}
+
+export async function runVideoFinderSaveTests(): Promise<number> {
+  const calls: { name: string; args: Record<string, unknown> }[] = [];
+  const client = { rpc: async (name: string, args: Record<string, unknown>) => { calls.push({ name, args }); return { error: null }; } };
+  assert(normalizeApprovedYouTubeUrl('https://www.youtube.com/watch?v=abcdefghijk')?.normalizedUrl === 'https://www.youtube.com/watch?v=abcdefghijk', 'Watch URLs must be accepted.');
+  assert(normalizeApprovedYouTubeUrl('https://youtu.be/abcdefghijk?t=12')?.videoId === 'abcdefghijk', 'youtu.be URLs must be accepted.');
+  assert(normalizeApprovedYouTubeUrl('https://www.youtube-nocookie.com/embed/abcdefghijk')?.videoId === 'abcdefghijk', 'Embed URLs must be accepted.');
+  assert(!normalizeApprovedYouTubeUrl('') && !normalizeApprovedYouTubeUrl('https://example.com/watch?v=abcdefghijk'), 'Empty and non-YouTube URLs must be rejected.');
+  assert(await saveApprovedYouTubeVideo(client, { moduleId: 'module-2', url: 'https://example.com/video', title: 'No', durationSeconds: 60 }) !== '', 'Invalid URLs must not save.');
+  assert(calls.length === 0, 'Validation failures must not call an RPC.');
+  assert(await saveApprovedYouTubeVideo(client, { moduleId: 'module-2', url: 'https://youtu.be/abcdefghijk', title: 'Warm Ups', durationSeconds: 180 }) === '', 'A reviewed valid video must save.');
+  assert(Number(calls.length) === 1 && calls[0].name === 'video_finder_save_approved_youtube', 'Save must call only the approved Video Finder RPC.');
+  assert(Object.keys(calls[0].args).sort().join(',') === 'media_duration_seconds,media_title,media_url,target_module', 'Save must send only video metadata and the target module.');
+  assert(!JSON.stringify(calls).match(/xp|progress|submission|review|status/i), 'Save must not call protected academic or status functions.');
   return 10;
 }
