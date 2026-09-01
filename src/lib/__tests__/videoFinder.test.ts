@@ -1,4 +1,4 @@
-import { VIDEO_FINDER_CSV_COLUMNS, buildVideoFinderRows, canAccessVideoFinder, normalizeApprovedYouTubeUrl, patchVideoFinderDraft, saveApprovedYouTubeVideo, setVideoFinderRowValue, suggestedYouTubeSearchTerm, videoFinderCsv, videoFinderDraftFor, youtubeSearchUrl } from '../videoFinder';
+import { VIDEO_FINDER_CSV_COLUMNS, approvedYouTubeVideoValidation, buildVideoFinderRows, canAccessVideoFinder, normalizeApprovedYouTubeUrl, patchVideoFinderDraft, saveApprovedYouTubeVideo, setVideoFinderRowValue, suggestedYouTubeSearchTerm, videoFinderCsv, videoFinderDraftFor, youtubeSearchUrl } from '../videoFinder';
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
 
@@ -44,6 +44,8 @@ export async function runVideoFinderSaveTests(): Promise<number> {
   assert(normalizeApprovedYouTubeUrl('https://youtu.be/abcdefghijk?t=12')?.videoId === 'abcdefghijk', 'youtu.be URLs must be accepted.');
   assert(normalizeApprovedYouTubeUrl('https://www.youtube-nocookie.com/embed/abcdefghijk')?.videoId === 'abcdefghijk', 'Embed URLs must be accepted.');
   assert(!normalizeApprovedYouTubeUrl('') && !normalizeApprovedYouTubeUrl('https://example.com/watch?v=abcdefghijk'), 'Empty and non-YouTube URLs must be rejected.');
+  assert(approvedYouTubeVideoValidation({ url: 'https://youtu.be/abcdefghijk', title: '', duration: '180' }).includes('title'), 'A missing reviewed title must disable save with a useful validation message.');
+  assert(approvedYouTubeVideoValidation({ url: 'https://youtu.be/abcdefghijk', title: 'Warm Ups', duration: '' }).includes('duration'), 'A missing duration must disable save with a useful validation message.');
   assert(await saveApprovedYouTubeVideo(client, { moduleId: 'module-1', url: 'https://example.com/video', title: 'No', durationSeconds: 60 }) !== '', 'Invalid URLs must show a validation error.');
   assert(calls.length === 0, 'Validation failures must not call an RPC.');
   assert(await saveApprovedYouTubeVideo(client, { moduleId: 'module-1', url: 'https://youtu.be/abcdefghijk', title: 'Warm Ups', durationSeconds: 180 }) === '', 'A reviewed valid module video must save.');
@@ -52,5 +54,5 @@ export async function runVideoFinderSaveTests(): Promise<number> {
   const failingClient = { rpc: async () => ({ error: { message: 'Staff access required' } }) };
   assert(await saveApprovedYouTubeVideo(failingClient, { moduleId: 'module-1', url: 'https://youtu.be/abcdefghijk', title: 'Warm Ups', durationSeconds: 180 }) === 'Staff access required', 'RPC failures must return useful error text and must not appear successful.');
   assert(!JSON.stringify(calls).match(/xp|progress|submission|review|status/i), 'Save must not call protected academic or status functions.');
-  return 11;
+  return 13;
 }
