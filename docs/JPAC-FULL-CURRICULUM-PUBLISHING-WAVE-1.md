@@ -31,7 +31,7 @@ The nine course rows are already published, so the migration does not update the
 
 - Singing and all Singing modules, lessons, activities, videos, and instructional media.
 - Piano `Save Draft Test Module` UUID `b94c8524-9715-4020-8075-5588b6fcce62`, plus its three lessons and two activities.
-- All course-level rows. The 36 parent `course_levels` records remain draft and unapproved because the authorized publication targets list courses, modules, lessons, and activities only.
+- All course-level rows. The separate approved prerequisite has already published and approval-stamped the 36 non-Singing parent `course_levels`; Wave 1 preserves them without updating them.
 - Any course or child record not selected through the nine exact course slugs.
 - Importer migrations `202608110001` and `202608110010` through `202608110014`.
 
@@ -97,7 +97,7 @@ Post-validation requires exactly 432 published modules, 1,296 published lessons,
 Expected status hashes after application:
 
 - courses: `8082773c4d305ebc6c08ee3615428c36` (unchanged)
-- course levels: `057fcce9d1d8224d80bdc92c54b77b6a` (unchanged)
+- course levels: normalized publication hash `6c8b444b18d7a2f5acb7e7fb8333ee2b` (unchanged from the applied prerequisite)
 - modules: `33d6b3dbf3574fcaf99b19a0fd91a065`
 - lessons: `30d7b1cc36aad17698103f9fb04e97d2`
 - activities: `234d87df696612d5d5b8f4e4646c691b`
@@ -110,7 +110,7 @@ The rollback refuses to run unless the exact expected post-publication hashes an
 
 After a separately approved application, entitled students should be able to query the published modules and lessons for these courses, subject to existing enrollment and unlock policies. Published activities remain subject to the existing module-unlock/access policy. Missing videos remain optional and do not block the status migration.
 
-The 36 `course_levels` rows remain draft and unapproved. Current module and lesson read policies do not require a published level, but embedded level metadata can be hidden by the separate course-level RLS policy. As a result, module and lesson content may be visible while level titles or level-navigation surfaces are incomplete. Publishing or approving course-level rows requires separate explicit authorization because it is outside this Wave 1 mutation scope.
+The 36 non-Singing `course_levels` rows are already published and approval-stamped by the separately approved prerequisite. Wave 1 does not update or revert them. Their published state allows entitled student queries to receive the correct embedded level numbers and titles when the child curriculum is published.
 
 ## L. Known risks
 
@@ -126,7 +126,7 @@ Merging this preparation PR does not authorize production application. Before ap
 
 1. the exact 432/1,296/864 publication scope;
 2. the Piano test-artifact exclusion;
-3. publication while all 36 `course_levels` rows remain draft/unapproved; and
-4. the known student level-label/navigation limitation.
+3. preservation of the 36 already-published prerequisite `course_levels`; and
+4. the exact 432/1,296/864 child publication hashes.
 
 After approval: run the exact preflight, apply only the prepared migration, run the exact post-validation, and stop for a controlled student-visibility validation plan. No SQL was applied during this build.

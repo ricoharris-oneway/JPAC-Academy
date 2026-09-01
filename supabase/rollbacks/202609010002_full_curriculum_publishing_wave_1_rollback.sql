@@ -5,6 +5,7 @@ begin;
 do $preflight$
 declare actual_hash text;
 begin
+  select md5(coalesce(string_agg(concat_ws('|',id::text,status,(approved_at is not null)::text,coalesce(approved_by::text,'')),E'\n' order by id),'')) into actual_hash from public.course_levels; if actual_hash<>'6c8b444b18d7a2f5acb7e7fb8333ee2b' then raise exception 'Rollback refused: published course-level prerequisite changed'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.course_modules; if actual_hash<>'33d6b3dbf3574fcaf99b19a0fd91a065' then raise exception 'Rollback refused: module status hash drifted'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.lessons; if actual_hash<>'30d7b1cc36aad17698103f9fb04e97d2' then raise exception 'Rollback refused: lesson status hash drifted'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.activities; if actual_hash<>'234d87df696612d5d5b8f4e4646c691b' then raise exception 'Rollback refused: activity status hash drifted'; end if;
@@ -37,7 +38,7 @@ begin
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.lessons; if actual_hash<>'4cc4acedddc8c2721f4a95a1f9fc64e4' then raise exception 'Rollback lesson status hash mismatch'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.activities; if actual_hash<>'2cceeec9886bdcf423f6f6fcf9f19c19' then raise exception 'Rollback activity status hash mismatch'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.courses; if actual_hash<>'8082773c4d305ebc6c08ee3615428c36' then raise exception 'Rollback changed course status'; end if;
-  select md5(coalesce(string_agg(id::text||':'||status||':'||coalesce(approved_at::text,''),E'\n' order by id),'')) into actual_hash from public.course_levels; if actual_hash<>'057fcce9d1d8224d80bdc92c54b77b6a' then raise exception 'Rollback changed course-level status/approval'; end if;
+  select md5(coalesce(string_agg(concat_ws('|',id::text,status,(approved_at is not null)::text,coalesce(approved_by::text,'')),E'\n' order by id),'')) into actual_hash from public.course_levels; if actual_hash<>'6c8b444b18d7a2f5acb7e7fb8333ee2b' then raise exception 'Rollback changed published course-level prerequisite'; end if;
 end $postcheck$;
 
 commit;
