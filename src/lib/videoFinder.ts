@@ -62,6 +62,14 @@ export function youtubeSearchUrl(searchTerm: string): string {
 
 export type ApprovedYouTubeVideo = { normalizedUrl: string; videoId: string };
 
+export function approvedYouTubeVideoValidation(input: { url: string; title: string; duration: string | number }): string {
+  if (!normalizeApprovedYouTubeUrl(input.url)) return 'Enter a valid YouTube watch, youtu.be, or YouTube embed URL.';
+  if (!input.title.trim()) return 'Enter the reviewed video title.';
+  const durationSeconds = Number(input.duration);
+  if (!Number.isInteger(durationSeconds) || durationSeconds < 1 || durationSeconds > 7200) return 'Enter a duration between 1 and 7200 seconds.';
+  return '';
+}
+
 export function normalizeApprovedYouTubeUrl(value: string): ApprovedYouTubeVideo | null {
   const source = value.trim();
   if (!source || /[<>]/.test(source)) return null;
@@ -80,10 +88,9 @@ export function normalizeApprovedYouTubeUrl(value: string): ApprovedYouTubeVideo
 export type VideoFinderRpcClient = { rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ error: { message: string } | null }> };
 
 export async function saveApprovedYouTubeVideo(client: VideoFinderRpcClient, input: { moduleId: string; url: string; title: string; durationSeconds: number }): Promise<string> {
-  const normalized = normalizeApprovedYouTubeUrl(input.url);
-  if (!normalized) return 'Enter a valid YouTube watch, youtu.be, or YouTube embed URL.';
-  if (!input.title.trim()) return 'Enter the reviewed video title.';
-  if (!Number.isInteger(input.durationSeconds) || input.durationSeconds < 1 || input.durationSeconds > 7200) return 'Enter a duration between 1 and 7200 seconds.';
+  const validation = approvedYouTubeVideoValidation({ url: input.url, title: input.title, duration: input.durationSeconds });
+  if (validation) return validation;
+  const normalized = normalizeApprovedYouTubeUrl(input.url)!;
   const { error } = await client.rpc('video_finder_save_approved_youtube', { target_module: input.moduleId, media_url: normalized.normalizedUrl, media_title: input.title.trim(), media_duration_seconds: input.durationSeconds });
   return error?.message || '';
 }
