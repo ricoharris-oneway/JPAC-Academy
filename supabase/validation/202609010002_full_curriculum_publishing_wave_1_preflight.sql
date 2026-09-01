@@ -53,11 +53,11 @@ begin
   if actual_hash<>'a65b2435025575e199755d1800c28334' then raise exception 'Module completion hash changed'; end if;
 
   select count(*) into actual from public.course_levels cl join public.courses c on c.id=cl.course_id where c.slug=any(array['acting','audio-engineering','dance','digital-ai-creator','guitar','music-business','music-production-songwriting','piano','video-production']);
-  if actual<>36 then raise exception 'Expected 36 excluded parent levels; found %',actual; end if;
+  if actual<>36 then raise exception 'Expected 36 published prerequisite levels; found %',actual; end if;
   select count(*) into actual from public.course_levels cl join public.courses c on c.id=cl.course_id where c.slug=any(array['acting','audio-engineering','dance','digital-ai-creator','guitar','music-business','music-production-songwriting','piano','video-production']) and not exists(select 1 from public.course_modules m where m.course_level_id=cl.id and m.id<>'b94c8524-9715-4020-8075-5588b6fcce62');
   if actual<>0 then raise exception 'An empty target level shell exists'; end if;
-  select count(*) into actual from public.course_levels cl join public.courses c on c.id=cl.course_id where c.slug=any(array['acting','audio-engineering','dance','digital-ai-creator','guitar','music-business','music-production-songwriting','piano','video-production']) and (cl.status<>'draft' or cl.approved_at is not null);
-  if actual<>0 then raise exception 'Excluded course-level baseline changed'; end if;
+  select count(*) into actual from public.course_levels cl join public.courses c on c.id=cl.course_id where c.slug=any(array['acting','audio-engineering','dance','digital-ai-creator','guitar','music-business','music-production-songwriting','piano','video-production']) and (cl.status<>'published' or cl.approved_at is null or cl.approved_by is not null);
+  if actual<>0 then raise exception 'Published course-level prerequisite changed'; end if;
 
   select count(*) into actual from public.course_modules m where m.id<>'b94c8524-9715-4020-8075-5588b6fcce62' and m.course_id in(select id from public.courses where slug=any(array['acting','audio-engineering','dance','digital-ai-creator','guitar','music-business','music-production-songwriting','piano','video-production'])) and ((select count(*) from public.lessons l where l.module_id=m.id)<>3 or (select count(*) from public.activities a where a.module_id=m.id)<>2);
   if actual<>0 then raise exception 'A target module has an incomplete child-record shape'; end if;
@@ -74,7 +74,7 @@ begin
 
   if (select count(*) from public.xp_ledger)<>6 or (select count(*) from public.enrollments)<>2 or (select count(*) from public.submissions)<>1 or (select count(*) from public.certificates)<>0 or (select count(*) from public.lesson_progress)<>7 then raise exception 'Protected academic/access counts changed'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.courses; if actual_hash<>'8082773c4d305ebc6c08ee3615428c36' then raise exception 'Course status hash changed'; end if;
-  select md5(coalesce(string_agg(id::text||':'||status||':'||coalesce(approved_at::text,''),E'\n' order by id),'')) into actual_hash from public.course_levels; if actual_hash<>'057fcce9d1d8224d80bdc92c54b77b6a' then raise exception 'Course-level status/approval hash changed'; end if;
+  select md5(coalesce(string_agg(concat_ws('|',id::text,status,(approved_at is not null)::text,coalesce(approved_by::text,'')),E'\n' order by id),'')) into actual_hash from public.course_levels; if actual_hash<>'6c8b444b18d7a2f5acb7e7fb8333ee2b' then raise exception 'Published course-level prerequisite hash changed'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.course_modules; if actual_hash<>'bfcf4c34a018228493ba741ffb984979' then raise exception 'Module status hash changed'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.lessons; if actual_hash<>'4cc4acedddc8c2721f4a95a1f9fc64e4' then raise exception 'Lesson status hash changed'; end if;
   select md5(coalesce(string_agg(id::text||':'||status,E'\n' order by id),'')) into actual_hash from public.activities; if actual_hash<>'2cceeec9886bdcf423f6f6fcf9f19c19' then raise exception 'Activity status hash changed'; end if;
