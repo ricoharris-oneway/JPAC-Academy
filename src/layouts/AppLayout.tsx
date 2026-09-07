@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { useAuth, type AppRole } from '../context/AuthContext';
 import { resolveDisplayName } from '../lib/displayName';
 import { GuidedWalkthrough } from '../features/guided-walkthrough/GuidedWalkthrough';
+import { ConsentReminder } from '../components/ConsentReminder';
 
 const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
@@ -12,11 +13,13 @@ const nav = [
   ['Career Pathing', '/career-pathing', '🚀', ['student']],
   ['My Academy', '/courses', '🎓', ['student']],
   ['My Payments', '/account/payments', '💳', ['student']],
+  ['My Consents', '/account/consents', '✅', ['student']],
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
   ['Teacher Studio', '/teacher', '👥', ['teacher', 'admin', 'developer']],
   ['Course Enrollment', '/staff/course-enrollment', '🎟️', ['teacher', 'admin', 'developer']],
   ['Payment Ledger', '/staff/payment-ledger', '💳', ['teacher', 'admin', 'developer']],
+  ['Consent Ledger', '/staff/consent-ledger', '✅', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
   ['Video Finder Helper', '/staff/video-finder', '🎬', ['teacher', 'admin', 'developer']],
   ['Singing Pilot Enrollment', '/staff/singing-pilot-enrollment', '🎤', ['teacher', 'admin', 'developer']],
@@ -26,6 +29,7 @@ const nav = [
   ['Admissions Center', '/manual-student', '🎟️', ['admin', 'developer']],
   ['JPAC LAB Manager', '/lab-manager', '🧰', ['admin', 'developer']],
   ['Admin Center', '/admin', '🛡️', ['admin', 'developer']],
+  ['Legal & Policies', '/legal', '⚖️', ['student', 'teacher', 'admin', 'developer']],
 ] as const;
 
 export function AppLayout() {
@@ -54,7 +58,7 @@ export function AppLayout() {
     </aside>
     <main className="main">
       <header className="topbar"><button className="mobile-menu-button" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}>☰</button><div><strong>JPAC Academy · Creative Operating System</strong><div className="muted">Learning and creative operations in one workspace</div></div><div className="topbar-actions"><div className="status">● {isSupabaseConfigured ? 'Supabase configured' : 'Supabase key needed'}</div></div></header>
-      <div className="content" key={location.pathname}><Outlet /></div>
+      <div className="content" key={location.pathname}>{role === 'student' ? <ConsentReminder /> : null}<Outlet /></div>
     </main>
     {role === 'student' ? <GuidedWalkthrough /> : null}
   </div>;
