@@ -14,6 +14,7 @@ const nav = [
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
   ['Teacher Studio', '/teacher', '👥', ['teacher', 'admin', 'developer']],
+  ['Course Enrollment', '/staff/course-enrollment', '🎟️', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
   ['Video Finder Helper', '/staff/video-finder', '🎬', ['teacher', 'admin', 'developer']],
   ['Singing Pilot Enrollment', '/staff/singing-pilot-enrollment', '🎤', ['teacher', 'admin', 'developer']],
