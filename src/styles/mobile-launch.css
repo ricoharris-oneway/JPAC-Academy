@@ -1,0 +1,115 @@
+/* Launch-wide responsive overrides. Keep this import last in main.tsx. */
+html,body,#root{max-width:100%;overflow-x:clip}
+img,video,canvas,svg,iframe{max-width:100%}
+.main,.content,.content>*,.card,.page-hero>*,.workspace-hero>*,.course-card,.mission-card{min-width:0}
+.content :where(h1,h2,h3,p,li,dd,dt,label,span,strong,small,a),.legal-page :where(h1,h2,h3,p,li,span,a){overflow-wrap:anywhere}
+input,select,textarea,button{max-width:100%}
+textarea{resize:vertical}
+
+@media(max-width:980px){
+  .app-shell{display:block;min-width:0}
+  .main{padding-bottom:0}
+  .sidebar{inset:0 auto 0 0!important;width:min(330px,88vw)!important;height:100dvh;max-height:100dvh;padding:20px 16px max(18px,env(safe-area-inset-bottom));display:flex;overflow:hidden}
+  .sidebar .brand{display:flex;margin:0 48px 18px 0}
+  .sidebar .brand div,.sidebar .nav-link span,.sidebar .authenticated-role,.sidebar .sidebar-footer div{display:block}
+  .sidebar .brand img{width:54px}
+  .sidebar .authenticated-role{margin-bottom:12px}
+  .sidebar .nav{display:grid;gap:5px;overflow-y:auto!important;overflow-x:hidden;padding:0 6px 12px 0}
+  .sidebar .nav-link,.sidebar .nav-link:nth-child(n+7){display:flex;min-width:0;justify-content:flex-start;padding:11px 12px}
+  .sidebar .nav-link span{min-width:0}
+  .sidebar>.nav-link{display:flex;justify-content:flex-start}
+  .sidebar-footer{display:flex;margin-top:auto;flex-wrap:nowrap}
+  .sidebar-footer small{display:block;max-width:160px}
+  .logout-button{font-size:.72rem}
+  .logout-button:after{content:none}
+  .topbar{height:auto;min-height:64px;padding:10px 14px!important;align-items:center}
+  .topbar>div:first-of-type{overflow:hidden}
+  .topbar>div:first-of-type strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .content{width:100%;max-width:100%;padding:22px 18px 40px!important}
+  .page-hero{align-items:flex-start;flex-direction:column}
+  .page-hero>.button,.page-hero>a.button{align-self:stretch}
+  .dashboard-grid,.teacher-dashboard-grid,.teacher-grid,.payment-ledger-grid,.course-enrollment-grid,.consent-ledger-grid{grid-template-columns:minmax(0,1fr)!important}
+  .teacher-roster,.quick-actions{position:static}
+}
+
+@media(max-width:768px){
+  .content{padding:18px 14px 36px!important}
+  .card{border-radius:18px}
+  .card-pad,.teacher-dashboard-card,.mission-card{padding:18px}
+  .workspace-hero,.hero{min-height:0;padding:24px 20px!important;border-radius:22px!important}
+  .workspace-hero{grid-template-columns:1fr}
+  .workspace-hero-copy h1,.page-title,.lesson-content h1{font-size:clamp(2rem,9vw,3.25rem)!important;line-height:1.02}
+  .hero-content,.hero-copy{max-width:100%}
+  .grid,.course-module-list,.student-access-page,.consent-page,.payment-ledger-page,.course-enrollment-page{gap:16px}
+  .grid-2,.grid-3,.grid-4,.achievement-grid,.dashboard-grid,.payment-ledger-grid,.course-enrollment-grid,.consent-ledger-grid,.consent-fields,.ledger-form-grid,.ledger-details,.consent-details{grid-template-columns:minmax(0,1fr)!important}
+  .dashboard-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .course-card,.entitled-course-card{min-height:0}
+  .course-card-content,.studio-body{padding:18px}
+  .module-heading,.selected-student,.ledger-entry-heading,.consent-record-heading{align-items:flex-start;flex-direction:column}
+  .student-lesson-list a{grid-template-columns:38px minmax(0,1fr)}
+  .student-lesson-list a>b{grid-column:2}
+  .lesson-body{min-height:0;margin:18px 0;padding:18px}
+  .sticky-action{position:static}
+  .practice-upload,.practice-coach .card{min-width:0}
+  .policy-grid{grid-template-columns:1fr}
+  .legal-page{padding:28px 18px}
+  .policy-meta{display:grid;gap:8px}
+  .policy-document section,.policy-footer,.policy-card{padding:20px}
+  .consent-reminder,.email-lookup,.review-actions{align-items:stretch;flex-direction:column}
+  .email-lookup{display:grid;grid-template-columns:1fr}
+  .consent-submit{justify-self:stretch}
+  .ledger-form-grid .wide{grid-column:auto}
+  .ledger-entry-heading>*, .consent-record-heading>*{max-width:100%}
+  .auth-page{grid-template-columns:1fr}
+  .auth-visual{min-height:34dvh;padding:28px 20px}
+  .auth-visual img{width:min(190px,60%)}
+  .auth-visual h1{font-size:clamp(2.45rem,12vw,3.8rem)}
+  .auth-panel{width:calc(100% - 28px);margin:20px auto 48px;padding:24px}
+}
+
+@media(max-width:560px){
+  body{min-width:0}
+  .content{padding:14px 10px 30px!important}
+  .topbar{padding-inline:10px!important}
+  .topbar>div:first-of-type strong{font-size:.82rem}
+  .card-pad,.teacher-dashboard-card,.mission-card{padding:16px}
+  .workspace-hero,.hero{padding:20px 16px!important}
+  .workspace-hero-actions,.hero-actions,.course-actions,.review-actions,.submission-actions{display:grid;grid-template-columns:1fr;width:100%}
+  .button,.workspace-hero-actions .button,.hero-actions .button,.course-actions .button,.review-actions .button,.submission-actions .button,.email-lookup .button,.ledger-form>.button,.course-enrollment-form>.button{width:100%;min-height:46px;padding:12px 16px}
+  input,select,textarea{font-size:16px!important;min-height:46px}
+  input[type=checkbox],input[type=radio]{min-height:0}
+  .dashboard-strip{gap:1px}
+  .dashboard-strip>div{padding:14px 12px}
+  .section-head{align-items:flex-start;gap:8px;flex-direction:column;margin:28px 0 14px}
+  .student-lesson-list a{padding:12px 10px;gap:10px}
+  .student-lesson-list a>span{width:34px;height:34px}
+  .access-empty,.locked-course{padding:24px 16px}
+  .lesson-meta span{white-space:normal}
+  .legal-page{padding:22px 12px}
+  .legal-header h1{font-size:clamp(2rem,12vw,3rem)}
+  .legal-notice,.policy-document section,.policy-footer,.policy-card{padding:16px;border-radius:16px}
+  .policy-document ul{padding-left:20px}
+  .consent-check{grid-template-columns:24px minmax(0,1fr)!important;padding:12px 10px}
+  .consent-check input{width:20px;height:20px}
+  .consent-status,.ledger-status{white-space:normal;text-align:center}
+  .lookup-result,.ledger-note{overflow-wrap:anywhere}
+  .teacher-metrics,.admin-metrics{grid-template-columns:1fr 1fr}
+  .teacher-student-row,.progress-list article,.submission-list article{min-width:0}
+  .auth-panel{width:calc(100% - 20px);padding:20px}
+}
+
+@media(max-width:360px){
+  .content{padding-inline:8px!important}
+  .mobile-menu-button{min-width:42px;width:42px}
+  .topbar>div:first-of-type strong{font-size:.76rem}
+  .card-pad,.teacher-dashboard-card,.mission-card{padding:14px}
+  .dashboard-strip,.teacher-metrics,.admin-metrics{grid-template-columns:1fr}
+  .workspace-hero,.hero{padding:18px 14px!important}
+  .page-title,.workspace-hero-copy h1,.lesson-content h1{font-size:clamp(1.8rem,11vw,2.4rem)!important}
+  .legal-page{padding-inline:10px}
+  .policy-document section,.policy-footer,.policy-card{padding:14px}
+}
+
+@media(hover:none){
+  .button:hover,.nav-link:hover,.course-card:hover,.studio-card:hover,.mission-card:hover{transform:none}
+}
