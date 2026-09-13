@@ -1,17 +1,22 @@
-.module-readiness { display: grid; gap: 1.25rem; }
+.module-readiness { display: grid; gap: 1.25rem; min-width: 0; color: #f5f1fa; }
 .module-readiness h1 { margin-top: 0; }
 .mr-actions, .mr-filters { display: flex; flex-wrap: wrap; gap: .75rem; }
 .mr-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
-.mr-card { background: var(--panel, #fff); border: 1px solid var(--line, #ddd); border-radius: 16px; padding: 1.25rem; min-width: 0; overflow-wrap: anywhere; }
+.mr-card { background: rgba(24, 12, 39, .94); color: #f5f1fa; border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; min-width: 0; overflow-wrap: anywhere; }
+.module-readiness .muted { color: #c8bfd5; }
 .mr-card h2 { font-size: 1.15rem; }
 .mr-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 1rem; }
-.mr-list { display: grid; gap: 1rem; }
+.mr-list { display: grid; gap: 1rem; min-width: 0; }
 .mr-chips { display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; list-style: none; }
 .mr-chips li { background: #fff1d6; color: #624000; border-radius: 20px; padding: .35rem .65rem; font-size: .85rem; }
-.mr-filters label, .mr-draft label { display: grid; gap: .4rem; font-weight: 600; }
-.mr-filters select, .mr-draft textarea { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #aaa; border-radius: 8px; background: #fff; color: #222; font: inherit; }
+.mr-filters label, .mr-draft label { display: grid; gap: .4rem; min-width: 0; font-weight: 600; }
+.mr-filters label { flex: 1 1 240px; }
+.mr-filters select, .mr-draft textarea { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; padding: .7rem; border: 1px solid #aaa; border-radius: 8px; background: #fff; color: #222; color-scheme: light; font: inherit; }
+.mr-filters option { background: #fff; color: #222; }
+.module-readiness .button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
 .mr-draft textarea { resize: vertical; font-weight: 400; }
 .mr-draft-section { display: grid; gap: .5rem; margin: 1.25rem 0; }
 .mr-card details { margin: 1rem 0; }
-.mr-card dl > div { display: flex; justify-content: space-between; gap: 1rem; }
+.mr-card dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; }
+.mr-card dd { margin-inline-start: 0; }
 @media (max-width: 900px) { .mr-workspace { grid-template-columns: minmax(0, 1fr); } }
