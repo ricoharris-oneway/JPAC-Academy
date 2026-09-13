@@ -21,6 +21,7 @@ const nav = [
   ['Payment Ledger', '/staff/payment-ledger', '💳', ['teacher', 'admin', 'developer']],
   ['Consent Ledger', '/staff/consent-ledger', '✅', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
+  ['Module Readiness', '/staff/module-readiness', '📋', ['teacher', 'admin', 'developer']],
   ['Video Finder Helper', '/staff/video-finder', '🎬', ['teacher', 'admin', 'developer']],
   ['Singing Pilot Enrollment', '/staff/singing-pilot-enrollment', '🎤', ['teacher', 'admin', 'developer']],
   ['Certificates & Portfolio', '/certificates', '📜', ['student', 'teacher', 'admin', 'developer']],

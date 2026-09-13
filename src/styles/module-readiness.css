@@ -1,0 +1,17 @@
+.module-readiness { display: grid; gap: 1.25rem; }
+.module-readiness h1 { margin-top: 0; }
+.mr-actions, .mr-filters { display: flex; flex-wrap: wrap; gap: .75rem; }
+.mr-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
+.mr-card { background: var(--panel, #fff); border: 1px solid var(--line, #ddd); border-radius: 16px; padding: 1.25rem; min-width: 0; overflow-wrap: anywhere; }
+.mr-card h2 { font-size: 1.15rem; }
+.mr-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 1rem; }
+.mr-list { display: grid; gap: 1rem; }
+.mr-chips { display: flex; flex-wrap: wrap; gap: .4rem; padding: 0; list-style: none; }
+.mr-chips li { background: #fff1d6; color: #624000; border-radius: 20px; padding: .35rem .65rem; font-size: .85rem; }
+.mr-filters label, .mr-draft label { display: grid; gap: .4rem; font-weight: 600; }
+.mr-filters select, .mr-draft textarea { width: 100%; min-width: 0; padding: .7rem; border: 1px solid #aaa; border-radius: 8px; background: #fff; color: #222; font: inherit; }
+.mr-draft textarea { resize: vertical; font-weight: 400; }
+.mr-draft-section { display: grid; gap: .5rem; margin: 1.25rem 0; }
+.mr-card details { margin: 1rem 0; }
+.mr-card dl > div { display: flex; justify-content: space-between; gap: 1rem; }
+@media (max-width: 900px) { .mr-workspace { grid-template-columns: minmax(0, 1fr); } }
