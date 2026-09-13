@@ -11,6 +11,7 @@ const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
   ['JPAC Coach', '/coach', '🧭', ['student', 'teacher', 'admin', 'developer']],
   ['Career Pathing', '/career-pathing', '🚀', ['student']],
+  ['Career Pathing Admin', '/staff/career-pathing', '🚀', ['teacher', 'admin', 'developer']],
   ['My Academy', '/courses', '🎓', ['student']],
   ['My Payments', '/account/payments', '💳', ['student']],
   ['My Consents', '/account/consents', '✅', ['student']],
