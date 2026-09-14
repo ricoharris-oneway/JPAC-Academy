@@ -1,1 +1,23 @@
 .course-enrollment-page{display:grid;gap:20px}.course-enrollment-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);gap:20px;align-items:start}.course-enrollment-form,.enrollment-preview{display:grid;gap:18px}.course-enrollment-form label{display:grid;gap:7px;font-weight:750}.course-enrollment-form input,.course-enrollment-form select,.course-enrollment-form textarea{width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:14px;background:#160a22;color:#fff}.course-enrollment-form textarea{min-height:100px;resize:vertical}.email-lookup{display:grid;grid-template-columns:1fr auto;gap:10px}.course-enrollment-form fieldset{border:0;padding:0;margin:0;display:grid;gap:9px}.course-enrollment-form legend{font-weight:750;margin-bottom:7px}.radio{display:flex!important;align-items:center;font-weight:500!important}.radio input,.payment-confirm input{width:18px}.payment-confirm{display:flex!important;align-items:center;gap:10px;padding:14px;border:1px solid rgba(255,215,120,.26);border-radius:14px;background:rgba(255,215,120,.06)}.payment-confirm small{color:var(--gold)}.lookup-result{margin:0;color:var(--silver)}.enrollment-preview dl{display:grid;gap:10px;margin:0}.enrollment-preview dl div{padding:13px;border-radius:14px;background:rgba(255,255,255,.045)}.enrollment-preview dt{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}.enrollment-preview dd{margin:4px 0 0;font-weight:800}.enrollment-preview p{color:var(--muted);line-height:1.55}.admin-message.error{border-color:#c85b6b;color:#ffd9de}@media(max-width:850px){.course-enrollment-grid,.email-lookup{grid-template-columns:1fr}}
+
+/* Unified onboarding workflow; ledger and enrollment behavior is unchanged. */
+.onboarding-page, .onboarding-page :where(section, aside, div, label, form) { min-width: 0; }
+.onboarding-page :where(p, span, strong, li, dd, a) { overflow-wrap: anywhere; }
+.onboarding-links { display: flex; flex-wrap: wrap; gap: 10px; }
+.onboarding-page .button { white-space: normal; max-width: 100%; text-align: center; }
+.onboarding-checklist { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; list-style-position: inside; padding: 0; }
+.onboarding-checklist li { padding: 16px; background: #231331; border: 1px solid var(--border); border-radius: 14px; color: #ffe0a1; }
+.onboarding-checklist li span { display: block; margin-top: 7px; color: #d6ccdf; font-size: .85rem; line-height: 1.5; }
+.onboarding-status-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.onboarding-status-grid h2 { font-size: 1.15rem; }
+.onboarding-status-grid p, .onboarding-account p, .onboarding-welcome p { color: #d6ccdf; line-height: 1.6; }
+.onboarding-status-grid a, .onboarding-account a:not(.button), .onboarding-page .enrollment-preview a { color: #ffdd92; text-decoration: underline; }
+.onboarding-status-grid ul { padding-left: 20px; line-height: 1.7; }
+.onboarding-confirm { display: flex; align-items: flex-start; gap: 10px; margin-top: 16px; line-height: 1.5; font-size: .85rem; }
+.onboarding-confirm input { flex: 0 0 18px; width: 18px; height: 18px; }
+.onboarding-welcome label { display: grid; gap: 8px; }
+.onboarding-welcome textarea { width: 100%; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: #160a22; color: #fff; font: inherit; line-height: 1.6; }
+.onboarding-welcome .button { margin-top: 16px; }
+.onboarding-page input::placeholder, .onboarding-page textarea::placeholder { color: #bfb0ce; }
+@media(max-width:1100px) { .onboarding-status-grid { grid-template-columns: 1fr; } }
+@media(max-width:650px) { .onboarding-checklist { grid-template-columns: 1fr; } }
