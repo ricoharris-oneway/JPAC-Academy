@@ -13,6 +13,7 @@ const nav = [
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
   ['Community', '/community', '💜', ['student', 'teacher', 'admin', 'developer']],
   ['Teacher Studio', '/teacher', '👥', ['teacher', 'admin', 'developer']],
+  ['Enrollment Manager', '/staff/course-enrollment', '🎟️', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
   ['Certificates & Portfolio', '/certificates', '📜', ['student', 'teacher', 'admin', 'developer']],
   ['Creative Studio', '/studio', '🎨', ['student', 'teacher', 'admin', 'developer']],
