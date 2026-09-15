@@ -2,6 +2,7 @@ import './styles/auth-milestone.css';
 import './styles/student-access.css';
 import './styles/ai-instructor.css';
 import './styles/member-launch.css';
+import './styles/member-launch-enhancements.css';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
