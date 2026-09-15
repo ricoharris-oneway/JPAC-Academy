@@ -6,21 +6,28 @@ import { useAuth, type AppRole } from '../context/AuthContext';
 import { resolveDisplayName } from '../lib/displayName';
 
 const nav = [
-  ['Career Paths', '/career-paths', '✦', ['student', 'teacher', 'admin', 'developer']],
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
-  ['My Academy', '/courses', '🎓', ['student']],
+  ['My Learning', '/courses', '🎓', ['student']],
+  ['Explore Programs', '/programs', '▷', ['student', 'teacher', 'admin', 'developer']],
+  ['Career Pathing', '/career-paths', '✦', ['student', 'teacher', 'admin', 'developer']],
+  ['JPAC Tools', '/tools', '◫', ['student', 'teacher', 'admin', 'developer']],
   ['Practice Submissions', '/practice-coach', '🎧', ['student', 'teacher', 'admin', 'developer']],
   ['Student Intelligence', '/student-intelligence', '🧬', ['student', 'teacher', 'admin', 'developer']],
   ['Community', '/community', '💜', ['student', 'teacher', 'admin', 'developer']],
   ['Teacher Studio', '/teacher', '👥', ['teacher', 'admin', 'developer']],
   ['Enrollment Manager', '/staff/course-enrollment', '🎟️', ['teacher', 'admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
+  ['Module Readiness', '/curriculum#module-readiness', '✓', ['teacher', 'admin', 'developer']],
+  ['Video Finder Helper', '/staff/video-finder', '▷', ['teacher', 'admin', 'developer']],
   ['Certificates & Portfolio', '/certificates', '📜', ['student', 'teacher', 'admin', 'developer']],
   ['Creative Studio', '/studio', '🎨', ['student', 'teacher', 'admin', 'developer']],
-  ['Enrollment Manager', '/enrollment', '🚪', ['admin', 'developer']],
+  ['Enrollment Records', '/enrollment', '🚪', ['admin', 'developer']],
+  ['Payment Ledger', '/staff/course-enrollment#payment-ledger', '▤', ['teacher', 'admin', 'developer']],
+  ['Consent Ledger', '/staff/course-enrollment#consent-ledger', '✓', ['teacher', 'admin', 'developer']],
   ['Admissions Center', '/manual-student', '🎟️', ['admin', 'developer']],
   ['JPAC LAB Manager', '/lab-manager', '🧰', ['admin', 'developer']],
   ['Admin Center', '/admin', '🛡️', ['admin', 'developer']],
+  ['Legal & Policies', '/admin/policies', '§', ['admin', 'developer']],
 ] as const;
 
 export function AppLayout() {
@@ -45,6 +52,7 @@ export function AppLayout() {
       <div className="authenticated-role"><span>Signed in as</span><strong>{role.replace('_', ' ')}</strong></div>
       <nav className="nav" aria-label="Workspace menu">{nav.filter((item) => (item[3] as readonly string[]).includes(role)).map((item) => <NavLink key={item[1]} to={item[1]} end={item[1] === '/'} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><b>{item[2]}</b><span>{item[0]}</span></NavLink>)}</nav>
       <NavLink to="/account" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><b>⚙️</b><span>Account Settings</span></NavLink>
+      <Link className="nav-link" to="/legal"><b>§</b><span>Legal & Policies</span></Link>
       <div className="sidebar-footer"><Link to="/account" className="avatar" aria-label="Open Account Settings">{initials}</Link><div><Link to="/account"><strong>{name}</strong><small>{user?.email}</small></Link></div><button className="logout-button" onClick={() => void signOut()}>Sign out</button></div>
     </aside>
     <main className="main">
