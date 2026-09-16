@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ariaOnboardingSteps, guidanceForPath, guidedWalkthroughSteps, type GuidedWalkthroughStep } from './guidedWalkthroughSteps';
+import { ariaOnboardingSteps, ariaWorkflowSteps, guidanceForPath, guidedWalkthroughSteps, type GuidedWalkthroughStep } from './guidedWalkthroughSteps';
 import { GuidedAvatar } from './GuidedAvatar';
 import { dismissAriaOnboardingPrompt, isAriaOnboardingPromptDismissed } from './ariaOnboardingPromptStorage';
 import { cancelAriaVoice, speakAriaGuidance } from './ariaVoice';
@@ -29,15 +29,17 @@ export function takeGuidedStepThere(step: GuidedWalkthroughStep, navigate: (rout
   navigate(step.route);
 }
 
-export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', initialPromptVisible = false }: { initialOpen?: boolean; initialView?: GuidedWalkthroughState['view']; initialPromptVisible?: boolean } = {}): JSX.Element {
+export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', initialPromptVisible = false, role = 'student' }: { initialOpen?: boolean; initialView?: GuidedWalkthroughState['view']; initialPromptVisible?: boolean; role?: string } = {}): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [state, dispatch] = useReducer(guidedWalkthroughReducer, { open: initialOpen, view: initialView, stepIndex: 0 });
   const [promptVisible, setPromptVisible] = useState(initialPromptVisible);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceUnavailable, setVoiceUnavailable] = useState(false);
+  const [detail, setDetail] = useState<'next' | 'blocker' | 'owner' | null>(null);
   const page = guidanceForPath(location.pathname);
-  const activeSteps = state.view === 'onboarding' ? ariaOnboardingSteps : guidedWalkthroughSteps;
+  const workflowSteps = ariaWorkflowSteps[role] || ariaWorkflowSteps.student;
+  const activeSteps = state.view === 'onboarding' ? ariaOnboardingSteps : state.view === 'pathway' ? workflowSteps : guidedWalkthroughSteps;
   const step = state.view === 'page' ? page : activeSteps[state.stepIndex];
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
 
   function changeGuide(action: GuidedWalkthroughAction): void {
     stopVoice();
+    setDetail(null);
     dispatch(action);
   }
 
@@ -102,9 +105,13 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
       <section className="guided-walkthrough-dialog" role="dialog" aria-modal="true" aria-labelledby="guided-walkthrough-title" aria-describedby="guided-walkthrough-message">
         <button className="guided-walkthrough-close" type="button" aria-label="Close guide" onClick={closeGuide}>×</button>
         <header className="guided-walkthrough-aria-header"><GuidedAvatar speaking size="small"/><span><strong>Aria, your JPAC Guide</strong><small>Hi, I’m Aria, your JPAC Guide. I’ll show you what to do next.</small></span></header>
-        <span className="guided-walkthrough-kicker">{state.view === 'page' ? 'You are here · Page guidance' : state.view === 'onboarding' ? `JPAC Welcome Tour · Step ${state.stepIndex + 1} of ${ariaOnboardingSteps.length}` : `Full pathway · Step ${state.stepIndex + 1} of ${guidedWalkthroughSteps.length}`}</span>
+        <span className="guided-walkthrough-kicker">{state.view === 'page' ? 'You are here · Page guidance' : state.view === 'onboarding' ? `JPAC Welcome Tour · Step ${state.stepIndex + 1} of ${ariaOnboardingSteps.length}` : `JPAC checklist · Step ${state.stepIndex + 1} of ${workflowSteps.length}`}</span>
         <h2 id="guided-walkthrough-title">{step.title}</h2>
         <p id="guided-walkthrough-message">{step.message}</p>
+        {state.view !== 'onboarding' && state.view !== 'page' ? <dl className="guided-walkthrough-facts">
+          <div><dt>What</dt><dd>{step.what}</dd></div><div><dt>Next step</dt><dd>{step.next}</dd></div><div><dt>Owner</dt><dd>{step.owner}</dd></div><div><dt>Where</dt><dd>{step.where}</dd></div>
+        </dl> : null}
+        {detail ? <p className="guided-walkthrough-detail" role="status">{detail === 'next' ? step.next : detail === 'blocker' ? step.blocker : step.owner}</p> : null}
         <p className="guided-walkthrough-safety">This guide does not award XP, complete lessons, submit assignments, or change your academic record.</p>
         <div className="guided-walkthrough-actions">
           {state.view !== 'page' ? <>
@@ -113,6 +120,8 @@ export function GuidedWalkthrough({ initialOpen = false, initialView = 'page', i
           </> : <><button className="button button-primary guided-walkthrough-tour-button" type="button" onClick={startOnboarding}>Start JPAC Tour</button><button className="button button-secondary" type="button" onClick={() => changeGuide({ type: 'show-pathway' })}>View full pathway</button></>}
           <button className="button button-secondary guided-walkthrough-voice-button" type="button" aria-label={isSpeaking ? 'Stop Aria voice' : 'Hear Aria read this guidance'} onClick={toggleVoice}>{isSpeaking ? 'Stop' : 'Hear Aria'}</button>
           <button className="button button-primary" type="button" onClick={takeMeThere}>Take me there · {step.action}</button>
+          {state.view === 'page' ? <button className="button button-secondary" type="button" onClick={() => changeGuide({ type: 'show-pathway' })}>Show checklist</button> : null}
+          {state.view !== 'onboarding' ? <><button className="button button-secondary" type="button" onClick={() => setDetail('next')}>What happens next?</button><button className="button button-secondary" type="button" onClick={() => setDetail('blocker')}>Why am I blocked?</button><button className="button button-secondary" type="button" onClick={() => setDetail('owner')}>Who needs to act?</button></> : null}
           {state.view === 'page' ? <button className="button button-secondary guided-walkthrough-secondary-action" type="button" onClick={() => { stopVoice(); dispatch({ type: 'close' }); navigate(page.secondaryRoute); }}>{page.secondaryAction}</button> : <button className="guided-walkthrough-text-button" type="button" onClick={() => { if (state.view === 'onboarding') rememberPromptDismissal(); changeGuide({ type: 'show-page' }); }}>Back to page guidance</button>}
           <button className="guided-walkthrough-text-button" type="button" onClick={closeGuide}>Close</button>
         </div>
