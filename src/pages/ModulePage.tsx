@@ -3,7 +3,7 @@ import{Link,useParams}from'react-router-dom';
 import{loadCourseContent,type CourseModule}from'../lib/studentAccess';
 import{supabase}from'../lib/supabase';
 import{useAuth}from'../context/AuthContext';
-import{AriaFeedback,LearnSection,LevelUpCard,MasteryChecklist,MissionBrief,MissionProgress,PracticeChallenge,SubmissionHistory,WatchSection,type MissionActivity,type MissionAttempt,type MissionCompletion}from'../components/MissionExperience';
+import{AriaFeedback,LearnSection,LevelUpCard,MasteryChecklist,MissionBrief,MissionNextStep,MissionProgress,PracticeChallenge,SubmissionHistory,WatchSection,type MissionActivity,type MissionAttempt,type MissionCompletion}from'../components/MissionExperience';
 import{JPACCoachPanel}from'../features/ai-instructor/components/JPACCoachPanel';
 import{buildModuleCoachContext}from'../features/ai-instructor/contextBuilder';
 
@@ -50,6 +50,7 @@ export function ModulePage(){
   return <div className="creator-mission"><Link className="text-link" to={`/courses/${course.id}`}>← {course.title}</Link>
     <div className="eyebrow">Level {module.level_number||1} · Mission {module.level_module_number||module.sort_order}</div>
     <MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/>
+    <MissionNextStep completion={completion} lessons={lessons} progress={progress} requiredActivity={requiredActivity} attempts={requiredAttempts} nextModule={nextModule} courseId={course.id} onStart={()=>void completeIntro()} busy={busy}/>
     <MissionBrief module={module} requiredActivity={requiredActivity} bonusAvailable={bonusAvailable} onStart={()=>void completeIntro()} busy={busy} started={Boolean(completion?.intro_complete)}/>
     <JPACCoachPanel context={buildModuleCoachContext({courseId:course.id,module,instructions:requiredActivity?.instructions,rubric:requiredActivity?.rubric,teacherFeedback:requiredAttempts[0]?.teacher_feedback,hasPreparedEvidence:Boolean(file)})}/>
     <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
