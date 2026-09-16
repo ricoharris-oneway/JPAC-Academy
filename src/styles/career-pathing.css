@@ -26,6 +26,7 @@
 .career-experience-v2 :where(#career-selected-path, #career-staff-detail):focus { outline: 2px solid #f7c64c; outline-offset: 3px; }
 .career-experience-v2 .button { white-space: normal; max-width: 100%; text-align: center; }
 .career-experience-v2 .career-pathing-hero { position: relative; overflow: hidden; grid-template-columns: minmax(0, 1.3fr) minmax(0, .8fr); align-items: center; background: radial-gradient(ellipse at 85% 30%, #652b8c88, transparent 55%), linear-gradient(125deg, #170923, #28113e 65%, #160a20); }
+.career-experience-v2 .career-path-roadmap-featured { border-color: #f7c64c66; box-shadow: 0 22px 65px #0008, inset 0 0 45px #7d43a51c; }
 .career-experience-v2 .career-hero-copy { position: relative; z-index: 1; }
 .career-experience-v2 h1 { letter-spacing: -.045em; }
 .career-experience-v2 h1 em { color: #ffdc8f; font-style: normal; }
