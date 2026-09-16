@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { homepageVisualGuide } from '../data/memberAssetMap';
 import { getHomepageMediaSlots, type HomepageMediaOverride, type HomepageMediaSlot } from '../lib/homepageMedia';
 import { supabase } from '../lib/supabase';
 import '../styles/member-launch.css';
@@ -101,6 +102,16 @@ export function HomepageMediaPage() {
   if (!allowed) return <div className="card card-pad"><h2>Administrator access required</h2></div>;
   return <main className="member-launch homepage-media-admin">
     <header className="member-page-heading"><span className="member-kicker">JPAC ACADEMY · ADMINISTRATION</span><h1>Homepage Media</h1><p>Manage URL-based homepage artwork overrides. Students see only active and published overrides; otherwise the default asset remains in use.</p></header>
+    <section className="card homepage-visual-guide" aria-labelledby="homepage-visual-guide-title">
+      <div>
+        <div className="eyebrow">ADMIN PLANNING REFERENCE · NOT STUDENT-FACING</div>
+        <h2 id="homepage-visual-guide-title">Homepage Visual Reference Guide</h2>
+        <p>This 10×10 category guide is for internal homepage planning only. It is never used as a student-facing homepage, card, course, program, tool image, or background.</p>
+      </div>
+      <div className="homepage-visual-guide-grid">
+        {homepageVisualGuide.map((group, index) => <article key={group.label}><span className="member-pill">Guide {index + 1} of 10</span><h3>{group.label}</h3><p>{group.description}</p><ul>{group.categories.map((category) => <li key={`${group.label}-${category}`}>{category}</li>)}</ul></article>)}
+      </div>
+    </section>
     {message && <p className="admin-message" role="status">{message}</p>}
     {loading ? <p className="muted">Loading homepage media slots…</p> : <div className="homepage-media-list">{drafts.map((draft) => {
       const preview = draft.overrideImageUrl.trim() || draft.defaultImagePath;
