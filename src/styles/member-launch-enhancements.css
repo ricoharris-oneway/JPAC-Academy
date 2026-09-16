@@ -5,7 +5,7 @@
 }
 
 .member-launch .member-hero:before {
-  background-image: url('/assets/academy-hero.svg');
+  background-image: url('/creative-assets/jpac-showcase-stage.webp');
   background-position: center;
   filter: saturate(1.15) contrast(1.08);
   transform: scale(1.04);
@@ -141,7 +141,7 @@
 .member-launch .member-upgrade {
   background:
     linear-gradient(135deg, #241234dc, #100819f2),
-    url('/assets/academy-hero.svg') center / cover;
+    url('/creative-assets/jpac-creative-spaces-grid.webp') center / cover;
   box-shadow: 0 20px 55px #05020866;
 }
 
