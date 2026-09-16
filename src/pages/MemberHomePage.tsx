@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { careerPaths } from '../features/career-pathing/careerPathing';
 import { memberPrograms, memberTools, enrollmentRequestUrl, courseLockedMessage } from '../data/memberPrograms';
 import { careerArtwork, programArtwork, toolArtwork } from '../data/memberAssetMap';
 import { useMemberJourney } from '../context/MemberJourneyContext';
 import { supabase } from '../lib/supabase';
 import { loadHomepageMediaOverrides, resolveHomepageMediaUrl } from '../lib/homepageMedia';
+import { loadMyCourses } from '../lib/studentAccess';
 import '../styles/member-launch.css';
+import '../styles/program-info-modal.css';
 
 export function MemberRow({ title, children }: { title: string; children: ReactNode }) {
   const rail = useRef<HTMLDivElement>(null);
@@ -38,7 +40,48 @@ export function MemberHomePage() {
 }
 
 export function ExploreProgramsPage() {
-  return <div className="member-launch"><header className="member-page-heading"><span className="member-kicker">FIND YOUR NEXT CHAPTER</span><h1>Explore Programs</h1><p>Start with your curiosity. Enrollment is approved for each course by JPAC staff.</p></header><div className="member-program-grid">{memberPrograms.map(program => <article className="member-program-detail" id={program.slug} key={program.slug}><img src={programArtwork[program.slug]} alt="" loading="lazy" /><div><span className="member-kicker">{program.category}</span><h2>{program.title}</h2><p>{program.description}</p><p className="member-note">{courseLockedMessage}</p><a className="button button-secondary" href={`${enrollmentRequestUrl}&body=${encodeURIComponent(`I would like to learn about enrollment in ${program.title}.`)}`}>Ask about this program ↗</a></div></article>)}</div><EnrollmentOffer /></div>;
+  const navigate = useNavigate();
+  const [selectedProgram, setSelectedProgram] = useState<(typeof memberPrograms)[number] | null>(null);
+  const [authorizedCourses, setAuthorizedCourses] = useState<Array<{ course_id: string; title: string; slug: string }>>([]);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const modalRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    void loadMyCourses().then(({ data }) => { if (active) setAuthorizedCourses(data); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProgram) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelectedProgram(null); };
+    document.addEventListener('keydown', closeOnEscape);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedProgram]);
+
+  useEffect(() => {
+    if (selectedProgram) modalRef.current?.focus();
+    else triggerRef.current?.focus();
+  }, [selectedProgram]);
+
+  const openProgram = (program: (typeof memberPrograms)[number], button: HTMLButtonElement) => {
+    triggerRef.current = button;
+    setSelectedProgram(program);
+  };
+  const enrolledCourse = selectedProgram && authorizedCourses.find(course => course.slug === selectedProgram.slug || course.title.toLowerCase() === selectedProgram.title.toLowerCase());
+  const connectedCareers = selectedProgram ? careerPaths.filter(path => path.connectedPrograms.some(program => program.toLowerCase() === selectedProgram.title.toLowerCase() || selectedProgram.title.toLowerCase().includes(program.toLowerCase()))).slice(0, 4) : [];
+  const askAria = () => {
+    if (!selectedProgram) return;
+    navigate('/coach', { state: { program: selectedProgram } });
+    setSelectedProgram(null);
+  };
+
+  return <div className="member-launch"><header className="member-page-heading"><span className="member-kicker">FIND YOUR NEXT CHAPTER</span><h1>Explore Programs</h1><p>Start with your curiosity. Enrollment is approved for each course by JPAC staff.</p></header><div className="member-program-grid">{memberPrograms.map(program => <article className="member-program-detail" id={program.slug} key={program.slug}><img src={programArtwork[program.slug]} alt="" loading="lazy" /><div><span className="member-kicker">{program.category}</span><h2>{program.title}</h2><p>{program.description}</p><p className="member-note">{courseLockedMessage}</p><button className="button button-secondary" type="button" aria-haspopup="dialog" aria-controls="program-info-dialog" onClick={(event) => openProgram(program, event.currentTarget)}>Ask about this program <span aria-hidden="true">↗</span></button></div></article>)}</div><EnrollmentOffer />{selectedProgram && <div className="program-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProgram(null); }}><section id="program-info-dialog" ref={modalRef} className="program-modal" role="dialog" aria-modal="true" aria-labelledby="program-modal-title" aria-describedby="program-modal-description" tabIndex={-1}><button className="program-modal-close" type="button" aria-label={`Close ${selectedProgram.title} program details`} onClick={() => setSelectedProgram(null)}>×</button><span className="member-kicker">{selectedProgram.category}</span><h2 id="program-modal-title">{selectedProgram.title}</h2><p id="program-modal-description" className="program-modal-description">{selectedProgram.description}</p><div className="program-modal-grid"><section><h3>What students learn</h3><p>{selectedProgram.description} JPAC staff can confirm the current course scope and learning sequence before enrollment.</p></section><section><h3>Level 1–4 overview</h3><ol className="program-levels"><li><strong>Level 1 · Foundations</strong><span>Build core vocabulary, habits, and safety foundations for the program.</span></li><li><strong>Level 2 · Development</strong><span>Develop technique and apply guided practice to creative work.</span></li><li><strong>Level 3 · Application</strong><span>Apply program skills in increasingly independent projects and practice.</span></li><li><strong>Level 4 · Portfolio readiness</strong><span>Refine work toward reviewed, career-connected outcomes.</span></li></ol></section><section><h3>Software and tools</h3><p>Software requirements will be confirmed by JPAC staff before enrollment.</p></section><section><h3>Equipment</h3><p>Equipment needs may vary by program and will be confirmed by JPAC staff.</p></section><section><h3>Enrollment and access</h3><p className={enrolledCourse ? 'program-status program-status-open' : 'program-status'}>{enrolledCourse ? 'Enrollment verified · Course access available.' : 'Enrollment pending staff verification · Course access is locked.'}</p>{!enrolledCourse && <p className="program-lock-note">{courseLockedMessage}</p>}</section><section><h3>Connected career paths</h3>{connectedCareers.length ? <ul className="program-careers">{connectedCareers.map(path => <li key={path.id}>{path.title}</li>)}</ul> : <p>Explore Career Pathing with JPAC staff to connect this program to your goals.</p>}</section></div><div className="program-modal-actions"><button className="button button-primary" type="button" onClick={askAria}>Ask Aria about this program</button><a className="button button-secondary" href={`${enrollmentRequestUrl}&body=${encodeURIComponent(`I would like to learn about enrollment in ${selectedProgram.title}.` )}`}>Ask Admissions Team</a><button className="button button-secondary" type="button" onClick={() => setSelectedProgram(null)}>Close</button></div></section></div>}</div>;
 }
 
 export function MemberToolsPage() {

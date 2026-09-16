@@ -1,13 +1,15 @@
 import{useEffect,useMemo,useState}from'react';
-import{Link}from'react-router-dom';
+import{Link,useLocation}from'react-router-dom';
 import{JPACCoachPanel}from'../features/ai-instructor/components/JPACCoachPanel';
-import{buildDashboardCoachContext}from'../features/ai-instructor/contextBuilder';
+import{buildDashboardCoachContext,buildProgramCoachContext}from'../features/ai-instructor/contextBuilder';
 import{continueDestination,loadMyCourses,type AcademyCourse}from'../lib/studentAccess';
 
 export function AIInstructorHubPage(){
+  const location=useLocation();
+  const programContext=location.state?.program as {title:string;description:string}|undefined;
   const[courses,setCourses]=useState<AcademyCourse[]>([]);const[loading,setLoading]=useState(true);const[error,setError]=useState('');
   useEffect(()=>{let active=true;void loadMyCourses().then(result=>{if(!active)return;setCourses(result.data);setError(result.error);setLoading(false)});return()=>{active=false}},[]);
-  const destination=useMemo(()=>continueDestination(courses),[courses]);const context=useMemo(()=>buildDashboardCoachContext(courses,destination),[courses,destination]);
+  const destination=useMemo(()=>continueDestination(courses),[courses]);const context=useMemo(()=>programContext?buildProgramCoachContext(programContext):buildDashboardCoachContext(courses,destination),[courses,destination,programContext]);
   const pendingItemCount=0;
   return <div className="ai-instructor-page"><header className="ai-instructor-hero"><div><span>Deterministic instructor layer · Phase 1</span><h1>JPAC AI Instructor Hub</h1><p>Start with your career goal, continue your course, practice the right skill, and prepare work for teacher review.</p></div><Link className="button button-primary" to="/career-pathing">Start with Career Pathing</Link></header>{error&&<div className="admin-message" role="alert">{error}</div>}<JPACCoachPanel context={context}/><section className="coach-hub-grid"><article><span>Step 1 · Career anchor</span><h2>Your Creative Career Path</h2><p>Choose the creative future you want to grow into before deciding what to learn and practice next.</p><Link to="/career-pathing">Explore career paths →</Link></article><article><span>Step 2 · Continue learning</span><h2>{courses[0]?.title||'My Academy'}</h2><p>{loading?'Checking your authorized learning scope…':courses.length?'Continue from the next published lesson available to your enrollment.':'No active course is available yet.'}</p><Link to={destination.to}>Open next step →</Link></article><article><span>Step 3 · Practice connection</span><h2>Creator Tools</h2><p>Use local practice games to build a skill connected to your career path and current lesson.</p><Link to="/studio">Open Creative Studio →</Link></article><article><span>Step 4 · Teacher review</span><h2>{pendingItemCount} pending items</h2><p>Prepare portfolio evidence or extra credit, then use teacher feedback for your next revision.</p><Link to="/courses">Review My Academy →</Link></article></section><section className="coach-hub-boundary"><strong>What JPAC Coach can do</strong><p>Explain, organize, recommend, navigate, and check completeness. It cannot submit, grade, approve, award XP or mastery, update progress, issue certificates, or change enrollment.</p></section></div>;
 }
