@@ -1,0 +1,13 @@
+.homepage-media-admin { max-width: 1180px; margin: 0 auto; }
+.homepage-media-list { display: grid; gap: 20px; }
+.homepage-media-card { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.6fr); gap: 24px; padding: 20px; }
+.homepage-media-preview { min-height: 180px; overflow: hidden; border-radius: 14px; background: #12091b; }
+.homepage-media-preview img { width: 100%; height: 100%; min-height: 180px; object-fit: cover; }
+.homepage-media-fields { display: grid; gap: 12px; }
+.homepage-media-fields label { display: grid; gap: 6px; color: #e8def4; font-size: .82rem; }
+.homepage-media-fields input[type="url"], .homepage-media-fields input:not([type]) { width: 100%; min-height: 42px; }
+.homepage-media-toggles { display: flex; flex-wrap: wrap; gap: 18px; color: #e8def4; }
+.homepage-media-toggles label { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 700px) {
+  .homepage-media-card { grid-template-columns: 1fr; }
+}

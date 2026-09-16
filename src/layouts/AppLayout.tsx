@@ -9,6 +9,9 @@ import { ConsentReminder } from '../components/ConsentReminder';
 
 const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
+  ['Explore Programs', '/programs', '🎭', ['student']],
+  ['JPAC Tools', '/tools', '🛠️', ['student']],
+  ['Community', '/community', '◎', ['student']],
   ['JPAC Coach', '/coach', '🧭', ['student', 'teacher', 'admin', 'developer']],
   ['Career Pathing', '/career-pathing', '🚀', ['student']],
   ['Career Pathing Admin', '/staff/career-pathing', '🚀', ['teacher', 'admin', 'developer']],
@@ -31,6 +34,8 @@ const nav = [
   ['Admissions Center', '/manual-student', '🎟️', ['admin', 'developer']],
   ['JPAC LAB Manager', '/lab-manager', '🧰', ['admin', 'developer']],
   ['Admin Center', '/admin', '🛡️', ['admin', 'developer']],
+  ['Homepage Media', '/admin/homepage-media', '🖼️', ['admin', 'developer']],
+  ['Legal Policy Editor', '/admin/policies', '⚖️', ['admin', 'developer']],
   ['Legal & Policies', '/legal', '⚖️', ['student', 'teacher', 'admin', 'developer']],
 ] as const;
 
