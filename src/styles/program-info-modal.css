@@ -1,0 +1,6 @@
+@media (max-width: 650px) {
+  .program-modal-backdrop { padding: 10px; }
+  .program-modal { max-height: 94vh; border-radius: 20px; padding: 23px 18px; }
+  .program-modal-grid { grid-template-columns: 1fr; }
+  .program-modal-actions > * { width: 100%; }
+}
