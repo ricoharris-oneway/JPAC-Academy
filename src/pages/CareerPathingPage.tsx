@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { careerMoveForDate, careerPaths, careerPracticeTools, type CareerCategory } from '../features/career-pathing/careerPathing';
 import { CareerCatalog, CareerFilters, CareerTools, categoryLabel, focusCareerDetail } from '../features/career-pathing/CareerCatalog';
 import { careerRoadmapForPath, careerRoadmapStatusLabel } from '../features/career-pathing/careerRoadmap';
+import { loadMyCourses, type AcademyCourse } from '../lib/studentAccess';
+import { presentStudentProgress } from '../lib/progressPresentation';
 import { useMemberJourney } from '../context/MemberJourneyContext';
 import '../styles/career-pathing.css';
 
@@ -13,10 +15,15 @@ export function CareerPathingPage(): JSX.Element {
   const [paused, setPaused] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [courses, setCourses] = useState<AcademyCourse[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState('');
+  useEffect(() => { let active = true; void loadMyCourses().then(result => { if (!active) return; setCourses(result.data); setCoursesError(result.error); setCoursesLoading(false); }); return () => { active = false; }; }, []);
   useEffect(() => { if (persistedPath) setSelectedPathId(persistedPath); }, [persistedPath]);
   const visiblePaths = careerPaths.filter(path => category === 'all' || path.category === category);
   const selectedPath = careerPaths.find(path => path.id === selectedPathId) ?? careerPaths[0];
   const selectedRoadmap = careerRoadmapForPath(selectedPath);
+  const courseByProgram = new Map(courses.map(course => [course.slug, course]));
   async function saveSelectedPath(): Promise<void> {
     setSaving(true); setSaveMessage('');
     try { await selectPath(selectedPath.id); setSaveMessage('Your Career Path is saved.'); }
@@ -32,13 +39,13 @@ export function CareerPathingPage(): JSX.Element {
     <section className="career-path-roadmap career-path-roadmap-featured" id="career-selected-path" tabIndex={-1} aria-labelledby="career-roadmap-title">
       <div><span>Your creative roadmap</span><h2 id="career-roadmap-title">{selectedPath.icon} {selectedPath.title}</h2><p className="career-detail-meta">{categoryLabel(selectedPath.category)} · {selectedPath.status}</p><p>{selectedPath.description}</p><strong>{selectedPath.outcome}</strong><h3>Connected JPAC programs</h3><div className="career-program-list">{selectedPath.connectedPrograms.map(program => <span key={program}>{program}</span>)}</div><p className="career-roadmap-note">Your selected path is the primary experience. Explore another path below when your direction changes.</p></div>
       <div className="career-roadmap-grid" aria-label={`${selectedPath.title} roadmap`}>
-        <div className="career-progress"><span>Recommended sequence</span><strong>Level 1 → Level 4 · {selectedRoadmap.length} connected programs</strong><div role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={2} aria-label="Current recommended level: 2"><i style={{ width: '50%' }} /></div></div>
+        <div className="career-progress"><span>Recommended sequence</span><strong>Level 1 → Level 4 · {selectedRoadmap.length} connected programs</strong><p className="career-roadmap-data-note">{coursesLoading ? 'Checking your authorized course progress…' : coursesError ? 'Course progress is unavailable right now; no status is asserted.' : 'Only authorized course progress is shown; roadmap levels remain unasserted unless the app has level-specific evidence.'}</p></div>
         <div className="career-building-blocks"><span>Building blocks for this path</span><div>{selectedRoadmap.map(program => <b key={program.slug}>{program.title}</b>)}</div></div>
         <div className="career-program-roadmap">
-          {selectedRoadmap.map(program => <section className="career-program-cluster" key={program.slug} aria-labelledby={`roadmap-program-${program.slug}`}>
-            <div className="career-program-heading"><span className="career-roadmap-spark" aria-hidden="true">✦</span><div><h3 id={`roadmap-program-${program.slug}`}>{program.title}</h3><p>JPAC program pathway · follow Levels 1–4 in order</p></div></div>
+          {selectedRoadmap.map(program => { const course = courseByProgram.get(program.slug); const progress = course ? presentStudentProgress({ progress: course.progress, courseSlug: course.slug, publishedModuleCount: course.published_module_count, level: course.enrollment_level }) : null; return <section className="career-program-cluster" key={program.slug} aria-labelledby={`roadmap-program-${program.slug}`}>
+            <div className="career-program-heading"><span className="career-roadmap-spark" aria-hidden="true">✦</span><div><h3 id={`roadmap-program-${program.slug}`}>{program.title}</h3><p>{course ? `Authorized course · ${progress?.wording ?? 'Progress unavailable'}` : 'JPAC program pathway · access and progress not available for this program'}</p></div></div>
             <ol className="career-level-grid">{program.levels.map(level => <li className={`career-level-node ${level.status}`} key={level.level}><span className="career-level-number">L{level.level}</span><div><strong>{level.title}</strong><small>{level.description}</small><em>{careerRoadmapStatusLabel(level.status)}</em></div></li>)}</ol>
-          </section>)}
+          </section>; })}
         </div>
         <p className="career-roadmap-guardrail">This roadmap is a visual recommendation layer. Enrollment, course access, completion records, and academic decisions remain governed by existing JPAC systems.</p>
       </div>

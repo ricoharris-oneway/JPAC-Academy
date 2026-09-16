@@ -1,7 +1,7 @@
 import { memberPrograms } from '../../data/memberPrograms';
 import { careerPaths, type CareerPath } from './careerPathing';
 
-export type CareerRoadmapStatus = 'completed' | 'current' | 'available' | 'locked';
+export type CareerRoadmapStatus = 'completed' | 'current' | 'available' | 'locked' | 'unknown';
 export type CareerRoadmapLevel = {
   level: 1 | 2 | 3 | 4;
   title: string;
@@ -15,7 +15,6 @@ export type CareerRoadmapProgram = {
 };
 
 const levelNames = ['Foundations', 'Core Practice', 'Portfolio Build', 'Professional Showcase'] as const;
-const statusByLevel: CareerRoadmapStatus[] = ['completed', 'current', 'available', 'locked'];
 const programSlugByLabel = new Map([
   ...memberPrograms.map((program) => [program.title, program.slug] as const),
   ['Music Business', 'music-business-artist-development'],
@@ -53,7 +52,7 @@ function roadmapProgram(programLabel: string): CareerRoadmapProgram {
       level: (index + 1) as 1 | 2 | 3 | 4,
       title,
       description: descriptionsByLevel[index],
-      status: statusByLevel[index],
+      status: 'unknown',
     })),
   };
 }
@@ -72,5 +71,6 @@ export function careerRoadmapStatusLabel(status: CareerRoadmapStatus): string {
     current: 'Current · You are here',
     available: 'Available',
     locked: 'Locked · Upcoming',
+    unknown: 'Status unavailable · Not asserted',
   }[status];
 }
