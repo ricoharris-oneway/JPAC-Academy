@@ -22,8 +22,8 @@ export function CareerPathingPage(): JSX.Element {
   useEffect(() => { if (persistedPath) setSelectedPathId(persistedPath); }, [persistedPath]);
   const visiblePaths = careerPaths.filter(path => category === 'all' || path.category === category);
   const selectedPath = careerPaths.find(path => path.id === selectedPathId) ?? careerPaths[0];
-  const selectedRoadmap = careerRoadmapForPath(selectedPath);
   const courseByProgram = new Map(courses.map(course => [course.slug, course]));
+  const selectedRoadmap = careerRoadmapForPath(selectedPath, courseByProgram);
   async function saveSelectedPath(): Promise<void> {
     setSaving(true); setSaveMessage('');
     try { await selectPath(selectedPath.id); setSaveMessage('Your Career Path is saved.'); }
@@ -43,7 +43,7 @@ export function CareerPathingPage(): JSX.Element {
         <div className="career-building-blocks"><span>Building blocks for this path</span><div>{selectedRoadmap.map(program => <b key={program.slug}>{program.title}</b>)}</div></div>
         <div className="career-program-roadmap">
           {selectedRoadmap.map(program => { const course = courseByProgram.get(program.slug); const progress = course ? presentStudentProgress({ progress: course.progress, courseSlug: course.slug, publishedModuleCount: course.published_module_count, level: course.enrollment_level }) : null; return <section className="career-program-cluster" key={program.slug} aria-labelledby={`roadmap-program-${program.slug}`}>
-            <div className="career-program-heading"><span className="career-roadmap-spark" aria-hidden="true">✦</span><div><h3 id={`roadmap-program-${program.slug}`}>{program.title}</h3><p>{course ? `Authorized course · ${progress?.wording ?? 'Progress unavailable'}` : 'JPAC program pathway · access and progress not available for this program'}</p></div></div>
+            <div className="career-program-heading"><span className="career-roadmap-spark" aria-hidden="true">✦</span><div><h3 id={`roadmap-program-${program.slug}`}>{program.title}</h3><p>{course ? `Authorized course · ${progress?.wording ?? 'Progress unavailable'} · level-specific completion is not asserted` : 'Not enrolled / access unavailable in current student course data'}</p></div></div>
             <ol className="career-level-grid">{program.levels.map(level => <li className={`career-level-node ${level.status}`} key={level.level}><span className="career-level-number">L{level.level}</span><div><strong>{level.title}</strong><small>{level.description}</small><em>{careerRoadmapStatusLabel(level.status)}</em></div></li>)}</ol>
           </section>; })}
         </div>

@@ -1,7 +1,7 @@
 import { memberPrograms } from '../../data/memberPrograms';
 import { careerPaths, type CareerPath } from './careerPathing';
 
-export type CareerRoadmapStatus = 'completed' | 'current' | 'available' | 'locked' | 'unknown';
+export type CareerRoadmapStatus = 'not-enrolled' | 'enrolled' | 'in-progress' | 'completion-unavailable';
 export type CareerRoadmapLevel = {
   level: 1 | 2 | 3 | 4;
   title: string;
@@ -12,6 +12,10 @@ export type CareerRoadmapProgram = {
   slug: string;
   title: string;
   levels: CareerRoadmapLevel[];
+};
+export type RoadmapCourseEvidence = {
+  progress: number | null;
+  enrollment_level: number;
 };
 
 const levelNames = ['Foundations', 'Core Practice', 'Portfolio Build', 'Professional Showcase'] as const;
@@ -42,7 +46,15 @@ const descriptionsByLevel = [
   'Prepare a reviewed showcase appropriate to your direction.',
 ];
 
-function roadmapProgram(programLabel: string): CareerRoadmapProgram {
+function statusForCourse(course: RoadmapCourseEvidence | undefined): CareerRoadmapStatus {
+  if (!course) return 'not-enrolled';
+  if (course.progress === null || !Number.isFinite(Number(course.progress))) return 'enrolled';
+  if (Number(course.progress) > 0 && Number(course.progress) < 100) return 'in-progress';
+  if (Number(course.progress) >= 100) return 'completion-unavailable';
+  return 'enrolled';
+}
+
+function roadmapProgram(programLabel: string, course?: RoadmapCourseEvidence): CareerRoadmapProgram {
   const slug = programSlugByLabel.get(programLabel) ?? programLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const classNames = classNamesByProgram[slug] ?? levelNames.map((name) => `${name} Lab`);
   return {
@@ -52,25 +64,25 @@ function roadmapProgram(programLabel: string): CareerRoadmapProgram {
       level: (index + 1) as 1 | 2 | 3 | 4,
       title,
       description: descriptionsByLevel[index],
-      status: 'unknown',
+      status: statusForCourse(course),
     })),
   };
 }
 
 const roadmapByPathId = new Map(
-  careerPaths.map((path) => [path.id, path.connectedPrograms.map(roadmapProgram)] as const),
+  careerPaths.map((path) => [path.id, path.connectedPrograms.map((program) => roadmapProgram(program))] as const),
 );
 
-export function careerRoadmapForPath(path: CareerPath): CareerRoadmapProgram[] {
-  return roadmapByPathId.get(path.id) ?? path.connectedPrograms.map(roadmapProgram);
+export function careerRoadmapForPath(path: CareerPath, courses: ReadonlyMap<string, RoadmapCourseEvidence> = new Map()): CareerRoadmapProgram[] {
+  const programs = roadmapByPathId.get(path.id) ?? path.connectedPrograms.map((program) => roadmapProgram(program));
+  return programs.map((program) => roadmapProgram(program.title, courses.get(program.slug)));
 }
 
 export function careerRoadmapStatusLabel(status: CareerRoadmapStatus): string {
   return {
-    completed: 'Completed',
-    current: 'Current · You are here',
-    available: 'Available',
-    locked: 'Locked · Upcoming',
-    unknown: 'Status unavailable · Not asserted',
+    'not-enrolled': 'Not enrolled / access unavailable',
+    enrolled: 'Enrolled · access granted',
+    'in-progress': 'In progress',
+    'completion-unavailable': 'Completion data unavailable',
   }[status];
 }
