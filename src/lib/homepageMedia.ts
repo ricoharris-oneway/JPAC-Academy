@@ -1,4 +1,4 @@
-import { homepageMediaSlots, programArtwork, careerArtwork, toolArtwork, heroArtwork } from '../data/memberAssetMap';
+import { artworkForHomepageCategory, homepageMediaSlots } from '../data/memberAssetMap';
 import { supabase } from './supabase';
 
 export type HomepageMediaOverride = {
@@ -16,16 +16,11 @@ export type HomepageMediaSlot = (typeof homepageMediaSlots)[number] & {
   defaultImagePath: string;
 };
 
-const defaultForSlot = (slotKey: string) => {
-  const [kind, id] = slotKey.split(':');
-  if (kind === 'program') return programArtwork[id] || '';
-  if (kind === 'career') return careerArtwork[id] || '';
-  if (kind === 'hero') return heroArtwork;
-  return toolArtwork[id] || '';
-};
-
 export function getHomepageMediaSlots(): HomepageMediaSlot[] {
-  return homepageMediaSlots.map((slot) => ({ ...slot, defaultImagePath: defaultForSlot(slot.slotKey) }));
+  return homepageMediaSlots.map((slot) => ({
+    ...slot,
+    defaultImagePath: artworkForHomepageCategory(slot.category),
+  }));
 }
 
 export async function loadHomepageMediaOverrides(): Promise<Map<string, HomepageMediaOverride>> {
