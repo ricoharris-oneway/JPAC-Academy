@@ -34,6 +34,7 @@ const nav = [
   ['Admissions Center', '/manual-student', '🎟️', ['admin', 'developer']],
   ['JPAC LAB Manager', '/lab-manager', '🧰', ['admin', 'developer']],
   ['Admin Center', '/admin', '🛡️', ['admin', 'developer']],
+  ['Homepage Media', '/admin/homepage-media', '🖼️', ['admin', 'developer']],
   ['Legal Policy Editor', '/admin/policies', '⚖️', ['admin', 'developer']],
   ['Legal & Policies', '/legal', '⚖️', ['student', 'teacher', 'admin', 'developer']],
 ] as const;

@@ -5,7 +5,7 @@
 }
 
 .member-launch .member-hero:before {
-  background-image: url('/creative-assets/jpac-showcase-stage.webp');
+  background-image: var(--member-hero-image, url('/creative-assets/jpac-showcase-stage.webp'));
   background-position: center;
   filter: saturate(1.15) contrast(1.08);
   transform: scale(1.04);

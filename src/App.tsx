@@ -3,6 +3,7 @@ import './styles/student-access.css';
 import './styles/ai-instructor.css';
 import './styles/member-launch.css';
 import './styles/member-launch-enhancements.css';
+import './styles/homepage-media.css';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
@@ -47,6 +48,7 @@ import { PaymentLedgerPage } from './pages/PaymentLedgerPage';
 import { LegalPoliciesPage } from './pages/LegalPoliciesPage';
 import { StudentConsentPage } from './pages/StudentConsentPage';
 import { ConsentLedgerPage } from './pages/ConsentLedgerPage';
+import { HomepageMediaPage } from './pages/HomepageMediaPage';
 
 function Loading() {
   return <div className="auth-loading"><img src="/assets/jpac-official-logo.png.png" alt="J. Moné's Performing Arts Center" /><p>Preparing your creative workspace…</p></div>;
@@ -128,6 +130,7 @@ export default function App() {
       <Route path="/manual-student" element={<RequireRole roles={admins}><ManualStudentPage /></RequireRole>} />
       <Route path="/lab-manager" element={<RequireRole roles={admins}><LabManagerPage /></RequireRole>} />
       <Route path="/admin" element={<RequireRole roles={admins}><AdminPage /></RequireRole>} />
+      <Route path="/admin/homepage-media" element={<RequireRole roles={admins}><HomepageMediaPage /></RequireRole>} />
       <Route path="/admin/policies" element={<RequireRole roles={admins}><LegalPoliciesPage editable /></RequireRole>} />
       <Route path="/admin/policies/:policySlug" element={<RequireRole roles={admins}><LegalPoliciesPage editable /></RequireRole>} />
       <Route path="/developer" element={<Navigate to="/admin" replace />} />
