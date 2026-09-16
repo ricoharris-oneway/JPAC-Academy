@@ -49,6 +49,7 @@ import { LegalPoliciesPage } from './pages/LegalPoliciesPage';
 import { StudentConsentPage } from './pages/StudentConsentPage';
 import { ConsentLedgerPage } from './pages/ConsentLedgerPage';
 import { HomepageMediaPage } from './pages/HomepageMediaPage';
+import { ApprovalQueuePage } from './pages/ApprovalQueuePage';
 
 function Loading() {
   return <div className="auth-loading"><img src="/assets/jpac-official-logo.png.png" alt="J. Moné's Performing Arts Center" /><p>Preparing your creative workspace…</p></div>;
@@ -125,6 +126,7 @@ export default function App() {
       <Route path="/staff/course-enrollment" element={<RequireRole roles={staff}><CourseEnrollmentManagerPage /></RequireRole>} />
       <Route path="/staff/payment-ledger" element={<RequireRole roles={staff}><PaymentLedgerPage /></RequireRole>} />
       <Route path="/staff/consent-ledger" element={<RequireRole roles={staff}><ConsentLedgerPage /></RequireRole>} />
+      <Route path="/staff/approval-queue" element={<RequireRole roles={staff}><ApprovalQueuePage /></RequireRole>} />
       <Route path="/teacher" element={<RequireRole roles={staff}><TeacherPage /></RequireRole>} />
       <Route path="/enrollment" element={<RequireRole roles={admins}><EnrollmentManagerPage /></RequireRole>} />
       <Route path="/manual-student" element={<RequireRole roles={admins}><ManualStudentPage /></RequireRole>} />
