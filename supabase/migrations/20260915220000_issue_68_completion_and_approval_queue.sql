@@ -40,36 +40,45 @@ language sql
 security definer
 set search_path = public
 as $$
-  select e.id, coalesce(p.display_name, 'Unnamed student'), coalesce(p.email, 'No email'),
-    'Enrollment verification', e.status, e.enrolled_at, '/enrollment'
-  from public.enrollments e
-  join public.profiles p on p.id = e.student_id
-  where public.is_academy_staff() and e.status in ('pending', 'awaiting_verification')
-  union all
-  select l.id, coalesce(p.display_name, 'Unnamed student'), coalesce(p.email, 'No email'),
-    'Payment verification', l.payment_status, l.created_at, '/staff/payment-ledger'
-  from public.student_payment_ledger l
-  join public.profiles p on p.id = l.student_id
-  where public.is_academy_staff() and l.payment_status = 'pending'
-  union all
-  select l.id, coalesce(p.display_name, 'Unnamed student'), coalesce(p.email, 'No email'),
-    'Consent review', l.consent_status, l.updated_at, '/staff/consent-ledger'
-  from public.student_consent_ledger l
-  join public.profiles p on p.id = l.student_id
-  where public.is_academy_staff() and l.consent_status in ('incomplete', 'needs_review')
-  union all
-  select s.id, coalesce(p.display_name, 'Unnamed student'), coalesce(p.email, 'No email'),
-    'Assignment submission', s.status, s.submitted_at, '/teacher'
-  from public.submissions s
-  join public.profiles p on p.id = s.student_id
-  where public.is_academy_staff() and s.status in ('submitted', 'under_review')
-  union all
-  select ps.id, trim(ps.first_name || ' ' || ps.last_name), coalesce(ps.email, 'No email'),
-    'Admissions follow-up', ps.enrollment_status, ps.created_at, '/manual-student'
-  from public.pending_students ps
-  where public.is_academy_staff()
-    and (ps.enrollment_status = 'pending' or ps.invitation_status in ('not_sent', 'queued', 'sent'))
-  order by item_date desc;
+  select q.item_id, q.student_name, q.student_email, q.item_type, q.item_status,
+    q.item_date, q.action_route
+  from (
+    select e.id as item_id, coalesce(p.display_name, 'Unnamed student') as student_name,
+      coalesce(p.email, 'No email') as student_email, 'Enrollment verification' as item_type,
+      e.status as item_status, e.enrolled_at as item_date, '/enrollment' as action_route
+    from public.enrollments e
+    join public.profiles p on p.id = e.student_id
+    where public.is_academy_staff() and e.status in ('pending', 'awaiting_verification')
+    union all
+    select l.id as item_id, coalesce(p.display_name, 'Unnamed student') as student_name,
+      coalesce(p.email, 'No email') as student_email, 'Payment verification' as item_type,
+      l.payment_status as item_status, l.created_at as item_date, '/staff/payment-ledger' as action_route
+    from public.student_payment_ledger l
+    join public.profiles p on p.id = l.student_id
+    where public.is_academy_staff() and l.payment_status = 'pending'
+    union all
+    select l.id as item_id, coalesce(p.display_name, 'Unnamed student') as student_name,
+      coalesce(p.email, 'No email') as student_email, 'Consent review' as item_type,
+      l.consent_status as item_status, l.updated_at as item_date, '/staff/consent-ledger' as action_route
+    from public.student_consent_ledger l
+    join public.profiles p on p.id = l.student_id
+    where public.is_academy_staff() and l.consent_status in ('incomplete', 'needs_review')
+    union all
+    select s.id as item_id, coalesce(p.display_name, 'Unnamed student') as student_name,
+      coalesce(p.email, 'No email') as student_email, 'Assignment submission' as item_type,
+      s.status as item_status, s.submitted_at as item_date, '/teacher' as action_route
+    from public.submissions s
+    join public.profiles p on p.id = s.student_id
+    where public.is_academy_staff() and s.status in ('submitted', 'under_review')
+    union all
+    select ps.id as item_id, trim(ps.first_name || ' ' || ps.last_name) as student_name,
+      coalesce(ps.email, 'No email') as student_email, 'Admissions follow-up' as item_type,
+      ps.enrollment_status as item_status, ps.created_at as item_date, '/manual-student' as action_route
+    from public.pending_students ps
+    where public.is_academy_staff()
+      and (ps.enrollment_status = 'pending' or ps.invitation_status in ('not_sent', 'queued', 'sent'))
+  ) q
+  order by q.item_date desc;
 $$;
 
 revoke all on function public.jpac_staff_approval_queue() from public, anon;
