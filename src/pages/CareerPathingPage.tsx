@@ -2,17 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { careerMoveForDate, careerPaths, careerPracticeTools, type CareerCategory } from '../features/career-pathing/careerPathing';
 import { CareerCatalog, CareerFilters, CareerTools, categoryLabel, focusCareerDetail } from '../features/career-pathing/CareerCatalog';
+import { careerRoadmapForPath, careerRoadmapStatusLabel } from '../features/career-pathing/careerRoadmap';
 import { useMemberJourney } from '../context/MemberJourneyContext';
 import '../styles/career-pathing.css';
-
-const journey = [
-  ['Discover', 'Notice what inspires you. Explore a direction that feels worth trying.'],
-  ['Build Skills', 'Connect your goal to published lessons you are already authorized to access.'],
-  ['Practice', 'Try a focused exercise with a recommended Creator Tool.'],
-  ['Create Portfolio Evidence', 'Choose original work that shows a creative choice and your growth.'],
-  ['Teacher Review', 'Ask for feedback, reflect, and make one thoughtful revision.'],
-  ['Showcase / Next Opportunity', 'Discuss an appropriate way to share your work and a possible next step with your teacher.'],
-];
 
 export function CareerPathingPage(): JSX.Element {
   const { selectedPath: persistedPath, loading: journeyLoading, error: journeyError, selectPath } = useMemberJourney();
@@ -24,6 +16,7 @@ export function CareerPathingPage(): JSX.Element {
   useEffect(() => { if (persistedPath) setSelectedPathId(persistedPath); }, [persistedPath]);
   const visiblePaths = careerPaths.filter(path => category === 'all' || path.category === category);
   const selectedPath = careerPaths.find(path => path.id === selectedPathId) ?? careerPaths[0];
+  const selectedRoadmap = careerRoadmapForPath(selectedPath);
   async function saveSelectedPath(): Promise<void> {
     setSaving(true); setSaveMessage('');
     try { await selectPath(selectedPath.id); setSaveMessage('Your Career Path is saved.'); }
@@ -39,9 +32,15 @@ export function CareerPathingPage(): JSX.Element {
     <section className="career-path-roadmap career-path-roadmap-featured" id="career-selected-path" tabIndex={-1} aria-labelledby="career-roadmap-title">
       <div><span>Your creative roadmap</span><h2 id="career-roadmap-title">{selectedPath.icon} {selectedPath.title}</h2><p className="career-detail-meta">{categoryLabel(selectedPath.category)} · {selectedPath.status}</p><p>{selectedPath.description}</p><strong>{selectedPath.outcome}</strong><h3>Connected JPAC programs</h3><div className="career-program-list">{selectedPath.connectedPrograms.map(program => <span key={program}>{program}</span>)}</div><p className="career-roadmap-note">Your selected path is the primary experience. Explore another path below when your direction changes.</p></div>
       <div className="career-roadmap-grid" aria-label={`${selectedPath.title} roadmap`}>
-        <div className="career-progress"><span>Roadmap progress</span><strong>1 of {journey.length} milestones</strong><div role="progressbar" aria-valuemin={0} aria-valuemax={journey.length} aria-valuenow={1}><i style={{ width: `${100 / journey.length}%` }} /></div></div>
-        <div className="career-building-blocks"><span>Building blocks for this path</span><div>{selectedPath.connectedPrograms.map(program => <b key={program}>{program}</b>)}</div></div>
-        <ol className="career-node-grid">{journey.map(([title, description], index) => { const status = index === 0 ? 'completed' : index === 1 ? 'active' : 'locked'; return <li className={`roadmap-node ${status}`} data-state={status} key={title}><span className="roadmap-node-marker" aria-hidden="true">{status === 'completed' ? '✓' : status === 'locked' ? '○' : '✦'}</span><div><strong>{title}</strong><small>{description}</small><em>{status === 'active' ? 'You are here' : status}</em></div></li>; })}</ol>
+        <div className="career-progress"><span>Recommended sequence</span><strong>Level 1 → Level 4 · {selectedRoadmap.length} connected programs</strong><div role="progressbar" aria-valuemin={1} aria-valuemax={4} aria-valuenow={2} aria-label="Current recommended level: 2"><i style={{ width: '50%' }} /></div></div>
+        <div className="career-building-blocks"><span>Building blocks for this path</span><div>{selectedRoadmap.map(program => <b key={program.slug}>{program.title}</b>)}</div></div>
+        <div className="career-program-roadmap">
+          {selectedRoadmap.map(program => <section className="career-program-cluster" key={program.slug} aria-labelledby={`roadmap-program-${program.slug}`}>
+            <div className="career-program-heading"><span className="career-roadmap-spark" aria-hidden="true">✦</span><div><h3 id={`roadmap-program-${program.slug}`}>{program.title}</h3><p>JPAC program pathway · follow Levels 1–4 in order</p></div></div>
+            <ol className="career-level-grid">{program.levels.map(level => <li className={`career-level-node ${level.status}`} key={level.level}><span className="career-level-number">L{level.level}</span><div><strong>{level.title}</strong><small>{level.description}</small><em>{careerRoadmapStatusLabel(level.status)}</em></div></li>)}</ol>
+          </section>)}
+        </div>
+        <p className="career-roadmap-guardrail">This roadmap is a visual recommendation layer. Enrollment, course access, completion records, and academic decisions remain governed by existing JPAC systems.</p>
       </div>
     </section>
     <section className="career-path-choice" aria-labelledby="career-path-choice-title">
