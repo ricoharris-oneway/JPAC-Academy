@@ -8,7 +8,7 @@ export type MissionCompletion={video_percent:number;assignment_score:number;core
 type StageState='locked'|'available'|'active'|'complete'|'revision';
 type WorkflowStep={label:string;detail:string;state:StageState;target:string};
 
-const stageLabel:Record<StageState,string>={locked:'Locked',available:'Ready',active:'Next',complete:'Complete',revision:'Revise'};
+const stageLabel:Record<StageState,string>={locked:'Locked',available:'Do this next',active:'You are here',complete:'Completed',revision:'Revise'};
 function statusLabel(value:string){return value.replaceAll('_',' ').replace(/\b\w/g,letter=>letter.toUpperCase())}
 
 export function MissionProgress({completion,lessons,progress,bonusEarned,bonusAvailable,hasRevision}:{completion:MissionCompletion|null;lessons:CourseLesson[];progress:LessonProgress[];bonusEarned:number;bonusAvailable:number;hasRevision:boolean}){
@@ -30,19 +30,20 @@ export function MissionProgress({completion,lessons,progress,bonusEarned,bonusAv
 export function MissionNextStep({completion,lessons,progress,requiredActivity,attempts,nextModule,courseId,onStart,busy}:{completion:MissionCompletion|null;lessons:CourseLesson[];progress:LessonProgress[];requiredActivity:MissionActivity|null;attempts:MissionAttempt[];nextModule:CourseModule|null;courseId:string;onStart?:()=>void;busy?:boolean}){
   const firstIncomplete=lessons.find(lesson=>progress.find(item=>item.lesson_id===lesson.id)?.status!=='completed');
   const latest=attempts[0];
+  let stepNumber=1;
   let step:{label:string;detail:string;target:string;action:'scroll'|'start'|'link'}={label:'Start mission',detail:'Read the mission brief so the required workflow can begin.',target:'mission-brief',action:'scroll'};
   if(!completion?.intro_complete)step={label:'Start mission',detail:'Begin with the mission brief to unlock the guided learning sequence.',target:'mission-brief',action:'start'};
-  else if(firstIncomplete)step={label:'Open lesson material',detail:`Continue with ${firstIncomplete.title}.`,target:`/courses/${courseId}/lessons/${firstIncomplete.id}`,action:'link'};
-  else if(Number(completion?.video_percent||0)<90)step={label:'Watch the video',detail:'Watch at least 90% of the approved instructional video to complete this Core step.',target:'mission-watch',action:'scroll'};
-  else if(!requiredActivity)step={label:'Review mission completion',detail:'No required assignment is published yet. Review the available mission evidence.',target:'mission-master',action:'scroll'};
-  else if(latest?.status==='revision_requested')step={label:'Review feedback and revise',detail:'Use the teacher feedback to prepare and submit another attempt.',target:'mission-feedback',action:'scroll'};
-  else if(!latest)step={label:'Submit assignment',detail:`Create and submit ${requiredActivity.title} for teacher review.`,target:'mission-create',action:'scroll'};
-  else if(!completion?.assessment_passed)step={label:'Await teacher review',detail:'Your submission is recorded. This step completes when an authorized teacher review is approved.',target:'mission-feedback',action:'scroll'};
-  else if(!completion?.is_complete)step={label:'Review completion checklist',detail:'Finish the remaining Core requirements shown below.',target:'mission-master',action:'scroll'};
-  else if(nextModule)step={label:'Continue to next module',detail:`${nextModule.title} is the next unlocked mission.`,target:`/courses/${courseId}/modules/${nextModule.id}`,action:'link'};
-  else step={label:'Review your completed mission',detail:'This is the last currently published mission in this pathway.',target:'mission-master',action:'scroll'};
+  else if(firstIncomplete){stepNumber=2;step={label:'Open lesson material',detail:`Continue with ${firstIncomplete.title}. Finish this step to keep moving.`,target:`/courses/${courseId}/lessons/${firstIncomplete.id}`,action:'link'};}
+  else if(Number(completion?.video_percent||0)<90){stepNumber=3;step={label:'Watch the video',detail:'Watch at least 90% of the approved instructional video to complete this Core step.',target:'mission-watch',action:'scroll'};}
+  else if(!requiredActivity){stepNumber=7;step={label:'Review mission completion',detail:'No required assignment is published yet. Review the available mission evidence.',target:'mission-master',action:'scroll'};}
+  else if(latest?.status==='revision_requested'){stepNumber=6;step={label:'Review feedback and revise',detail:'Use the teacher feedback to prepare and submit another attempt.',target:'mission-feedback',action:'scroll'};}
+  else if(!latest){stepNumber=5;step={label:'Submit assignment',detail:`Create and submit ${requiredActivity.title} for teacher review.`,target:'mission-create',action:'scroll'};}
+  else if(!completion?.assessment_passed){stepNumber=6;step={label:'Await teacher review',detail:'Your submission is recorded. This step completes when an authorized teacher review is approved.',target:'mission-feedback',action:'scroll'};}
+  else if(!completion?.is_complete){stepNumber=7;step={label:'Review completion checklist',detail:'Finish the remaining Core requirements shown below.',target:'mission-master',action:'scroll'};}
+  else if(nextModule){stepNumber=7;step={label:'Continue to next module',detail:`${nextModule.title} is the next unlocked mission.`,target:`/courses/${courseId}/modules/${nextModule.id}`,action:'link'};}
+  else {stepNumber=7;step={label:'Review your completed mission',detail:'This is the last currently published mission in this pathway.',target:'mission-master',action:'scroll'};}
   const jumpTo=(id:string)=>{const target=document.getElementById(id);if(!target)return;target.scrollIntoView({behavior:'smooth',block:'start'});target.focus({preventScroll:true});};
-  return <section className="mission-next-step" aria-labelledby="mission-next-step-title"><div><span className="mission-section-label">Do this next</span><h2 id="mission-next-step-title">{step.label}</h2><p>{step.detail}</p></div>{step.action==='link'?<Link className="button button-primary" to={step.target}>Go to next step</Link>:step.action==='start'?<button className="button button-primary" disabled={busy} onClick={onStart}>{busy?'Starting…':'Start mission'}</button>:<button className="button button-primary" onClick={()=>jumpTo(step.target)}>Go to next step</button>}</section>
+  return <section className="mission-next-step" aria-labelledby="mission-next-step-title"><div className="mission-next-step-copy"><span className="mission-section-label">Do this next</span><small className="mission-step-count">Step {stepNumber} of 7</small><h2 id="mission-next-step-title">{step.label}</h2><p>{step.detail}</p><strong className="mission-next-step-note">{stepNumber<7?'Finish this step to keep moving.':'Next module unlocks after this step is complete.'}</strong></div>{step.action==='link'?<Link className="button button-primary" to={step.target}>Go to next step</Link>:step.action==='start'?<button className="button button-primary" disabled={busy} onClick={onStart}>{busy?'Starting…':'Start mission'}</button>:<button className="button button-primary" onClick={()=>jumpTo(step.target)}>Go to next step</button>}</section>
 }
 
 export function MissionBrief({module,requiredActivity,bonusAvailable,onStart,busy,started}:{module:CourseModule;requiredActivity:MissionActivity|null;bonusAvailable:number;onStart:()=>void;busy:boolean;started:boolean}){

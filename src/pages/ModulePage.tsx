@@ -49,8 +49,8 @@ export function ModulePage(){
   if(!course||!module)return <section className="card card-pad locked-course"><span>🔒</span><h1>Mission locked</h1><p>{message||'Complete the previous mission requirements to unlock this creative session.'}</p><Link className="button button-secondary" to={`/courses/${courseId}`}>Return to course</Link></section>;
   return <div className="creator-mission"><Link className="text-link" to={`/courses/${course.id}`}>← {course.title}</Link>
     <div className="eyebrow">Level {module.level_number||1} · Mission {module.level_module_number||module.sort_order}</div>
-    <MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/>
     <MissionNextStep completion={completion} lessons={lessons} progress={progress} requiredActivity={requiredActivity} attempts={requiredAttempts} nextModule={nextModule} courseId={course.id} onStart={()=>void completeIntro()} busy={busy}/>
+    <MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/>
     <MissionBrief module={module} requiredActivity={requiredActivity} bonusAvailable={bonusAvailable} onStart={()=>void completeIntro()} busy={busy} started={Boolean(completion?.intro_complete)}/>
     <JPACCoachPanel context={buildModuleCoachContext({courseId:course.id,module,instructions:requiredActivity?.instructions,rubric:requiredActivity?.rubric,teacherFeedback:requiredAttempts[0]?.teacher_feedback,hasPreparedEvidence:Boolean(file)})}/>
     <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
