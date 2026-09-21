@@ -3,11 +3,16 @@ import{json,parseBody,createServerSupabase}from'./_lib/integration.js';
 const uuid=/^[0-9a-f-]{36}$/i;
 const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
 
-async function sendWelcomeEmail(admin,user,studentId){
+async function sendResendEmail(payload){
   const apiKey=process.env.RESEND_API_KEY;
-  if(!apiKey)return{status:500,body:{ok:false,error:'RESEND_API_KEY is not configured'}};
-  if(!uuid.test(studentId))return{status:400,body:{ok:false,error:'A valid student is required'}};
+  if(!apiKey)return{ok:false,status:500,error:'RESEND_API_KEY is not configured'};
+  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const result=await response.json().catch(()=>({}));
+  return response.ok?{ok:true,status:200,id:result?.id||null}:{ok:false,status:400,error:result?.message||'Email could not be sent'};
+}
 
+async function sendWelcomeEmail(admin,user,studentId){
+  if(!uuid.test(studentId))return{status:400,body:{ok:false,error:'A valid student is required'}};
   const[{data:student,error:studentError},{data:enrollments,error:enrollmentError},{data:guardians,error:guardianError}]=await Promise.all([
     admin.from('profiles').select('id,email,display_name,first_name,last_name,role').eq('id',studentId).maybeSingle(),
     admin.from('enrollments').select('status,course:courses(title)').eq('student_id',studentId).order('enrolled_at',{ascending:false}),
@@ -25,76 +30,51 @@ async function sendWelcomeEmail(admin,user,studentId){
   const programText=activeCourses.length?activeCourses.join(', '):'Your JPAC Academy program';
   const academyUrl=process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app';
   const primaryGuardian=(guardians||[]).find(g=>g.is_primary)||(guardians||[])[0];
-  const recipients=[student.email];
   const cc=primaryGuardian?.email&&primaryGuardian.email.toLowerCase()!==student.email.toLowerCase()?[primaryGuardian.email]:undefined;
 
-  const subject=`Welcome to JPAC Academy, ${firstName}!`;
-  const html=`<!doctype html><html><body style="margin:0;background:#12091b;font-family:Arial,Helvetica,sans-serif;color:#23172d"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#12091b;padding:32px 16px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden"><tr><td style="background:#2b123d;padding:28px 34px;color:#fff"><div style="font-size:12px;letter-spacing:1.5px;color:#f0c85a;font-weight:700">JPAC ACADEMY ADMISSIONS</div><h1 style="margin:8px 0 0;font-size:30px">Welcome to JPAC Academy</h1></td></tr><tr><td style="padding:34px"><p style="font-size:18px;margin-top:0">Hi ${escapeHtml(firstName)},</p><p>Welcome to JPAC Academy. Your student account is ready for the next step in onboarding.</p><div style="background:#f7f2fb;border:1px solid #e7d9ef;border-radius:12px;padding:18px;margin:24px 0"><strong>Program</strong><br>${escapeHtml(programText)}</div><p>Use the button below to open JPAC Academy. If you have not activated your login yet, use the secure account invitation email you received to create your password first.</p><p style="text-align:center;margin:28px 0"><a href="${academyUrl}" style="display:inline-block;background:#6f2c91;color:#fff;text-decoration:none;font-weight:700;padding:14px 24px;border-radius:999px">Open JPAC Academy</a></p><p><strong>After you sign in:</strong></p><ol style="line-height:1.7"><li>Complete required policies and consent.</li><li>Open My Academy.</li><li>Confirm your assigned course.</li><li>Begin coursework once access is active.</li></ol>${primaryGuardian?`<p style="margin-top:24px"><strong>Parent/Guardian:</strong> ${escapeHtml(primaryGuardian.full_name||'Guardian')} should review and complete required consent information before coursework begins.</p>`:''}<p style="margin-top:28px">Questions? Reply to this email and our admissions team will assist you.</p><p style="margin-bottom:0">JPAC Academy Admissions<br><a href="mailto:admissions@jmonespac.org">admissions@jmonespac.org</a></p></td></tr></table></td></tr></table></body></html>`;
-  const text=`Welcome to JPAC Academy, ${firstName}!\n\nProgram: ${programText}\n\nOpen JPAC Academy: ${academyUrl}\n\nIf you have not activated your login yet, use the secure account invitation email you received to create your password first.\n\nAfter you sign in:\n1. Complete required policies and consent.\n2. Open My Academy.\n3. Confirm your assigned course.\n4. Begin coursework once access is active.\n\nQuestions? Reply to admissions@jmonespac.org.`;
-
-  const resendResponse=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:'JPAC Academy Admissions <admissions@jmonespac.org>',to:recipients,cc,reply_to:'admissions@jmonespac.org',subject,html,text})});
-  const result=await resendResponse.json().catch(()=>({}));
-  if(!resendResponse.ok){
-    await admin.from('system_audit_events').insert({actor_id:user.id,action:'send_student_welcome_email',entity_type:'profile',entity_id:studentId,result:'error',detail:{student_email:student.email,error:result?.message||'Resend request failed'}});
-    return{status:400,body:{ok:false,error:result?.message||'Welcome email could not be sent'}};
-  }
-
-  await admin.from('system_audit_events').insert({actor_id:user.id,action:'send_student_welcome_email',entity_type:'profile',entity_id:studentId,result:'success',detail:{student_email:student.email,guardian_cc:cc?.[0]||null,resend_id:result?.id||null,programs:activeCourses}});
+  const result=await sendResendEmail({from:'JPAC Academy Admissions <admissions@jmonespac.org>',to:[student.email],cc,reply_to:'admissions@jmonespac.org',subject:`Welcome to JPAC Academy, ${firstName}!`,html:`<!doctype html><html><body style="margin:0;background:#12091b;font-family:Arial,Helvetica,sans-serif;color:#23172d"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#12091b;padding:32px 16px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden"><tr><td style="background:#2b123d;padding:28px 34px;color:#fff"><div style="font-size:12px;letter-spacing:1.5px;color:#f0c85a;font-weight:700">JPAC ACADEMY ADMISSIONS</div><h1 style="margin:8px 0 0;font-size:30px">Welcome to JPAC Academy</h1></td></tr><tr><td style="padding:34px"><p style="font-size:18px;margin-top:0">Hi ${escapeHtml(firstName)},</p><p>Welcome to JPAC Academy. Your student account is ready for the next step in onboarding.</p><div style="background:#f7f2fb;border:1px solid #e7d9ef;border-radius:12px;padding:18px;margin:24px 0"><strong>Program</strong><br>${escapeHtml(programText)}</div><p>Use the button below to open JPAC Academy. If you have not activated your login yet, use the secure account setup email from JPAC Admissions to create your password first.</p><p style="text-align:center;margin:28px 0"><a href="${academyUrl}" style="display:inline-block;background:#6f2c91;color:#fff;text-decoration:none;font-weight:700;padding:14px 24px;border-radius:999px">Open JPAC Academy</a></p><p><strong>After you sign in:</strong></p><ol style="line-height:1.7"><li>Complete required policies and consent.</li><li>Open My Academy.</li><li>Confirm your assigned course.</li><li>Begin coursework once access is active.</li></ol>${primaryGuardian?`<p style="margin-top:24px"><strong>Parent/Guardian:</strong> ${escapeHtml(primaryGuardian.full_name||'Guardian')} should review and complete required consent information before coursework begins.</p>`:''}<p style="margin-top:28px">Questions? Reply to this email and our admissions team will assist you.</p><p style="margin-bottom:0">JPAC Academy Admissions<br><a href="mailto:admissions@jmonespac.org">admissions@jmonespac.org</a></p></td></tr></table></td></tr></table></body></html>`,text:`Welcome to JPAC Academy, ${firstName}!\n\nProgram: ${programText}\n\nOpen JPAC Academy: ${academyUrl}\n\nIf you have not activated your login yet, use the secure account setup email from JPAC Admissions to create your password first.\n\nQuestions? Reply to admissions@jmonespac.org.`});
+  if(!result.ok){await admin.from('system_audit_events').insert({actor_id:user.id,action:'send_student_welcome_email',entity_type:'profile',entity_id:studentId,result:'error',detail:{student_email:student.email,error:result.error}});return{status:result.status,body:{ok:false,error:result.error}}}
+  await admin.from('system_audit_events').insert({actor_id:user.id,action:'send_student_welcome_email',entity_type:'profile',entity_id:studentId,result:'success',detail:{student_email:student.email,guardian_cc:cc?.[0]||null,resend_id:result.id,programs:activeCourses}});
   const{data:pending}=await admin.from('pending_students').select('id').eq('linked_profile_id',studentId).maybeSingle();
   if(pending?.id)await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'welcome_email_sent',title:'JPAC welcome email sent',details:`Welcome email sent to ${student.email}${cc?.[0]?` with guardian copy to ${cc[0]}`:''}.`,created_by:user.id});
-  return{status:200,body:{ok:true,id:result?.id||null,message:`Welcome email sent to ${student.email}${cc?.[0]?` and copied to ${cc[0]}`:''}.`}};
+  return{status:200,body:{ok:true,id:result.id,message:`Welcome email sent to ${student.email}${cc?.[0]?` and copied to ${cc[0]}`:''}.`}};
+}
+
+async function sendLoginSetupEmail(admin,user,studentId){
+  if(!uuid.test(studentId))return{status:400,body:{ok:false,error:'A valid student is required'}};
+  const{data:student,error}=await admin.from('profiles').select('id,email,display_name,first_name,last_name,role').eq('id',studentId).maybeSingle();
+  if(error)return{status:400,body:{ok:false,error:error.message}};
+  if(!student||student.role!=='student')return{status:404,body:{ok:false,error:'Academy student not found'}};
+  if(!student.email)return{status:400,body:{ok:false,error:'Student email is required'}};
+  const academyUrl=process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app';
+  const{data:linkData,error:linkError}=await admin.auth.admin.generateLink({type:'recovery',email:student.email,options:{redirectTo:`${academyUrl}/auth/callback`}});
+  if(linkError)return{status:400,body:{ok:false,error:linkError.message}};
+  const actionLink=linkData?.properties?.action_link;
+  if(!actionLink)return{status:500,body:{ok:false,error:'Could not generate a secure account setup link'}};
+  const displayName=student.display_name||`${student.first_name||''} ${student.last_name||''}`.trim()||'JPAC Student';
+  const firstName=student.first_name||displayName.split(' ')[0]||'Student';
+  const result=await sendResendEmail({from:'JPAC Academy Admissions <admissions@jmonespac.org>',to:[student.email],reply_to:'admissions@jmonespac.org',subject:'Your JPAC Academy login link',html:`<!doctype html><html><body style="margin:0;background:#12091b;font-family:Arial,Helvetica,sans-serif;color:#23172d"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#12091b;padding:32px 16px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:18px;overflow:hidden"><tr><td style="background:#2b123d;padding:28px 34px;color:#fff"><div style="font-size:12px;letter-spacing:1.5px;color:#f0c85a;font-weight:700">JPAC ACADEMY ADMISSIONS</div><h1 style="margin:8px 0 0;font-size:30px">Set Up Your JPAC Academy Login</h1></td></tr><tr><td style="padding:34px"><p style="font-size:18px;margin-top:0">Hi ${escapeHtml(firstName)},</p><p>Use the secure button below to create or reset your JPAC Academy password and access your account.</p><p style="text-align:center;margin:30px 0"><a href="${escapeHtml(actionLink)}" style="display:inline-block;background:#6f2c91;color:#fff;text-decoration:none;font-weight:700;padding:14px 24px;border-radius:999px">Set Up JPAC Login</a></p><p>This link is time-limited for security. If it expires, contact JPAC Admissions or ask staff to resend your login email.</p><p style="margin-top:28px">JPAC Academy Admissions<br><a href="mailto:admissions@jmonespac.org">admissions@jmonespac.org</a></p></td></tr></table></td></tr></table></body></html>`,text:`Hi ${firstName},\n\nUse this secure link to create or reset your JPAC Academy password:\n${actionLink}\n\nThis link is time-limited. If it expires, contact admissions@jmonespac.org for a new link.`});
+  if(!result.ok)return{status:result.status,body:{ok:false,error:result.error}};
+  await admin.from('system_audit_events').insert({actor_id:user.id,action:'resend_student_login_email',entity_type:'profile',entity_id:studentId,result:'success',detail:{student_email:student.email,resend_id:result.id}});
+  const{data:pending}=await admin.from('pending_students').select('id').eq('linked_profile_id',studentId).maybeSingle();
+  if(pending?.id)await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'login_email_resent',title:'JPAC login email sent',details:`Secure login setup email sent to ${student.email}.`,created_by:user.id});
+  return{status:200,body:{ok:true,id:result.id,message:`Fresh login setup email sent to ${student.email}.`}};
 }
 
 export default async function handler(req,res){
   if(req.method!=='POST')return json(res,405,{ok:false,error:'Method not allowed'});const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)return json(res,401,{ok:false,error:'Authentication required'});let admin;try{admin=createServerSupabase()}catch(error){return json(res,500,{ok:false,error:error instanceof Error?error.message:'Server configuration is incomplete'})}const{data:{user},error:userError}=await admin.auth.getUser(token);if(userError||!user)return json(res,401,{ok:false,error:'Invalid or expired session'});const{data:caller}=await admin.from('profiles').select('role').eq('id',user.id).maybeSingle();if(!caller||!['admin','developer'].includes(caller.role))return json(res,403,{ok:false,error:'Administrator access required'});const body=parseBody(req);const action=typeof body.action==='string'?body.action:'reset_password';
-
-  if(action==='send_welcome_email'){
-    const result=await sendWelcomeEmail(admin,user,typeof body.studentId==='string'?body.studentId:'');
-    return json(res,result.status,result.body);
-  }
+  if(action==='send_welcome_email'){const result=await sendWelcomeEmail(admin,user,typeof body.studentId==='string'?body.studentId:'');return json(res,result.status,result.body)}
+  if(action==='resend_login_email'){const result=await sendLoginSetupEmail(admin,user,typeof body.studentId==='string'?body.studentId:'');return json(res,result.status,result.body)}
 
   if(action==='invite_pending_student'){
     const pendingStudentId=typeof body.pendingStudentId==='string'?body.pendingStudentId:'';
     if(!uuid.test(pendingStudentId))return json(res,400,{ok:false,error:'A valid admissions record is required'});
-
     const{data:pending,error:pendingError}=await admin.from('pending_students').select('*').eq('id',pendingStudentId).maybeSingle();
-    if(pendingError)return json(res,400,{ok:false,error:pendingError.message});
-    if(!pending)return json(res,404,{ok:false,error:'Admissions record not found'});
-    if(!pending.email)return json(res,400,{ok:false,error:'Student email is required before account activation'});
-
+    if(pendingError)return json(res,400,{ok:false,error:pendingError.message});if(!pending)return json(res,404,{ok:false,error:'Admissions record not found'});if(!pending.email)return json(res,400,{ok:false,error:'Student email is required before account activation'});
     const{data:existing}=await admin.from('profiles').select('id,email,role').ilike('email',pending.email).maybeSingle();
-    if(existing){
-      if(existing.role!=='student')return json(res,409,{ok:false,error:'That email already belongs to a non-student JPAC account'});
-      await admin.from('pending_students').update({linked_profile_id:existing.id,invitation_status:'accepted',admissions_stage:'active',activated_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',pending.id);
-      await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'account_linked',title:'Existing JPAC account linked',details:'Existing student profile matched by email.',created_by:user.id});
-      return json(res,200,{ok:true,linked:true,profileId:existing.id,message:'Existing JPAC student account linked. You can now grant course access.'});
-    }
-
-    const academyUrl=process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app';
-    const{data:invite,error:inviteError}=await admin.auth.admin.inviteUserByEmail(pending.email,{redirectTo:`${academyUrl}/auth/callback`,data:{display_name:pending.display_name,first_name:pending.first_name,last_name:pending.last_name,role:'student'}});
-    if(inviteError)return json(res,400,{ok:false,error:inviteError.message});
-    const profileId=invite?.user?.id;
-    if(!profileId)return json(res,500,{ok:false,error:'Invitation was created but no user ID was returned'});
-
-    const displayName=pending.display_name||`${pending.first_name||''} ${pending.last_name||''}`.trim();
-    const{error:profileError}=await admin.from('profiles').upsert({id:profileId,email:pending.email,display_name:displayName,first_name:pending.first_name,last_name:pending.last_name,full_name:displayName,role:'student',updated_at:new Date().toISOString()},{onConflict:'id'});
-    if(profileError)return json(res,500,{ok:false,error:profileError.message});
-
-    await admin.from('student_profiles').upsert({user_id:profileId,guardian_name:pending.guardian_name,guardian_email:pending.guardian_email,guardian_phone:pending.guardian_phone,birth_date:pending.date_of_birth,school_name:pending.school_name,grade_level:pending.grade_level,updated_at:new Date().toISOString()},{onConflict:'user_id'});
-    await admin.from('pending_students').update({linked_profile_id:profileId,invitation_status:'sent',admissions_stage:'invited',updated_at:new Date().toISOString()}).eq('id',pending.id);
-    await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'invitation_sent',title:'JPAC account invitation sent',details:`Invitation sent to ${pending.email}.`,created_by:user.id});
-    await admin.from('system_audit_events').insert({actor_id:user.id,action:'invite_pending_student',entity_type:'pending_student',entity_id:pending.id,result:'success',detail:{student_email:pending.email,profile_id:profileId}});
-    return json(res,200,{ok:true,linked:true,profileId,message:'JPAC account invitation sent. The student profile is now available for course enrollment.'});
+    if(existing){if(existing.role!=='student')return json(res,409,{ok:false,error:'That email already belongs to a non-student JPAC account'});await admin.from('pending_students').update({linked_profile_id:existing.id,invitation_status:'accepted',admissions_stage:'active',activated_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',pending.id);await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'account_linked',title:'Existing JPAC account linked',details:'Existing student profile matched by email.',created_by:user.id});return json(res,200,{ok:true,linked:true,profileId:existing.id,message:'Existing JPAC student account linked. You can now grant course access.'})}
+    const academyUrl=process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app';const{data:invite,error:inviteError}=await admin.auth.admin.inviteUserByEmail(pending.email,{redirectTo:`${academyUrl}/auth/callback`,data:{display_name:pending.display_name,first_name:pending.first_name,last_name:pending.last_name,role:'student'}});if(inviteError)return json(res,400,{ok:false,error:inviteError.message});const profileId=invite?.user?.id;if(!profileId)return json(res,500,{ok:false,error:'Invitation was created but no user ID was returned'});
+    const displayName=pending.display_name||`${pending.first_name||''} ${pending.last_name||''}`.trim();const{error:profileError}=await admin.from('profiles').upsert({id:profileId,email:pending.email,display_name:displayName,first_name:pending.first_name,last_name:pending.last_name,full_name:displayName,role:'student',updated_at:new Date().toISOString()},{onConflict:'id'});if(profileError)return json(res,500,{ok:false,error:profileError.message});await admin.from('student_profiles').upsert({user_id:profileId,guardian_name:pending.guardian_name,guardian_email:pending.guardian_email,guardian_phone:pending.guardian_phone,birth_date:pending.date_of_birth,school_name:pending.school_name,grade_level:pending.grade_level,updated_at:new Date().toISOString()},{onConflict:'user_id'});await admin.from('pending_students').update({linked_profile_id:profileId,invitation_status:'sent',admissions_stage:'invited',updated_at:new Date().toISOString()}).eq('id',pending.id);await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'invitation_sent',title:'JPAC account invitation sent',details:`Invitation sent to ${pending.email}.`,created_by:user.id});await admin.from('system_audit_events').insert({actor_id:user.id,action:'invite_pending_student',entity_type:'pending_student',entity_id:pending.id,result:'success',detail:{student_email:pending.email,profile_id:profileId}});return json(res,200,{ok:true,linked:true,profileId,message:'JPAC account invitation sent. The student profile is now available for course enrollment.'});
   }
-
-  const studentId=typeof body.studentId==='string'?body.studentId:'';
-  const password=typeof body.password==='string'?body.password:'';
-  if(!uuid.test(studentId)||password.length<8)return json(res,400,{ok:false,error:'A valid student and password of at least 8 characters are required'});
-  const{data:target}=await admin.from('profiles').select('id,email,role').eq('id',studentId).maybeSingle();
-  if(!target||target.role!=='student')return json(res,404,{ok:false,error:'Academy student not found'});
-  const{error}=await admin.auth.admin.updateUserById(studentId,{password});
-  const{error:auditError}=await admin.from('system_audit_events').insert({actor_id:user.id,action:'admin_reset_student_password',entity_type:'auth_user',entity_id:studentId,result:error?'error':'success',detail:{student_email:target.email}});
-  if(error)return json(res,400,{ok:false,error:error.message});
-  if(auditError)return json(res,500,{ok:false,error:'Password was changed, but the required audit record could not be written'});
-  return json(res,200,{ok:true});
+  const studentId=typeof body.studentId==='string'?body.studentId:'';const password=typeof body.password==='string'?body.password:'';if(!uuid.test(studentId)||password.length<8)return json(res,400,{ok:false,error:'A valid student and password of at least 8 characters are required'});const{data:target}=await admin.from('profiles').select('id,email,role').eq('id',studentId).maybeSingle();if(!target||target.role!=='student')return json(res,404,{ok:false,error:'Academy student not found'});const{error}=await admin.auth.admin.updateUserById(studentId,{password});const{error:auditError}=await admin.from('system_audit_events').insert({actor_id:user.id,action:'admin_reset_student_password',entity_type:'auth_user',entity_id:studentId,result:error?'error':'success',detail:{student_email:target.email}});if(error)return json(res,400,{ok:false,error:error.message});if(auditError)return json(res,500,{ok:false,error:'Password was changed, but the required audit record could not be written'});return json(res,200,{ok:true});
 }
