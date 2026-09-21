@@ -1,20 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getStudentPaymentLedger, paymentMethodLabels, paymentStatusLabels, purchaseTypeLabels, savePaymentLedgerEntry, type LedgerForm, type LedgerPurchaseType, type PaymentLedgerEntry, type PaymentMethod, type PaymentStatus } from '../lib/paymentLedger';
 import type { PublishedCourse, StudentLookup } from '../lib/singleCourseEnrollment';
 import '../styles/payment-ledger.css';
 
 type EnrollmentChoice = { id: string; course_id: string; status: string };
+const ACTIVE_STUDENT_KEY='jpac.activeStudentEmail';
 const today = () => new Date().toISOString().slice(0, 10);
 const blankForm = (): LedgerForm => ({ id: null, courseId: '', enrollmentId: '', paymentStatus: 'verified', paymentMethod: 'manual_approval', purchaseType: 'first_course_purchase', amount: '', currency: 'USD', paymentDate: today(), accessStartDate: '', accessEndDate: '', referenceNumber: '', externalSource: '', externalReference: '', studentVisibleNote: '', internalNote: '' });
 
 export function PaymentLedgerPage() {
+  const [searchParams,setSearchParams]=useSearchParams();
   const [email, setEmail] = useState(''); const [student, setStudent] = useState<StudentLookup | null>(null);
   const [courses, setCourses] = useState<PublishedCourse[]>([]); const [enrollments, setEnrollments] = useState<EnrollmentChoice[]>([]);
   const [entries, setEntries] = useState<PaymentLedgerEntry[]>([]); const [form, setForm] = useState<LedgerForm>(blankForm);
   const [error, setError] = useState(''); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
 
   useEffect(() => { void (async () => { if (!supabase) return; const { data, error: courseError } = await supabase.from('courses').select('id,title,status').order('title'); if (courseError) setError(courseError.message); else setCourses((data || []) as PublishedCourse[]); })(); }, []);
+  useEffect(()=>{const target=(searchParams.get('email')||localStorage.getItem(ACTIVE_STUDENT_KEY)||'').trim().toLowerCase();if(target&&!student){setEmail(target);void lookup(target)}},[]);
   const update = <K extends keyof LedgerForm>(key: K, value: LedgerForm[K]) => setForm((current) => ({ ...current, [key]: value }));
   const linkedEnrollments = useMemo(() => form.courseId ? enrollments.filter((item) => item.course_id === form.courseId) : enrollments, [enrollments, form.courseId]);
 
@@ -28,11 +32,11 @@ export function PaymentLedgerPage() {
     setEnrollments((enrollmentRows || []) as EnrollmentChoice[]); setEntries(ledger);
   }
 
-  async function lookup() {
+  async function lookup(targetEmail?:string) {
     setError(''); setMessage(''); setStudent(null); setEntries([]); setEnrollments([]); setForm(blankForm());
-    const value = email.trim().toLowerCase(); if (!value) return setError('Enter a student email before looking up a profile.'); if (!supabase) return setError('Supabase is not configured.');
-    setBusy(true);
-    try { const { data, error: lookupError } = await supabase.from('profiles').select('id,display_name,email,role').ilike('email', value).eq('role', 'student').maybeSingle(); if (lookupError) throw lookupError; if (!data) return setError('student_missing: No existing student profile was found for that email.'); const found = data as StudentLookup; setStudent(found); await loadLedger(found); }
+    const value = (targetEmail??email).trim().toLowerCase(); if (!value) return setError('Enter a student email before looking up a profile.'); if (!supabase) return setError('Supabase is not configured.');
+    setEmail(value);setBusy(true);
+    try { const { data, error: lookupError } = await supabase.from('profiles').select('id,display_name,email,role').ilike('email', value).eq('role', 'student').maybeSingle(); if (lookupError) throw lookupError; if (!data) return setError('student_missing: No existing student profile was found for that email.'); const found = data as StudentLookup; setStudent(found);localStorage.setItem(ACTIVE_STUDENT_KEY,value);setSearchParams({email:value},{replace:true});await loadLedger(found); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to load the student payment ledger.'); }
     finally { setBusy(false); }
   }
@@ -47,9 +51,9 @@ export function PaymentLedgerPage() {
     setBusy(true); try { await savePaymentLedgerEntry(student.id, form); await loadLedger(student); setForm(blankForm()); setMessage('Payment ledger record saved. Course access was not changed.'); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save the payment record.'); } finally { setBusy(false); }
   }
 
-  return <div className="payment-ledger-page"><header className="page-hero"><div><div className="eyebrow">Staff operations</div><h1 className="page-title">Student Payment Ledger</h1><p className="muted">Payment ledger records do not grant course access by themselves. Use Course Enrollment Manager to grant access after payment is verified. Payment records do not replace required parent/student consent.</p></div></header>
+  return <div className="payment-ledger-page"><header className="page-hero"><div><div className="eyebrow">Staff operations</div><h1 className="page-title">Student Payment Ledger</h1><p className="muted">The active student follows you from Enrollment Manager so you do not have to search again.</p></div></header>
     {(error || message) && <div className={error ? 'admin-message error' : 'admin-message'} role="status">{error || message}</div>}
-    <section className="card card-pad ledger-lookup"><label>Student email<div className="email-lookup"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="student@example.com"/><button className="button button-secondary" type="button" disabled={busy} onClick={() => void lookup()}>{busy ? 'Loading…' : 'Look up'}</button></div></label>{student && <p className="lookup-result">Student: <strong>{student.display_name || 'No display name'}</strong> · {student.email}</p>}</section>
+    <section className="card card-pad ledger-lookup"><label>Student email<div className="email-lookup"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="student@example.com"/><button className="button button-secondary" type="button" disabled={busy} onClick={() => void lookup()}>{busy ? 'Loading…' : 'Look up'}</button></div></label>{student && <p className="lookup-result">Active student: <strong>{student.display_name || 'No display name'}</strong> · {student.email}</p>}</section>
     {student && <div className="payment-ledger-grid"><section className="card card-pad ledger-form"><div className="ledger-entry-heading"><h2>{form.id ? 'Edit payment record' : 'Add payment record'}</h2>{form.id && <button className="button button-secondary" type="button" onClick={() => setForm(blankForm())}>Cancel edit</button>}</div>
       <div className="ledger-form-grid"><label>Course<select value={form.courseId} onChange={(event) => { update('courseId', event.target.value); update('enrollmentId', ''); }}><option value="">Not linked</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label>
       <label>Enrollment<select value={form.enrollmentId} onChange={(event) => update('enrollmentId', event.target.value)}><option value="">Not linked</option>{linkedEnrollments.map((item) => <option key={item.id} value={item.id}>{courses.find((course) => course.id === item.course_id)?.title || item.course_id} · {item.status}</option>)}</select></label>
