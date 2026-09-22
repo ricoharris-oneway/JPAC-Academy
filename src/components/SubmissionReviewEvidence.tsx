@@ -28,7 +28,19 @@ export function SubmissionReviewEvidence({ signedUrl, mediaName, mediaType, stor
   const criteria = normalizeRubric(rubric);
   const kind = evidenceKind(mediaType, mediaName, storagePath);
   return <div className="submission-review-detail">
-    <section className="submission-evidence"><h4>Private submission evidence</h4>{signedUrl ? <>{kind === 'audio' && <audio controls preload="metadata" src={signedUrl} />}{kind === 'video' && <video controls preload="metadata" src={signedUrl} />}{kind === 'file' && <p>Evidence cannot be previewed here. Download or open using the secure link.</p>}<a href={signedUrl} target="_blank" rel="noreferrer">Open secure evidence link</a><small>This short-lived link is available only through the signed-in staff review.</small></> : <p>Evidence cannot be previewed here. Download or open using the secure link.</p>}</section>
+    <section className="submission-evidence">
+      <div className="eyebrow">Guided assessment workflow</div>
+      <h4>Review this submission in four steps</h4>
+      <ol style={{display:'grid',gap:8,paddingLeft:20,margin:'10px 0 18px'}}>
+        <li><strong>Review the evidence.</strong> Play the student submission completely.</li>
+        <li><strong>Compare it to the rubric.</strong> Use the mastery criteria shown beside the evidence.</li>
+        <li><strong>Enter a score and feedback.</strong> Give the student a clear strength and a specific next step.</li>
+        <li><strong>Complete the review.</strong> Choose <em>Approve</em> if mastery is met, or <em>Request revision</em> if another attempt is required.</li>
+      </ol>
+      <h4>Private submission evidence</h4>
+      {mediaName && <p><strong>File:</strong> {mediaName}</p>}
+      {signedUrl ? <>{kind === 'audio' && <audio controls preload="metadata" src={signedUrl} />}{kind === 'video' && <video controls preload="metadata" src={signedUrl} />}{kind === 'file' && <p>Evidence cannot be previewed here. Open it with the secure link below.</p>}<a className="button button-secondary" href={signedUrl} target="_blank" rel="noreferrer">Open secure evidence</a><small>This short-lived link is available only through the signed-in staff review.</small></> : <p>Evidence preview is unavailable. Refresh the classroom to generate a new secure evidence link.</p>}
+    </section>
     <section className="submission-rubric"><h4>Rubric / mastery criteria</h4>{criteria.length ? <ul>{criteria.map((item, index) => <li key={`${item.name}-${index}`}><span>{item.name}</span>{item.weight !== null && <strong>{item.weight}%</strong>}</li>)}</ul> : <p>No rubric criteria are configured for this activity.</p>}</section>
   </div>;
 }
