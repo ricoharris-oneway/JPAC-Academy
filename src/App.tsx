@@ -22,6 +22,7 @@ import { OperationsCenterPage } from './pages/OperationsCenterPage';
 import { CurriculumStudioPage } from './pages/CurriculumStudioPage';
 import { EnrollmentManagerPage } from './pages/EnrollmentManagerPage';
 import { ManualStudentPage } from './pages/ManualStudentPage';
+import { StaffStudentProfilePage } from './pages/StaffStudentProfilePage';
 import { LabManagerPage } from './pages/LabManagerPage';
 import { StudentIntelligencePage } from './pages/StudentIntelligencePage';
 import { PracticeCoachPage } from './pages/PracticeCoachPage';
@@ -127,6 +128,7 @@ export default function App() {
       <Route path="/staff/payment-ledger" element={<RequireRole roles={staff}><PaymentLedgerPage /></RequireRole>} />
       <Route path="/staff/consent-ledger" element={<RequireRole roles={staff}><ConsentLedgerPage /></RequireRole>} />
       <Route path="/staff/approval-queue" element={<RequireRole roles={staff}><ApprovalQueuePage /></RequireRole>} />
+      <Route path="/staff/student/:studentId" element={<RequireRole roles={staff}><StaffStudentProfilePage /></RequireRole>} />
       <Route path="/teacher" element={<RequireRole roles={staff}><TeacherPage /></RequireRole>} />
       <Route path="/enrollment" element={<RequireRole roles={admins}><EnrollmentManagerPage /></RequireRole>} />
       <Route path="/manual-student" element={<RequireRole roles={admins}><ManualStudentPage /></RequireRole>} />
