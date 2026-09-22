@@ -4,7 +4,6 @@ const uuid=/^[0-9a-f-]{36}$/i;
 const text=v=>typeof v==='string'?(v.trim()||null):null;
 const boolOrNull=v=>v===true?true:v===false?false:null;
 const allowedExperience=new Set(['online','campus','hybrid']);
-const allowedStudentType=new Set(['adult','minor']);
 const allowedScholarship=new Set(['Not Requested','Requested','Under Review','Awarded','Not Awarded']);
 
 export default async function handler(req,res){
@@ -39,13 +38,12 @@ export default async function handler(req,res){
   if(pending?.id){
     const pendingPatch={updated_at:new Date().toISOString(),experience_level:text(changes.experience_level),transportation_needed:text(changes.transportation_needed),transportation_pickup:text(changes.transportation_pickup),authorized_pickup_names:text(changes.authorized_pickup_names),medical_accessibility_notes:text(changes.medical_accessibility_notes),scholarship_type:text(changes.scholarship_type),photo_release_consent:boolOrNull(changes.photo_release_consent),digital_communication_consent:boolOrNull(changes.digital_communication_consent)};
     const academyExperience=text(changes.academy_experience);if(academyExperience&&allowedExperience.has(academyExperience))pendingPatch.academy_experience=academyExperience;
-    const studentType=text(changes.student_type);if(studentType&&allowedStudentType.has(studentType))pendingPatch.student_type=studentType;
     const scholarship=text(changes.scholarship_status);if(scholarship&&allowedScholarship.has(scholarship))pendingPatch.scholarship_status=scholarship;
     if(email!==null)pendingPatch.email=email;if(firstName!==null)pendingPatch.first_name=firstName;if(lastName!==null)pendingPatch.last_name=lastName;
     const{error:pError}=await admin.from('pending_students').update(pendingPatch).eq('id',pending.id);if(pError)return json(res,400,{ok:false,error:pError.message});
-    await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'profile_updated',title:'Student profile updated',details:'Student profile information updated by administrator.',created_by:user.id});
+    await admin.from('admissions_activity').insert({pending_student_id:pending.id,activity_type:'profile_updated',title:'Student profile updated',details:'Student profile information updated by administrator. Student type is calculated automatically from date of birth.',created_by:user.id});
   }
 
-  await admin.from('system_audit_events').insert({actor_id:user.id,action:'admin_update_student_profile',entity_type:'profile',entity_id:studentId,result:'success',detail:{fields:Object.keys(changes)}});
-  return json(res,200,{ok:true,message:'Student profile updated successfully.'});
+  await admin.from('system_audit_events').insert({actor_id:user.id,action:'admin_update_student_profile',entity_type:'profile',entity_id:studentId,result:'success',detail:{fields:Object.keys(changes),student_type_source:'date_of_birth'}});
+  return json(res,200,{ok:true,message:'Student profile updated successfully. Student type is calculated automatically from date of birth.'});
 }
