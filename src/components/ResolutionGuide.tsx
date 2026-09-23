@@ -25,6 +25,6 @@ export function ResolutionGuide(){
     <p className="muted">{guide.why}</p>
     <div style={{display:'grid',gap:10,margin:'16px 0'}}>{guide.steps.map((step,index)=><div key={step} style={{display:'flex',gap:10,alignItems:'flex-start'}}><strong>{index+1}.</strong><span>{step}</span></div>)}</div>
     <p><strong>How JPAC knows it is fixed:</strong> {guide.done}</p>
-    <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14}}><Link className="button button-secondary" to="/">Back to Operations Center</Link>{email&&<Link className="button button-secondary" to={`/staff/student-profiles?email=${encodeURIComponent(email)}`}>Student Profiles</Link>}</div>
+    <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14}}><Link className="button button-secondary" to="/">Back to Operations Center</Link><Link className="button button-secondary" to="/staff/students">Student Directory</Link></div>
   </section>;
 }
