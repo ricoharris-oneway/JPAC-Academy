@@ -24,6 +24,7 @@ import { EnrollmentManagerPage } from './pages/EnrollmentManagerPage';
 import { ManualStudentPage } from './pages/ManualStudentPage';
 import { StaffStudentProfilePage } from './pages/StaffStudentProfilePage';
 import { StaffStudentDirectoryPage } from './pages/StaffStudentDirectoryPage';
+import { FamilyBillingPage } from './pages/FamilyBillingPage';
 import { LabManagerPage } from './pages/LabManagerPage';
 import { StudentIntelligencePage } from './pages/StudentIntelligencePage';
 import { PracticeCoachPage } from './pages/PracticeCoachPage';
@@ -134,6 +135,7 @@ export default function App() {
       <Route path="/teacher" element={<RequireRole roles={staff}><TeacherPage /></RequireRole>} />
       <Route path="/enrollment" element={<RequireRole roles={admins}><EnrollmentManagerPage /></RequireRole>} />
       <Route path="/manual-student" element={<RequireRole roles={admins}><ManualStudentPage /></RequireRole>} />
+      <Route path="/staff/family-billing" element={<RequireRole roles={admins}><FamilyBillingPage /></RequireRole>} />
       <Route path="/lab-manager" element={<RequireRole roles={admins}><LabManagerPage /></RequireRole>} />
       <Route path="/admin" element={<RequireRole roles={admins}><AdminPage /></RequireRole>} />
       <Route path="/admin/homepage-media" element={<RequireRole roles={admins}><HomepageMediaPage /></RequireRole>} />
