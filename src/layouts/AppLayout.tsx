@@ -26,6 +26,7 @@ const nav = [
   ['Enrollment Manager', '/staff/course-enrollment', '🎟️', ['teacher', 'admin', 'developer']],
   ['Payment Ledger', '/staff/payment-ledger', '💳', ['teacher', 'admin', 'developer']],
   ['Consent Ledger', '/staff/consent-ledger', '✅', ['teacher', 'admin', 'developer']],
+  ['Family Billing', '/staff/family-billing', '👨‍👩‍👧‍👦', ['admin', 'developer']],
   ['Curriculum Studio', '/curriculum', '🧩', ['teacher', 'admin', 'developer']],
   ['Module Readiness', '/staff/module-readiness', '📋', ['teacher', 'admin', 'developer']],
   ['Video Finder Helper', '/staff/video-finder', '🎬', ['teacher', 'admin', 'developer']],
