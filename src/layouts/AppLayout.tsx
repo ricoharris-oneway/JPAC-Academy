@@ -6,6 +6,7 @@ import { useAuth, type AppRole } from '../context/AuthContext';
 import { resolveDisplayName } from '../lib/displayName';
 import { GuidedWalkthrough } from '../features/guided-walkthrough/GuidedWalkthrough';
 import { ConsentReminder } from '../components/ConsentReminder';
+import { ActiveStudentBar } from '../components/ActiveStudentBar';
 
 const nav = [
   ['Home', '/', '✨', ['student', 'teacher', 'admin', 'developer']],
@@ -65,7 +66,7 @@ export function AppLayout() {
     </aside>
     <main className="main">
       <header className="topbar"><button className="mobile-menu-button" aria-label="Open navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}>☰</button><div><strong>JPAC Academy · Creative Operating System</strong><div className="muted">Learning and creative operations in one workspace</div></div><div className="topbar-actions"><div className="status">● {isSupabaseConfigured ? 'Supabase configured' : 'Supabase key needed'}</div></div></header>
-      <div className="content" key={location.pathname}>{role === 'student' ? <ConsentReminder /> : null}<Outlet /></div>
+      <div className="content" key={location.pathname}>{role === 'student' ? <ConsentReminder /> : <ActiveStudentBar />}<Outlet /></div>
     </main>
     <GuidedWalkthrough role={role} />
   </div>;
