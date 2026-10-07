@@ -6,7 +6,7 @@ import { careerArtwork, programArtwork, toolArtwork } from '../data/memberAssetM
 import { useMemberJourney } from '../context/MemberJourneyContext';
 import { supabase } from '../lib/supabase';
 import { loadHomepageMediaOverrides, resolveHomepageMediaUrl } from '../lib/homepageMedia';
-import { loadMyCourses } from '../lib/studentAccess';
+import { continueDestination, loadMyCourses, type AcademyCourse } from '../lib/studentAccess';
 import '../styles/member-launch.css';
 import '../styles/program-info-modal.css';
 
@@ -22,14 +22,16 @@ export function EnrollmentOffer() {
 export function MemberHomePage() {
   const { selectedPath } = useMemberJourney();
   const path = careerPaths.find((item) => item.id === selectedPath);
-  const [access, setAccess] = useState<Array<{ course_id: string; title: string; slug: string }>>([]);
+  const [access, setAccess] = useState<AcademyCourse[]>([]);
   const [media, setMedia] = useState<Map<string, import('../lib/homepageMedia').HomepageMediaOverride>>(new Map());
-  useEffect(() => { let active = true; void supabase?.rpc('jpac_my_academy_courses').then(({ data, error }) => { if (active && !error) setAccess(data || []); }); return () => { active = false; }; }, []);
+  useEffect(() => { let active = true; void loadMyCourses().then(({ data }) => { if (active) setAccess(data); }); return () => { active = false; }; }, []);
   useEffect(() => { let active = true; void loadHomepageMediaOverrides().then((overrides) => { if (active) setMedia(overrides); }); return () => { active = false; }; }, []);
   const artwork = (slotKey: string, fallback: string) => resolveHomepageMediaUrl(slotKey, media) || fallback;
+  const nextAction = continueDestination(access);
   return <div className="member-launch">
     <header className="member-hero" style={{ '--member-hero-image': `url("${artwork('hero:homepage', '/creative-assets/jpac-showcase-stage.webp')}")` } as CSSProperties}><div className="hero-copy"><span className="member-kicker">JPAC ACADEMY · YOUR CREATIVE WORLD</span><h1>Create Your Future<br />at <em>JPAC Academy</em></h1><p>Explore programs, choose your career path, use creative tools, and unlock full courses after enrollment approval.</p><div className="member-actions"><Link className="button button-primary" to="/choose-career-path">Choose Career Path ↗</Link><Link className="button button-secondary" to="/programs">Explore Programs</Link></div><div className="member-benefits">{['Real Skills', 'Real Opportunities', 'Build Your Future', 'Creative Community'].map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="hero-caption"><span>THE STAGE IS YOURS</span><b>Imagine. Create. Become.</b></div></header>
     <div className="member-welcome"><span className="member-pill">FREE MEMBERSHIP · WELCOME IN</span><p>Your direction: <strong>{path?.title || 'Your creative future'}</strong></p><Link to="/courses">My Learning →</Link></div>
+    {access.length>0&&<section className="course-next-step" aria-labelledby="home-next-action"><div><span>Do this next</span><small>Your Academy learning path</small><h2 id="home-next-action">Pick up where you left off</h2><p>JPAC selected the next available learning step from your active enrollment and saved progress.</p></div><Link className="button button-primary" to={nextAction.to}>{nextAction.label}</Link></section>}
     <MemberRow title="Featured Programs">{memberPrograms.map((program, i) => <Link className="member-program" to={`/programs#${program.slug}`} key={program.slug}><img src={artwork(`program:${program.slug}`, programArtwork[program.slug])} alt="" loading="lazy" /><div><span>{program.category}</span><h3>{program.title}</h3><p>Explore program <b>↗</b></p></div><span className="program-number">{String(i + 1).padStart(2, '0')}</span></Link>)}</MemberRow>
     <MemberRow title="Career Paths">{careerPaths.map(path => <Link className="member-career" to="/career-pathing" key={path.id}><img src={artwork(`career:${path.category}`, careerArtwork[path.category])} alt="" loading="lazy" /><span className="career-symbol" aria-hidden="true">{path.icon}</span><small>YOUR FUTURE IN FOCUS</small><h3>{path.title}</h3><p>{path.outcome}</p><b>Explore your path ↗</b></Link>)}</MemberRow>
     <MemberRow title="JPAC Tools">{memberTools.map(tool => <Link className="member-tool" to={tool.to} key={tool.title}><div className="tool-preview" aria-hidden="true"><img src={artwork(`tool:${tool.title}`, toolArtwork[tool.title])} alt="" loading="lazy" /><span>{tool.icon}</span></div><h3>{tool.title}</h3><p>{tool.description}</p><b>Explore →</b></Link>)}</MemberRow>

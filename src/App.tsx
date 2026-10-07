@@ -55,7 +55,7 @@ import { HomepageMediaPage } from './pages/HomepageMediaPage';
 import { ApprovalQueuePage } from './pages/ApprovalQueuePage';
 
 function Loading() {
-  return <div className="auth-loading"><img src="/assets/jpac-official-logo.png.png" alt="J. Moné's Performing Arts Center" /><p>Preparing your creative workspace…</p></div>;
+  return <div className="auth-loading"><img src="/assets/jpac-official-logo.png" alt="J. Moné's Performing Arts Center" /><p>Preparing your creative workspace…</p></div>;
 }
 
 function RequireAuth() {
