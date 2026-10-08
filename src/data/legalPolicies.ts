@@ -7,6 +7,8 @@ export const policyMeta = {
   website: 'www.jmonespac.org',
   effectiveDate: 'October 7, 2026',
   contact: 'admissions@jmonespac.org',
+  address: 'Public business mailing address pending final publication',
+  phone: 'Public business telephone pending final publication',
 };
 
 export const legalPolicies: LegalPolicy[] = [
