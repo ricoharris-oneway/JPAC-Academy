@@ -11,7 +11,8 @@ import { useAuth, type AppRole } from './context/AuthContext';
 import { MemberJourneyProvider, useMemberJourney } from './context/MemberJourneyContext';
 import { MemberAccessGate } from './components/MemberAccessGate';
 import { ChooseCareerPathPage } from './pages/ChooseCareerPathPage';
-import { MemberHomePage, ExploreProgramsPage, MemberToolsPage, MemberCommunityPage } from './pages/MemberHomePage';
+import { MemberHomePage, ExploreProgramsPage, MemberToolsPage } from './pages/MemberHomePage';
+import { CommunityPage } from './pages/CommunityPage';
 import { StudioPage } from './pages/StudioPage';
 import { CreativeToolPage } from './pages/CreativeToolPage';
 import { MyCoursesPage } from './pages/MyCoursesPage';
@@ -105,7 +106,7 @@ export default function App() {
       <Route path="/choose-career-path" element={<ChooseCareerPathPage />} />
       <Route path="/programs" element={<ExploreProgramsPage />} />
       <Route path="/tools" element={<MemberToolsPage />} />
-      <Route path="/community" element={<MemberCommunityPage />} />
+      <Route path="/community" element={<CommunityPage />} />
       <Route path="account" element={<AccountSettingsPage />} />
       <Route path="/account/payments" element={<RequireRole roles={['student']}><MyPaymentsPage /></RequireRole>} />
       <Route path="/account/consents" element={<RequireRole roles={['student']}><StudentConsentPage /></RequireRole>} />
