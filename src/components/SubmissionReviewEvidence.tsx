@@ -32,7 +32,7 @@ export function SubmissionReviewEvidence({ signedUrl, mediaName, mediaType, stor
       <div className="eyebrow">Guided assessment workflow</div>
       <h4>Review this submission in four steps</h4>
       <ol style={{display:'grid',gap:8,paddingLeft:20,margin:'10px 0 18px'}}>
-        <li><strong>Review the evidence.</strong> Play the student submission completely.</li>
+        <li><strong>Review the evidence.</strong> Play, open, or inspect the student submission completely.</li>
         <li><strong>Compare it to the rubric.</strong> Use the mastery criteria shown beside the evidence.</li>
         <li><strong>Enter a score and feedback.</strong> Give the student a clear strength and a specific next step.</li>
         <li><strong>Complete the review.</strong> Choose <em>Approve</em> if mastery is met, or <em>Request revision</em> if another attempt is required.</li>
