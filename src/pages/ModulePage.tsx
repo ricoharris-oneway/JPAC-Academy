@@ -149,9 +149,9 @@ export function ModulePage(){
         <div className="module-video-block-head"><span>Required instructional video</span><h2>Watch: {module.title}</h2><p>This is the video requirement represented in the Guided Workflow above.</p></div>
         <WatchSection videoUrl={module.primary_video_url} percent={Number(completion?.video_percent||0)} onProgress={trackVideo} onAcknowledge={()=>void acknowledgeVideo()} acknowledging={acknowledgingVideo}/>
       </div>
-    </section>
     <div id="mission-practice" tabIndex={-1} className="mission-practice-grid"><PracticeChallenge kind="practice" activity={realWorldActivity} moduleData={module.real_world_activity} busy={busy} earned={Boolean(realWorldActivity&&awardedSources.has(realWorldActivity.id))} onComplete={activity=>void completePractice(activity)}/><PracticeChallenge kind="lab" activity={labActivity} moduleData={module.jpac_tool_activity} busy={busy} earned={Boolean(labActivity&&awardedSources.has(labActivity.id))} onComplete={activity=>void completePractice(activity)}/>{otherPractice.map(activity=><PracticeChallenge key={activity.id} kind="practice" activity={activity} busy={busy} earned={awardedSources.has(activity.id)} onComplete={item=>void completePractice(item)}/>)}</div>
-    {requiredActivity&&<section id="mission-create" tabIndex={-1} className="mission-card creative-challenge">
+    {requiredActivity&&<section id="mission-create" tabIndex={-1} className="mission-card creative-challenge module-assignment-block">
+      <div className="module-assignment-block-head"><span>Required module assignment</span><h2>Submit: {requiredActivity.title}</h2><p>This is the assignment requirement represented in the Guided Workflow above.</p></div>
       <div className="creative-challenge-head"><div><div className="mission-section-label">Required assignment</div><h2>{requiredActivity.title}</h2></div><strong>{requiredActivity.xp_reward} Core XP</strong></div>
       <p>{requiredActivity.description}</p><p className="muted">{requiredActivity.instructions}</p>
       <div className="submission-state"><strong>{assignmentApproved?'✓ Assignment approved':hasRevision?'Revision requested':reviewPending?'✓ Submitted for review':'Assignment ready'}</strong><small>{assignmentApproved?'Your instructor approved this requirement. Continue with the mastery checklist.':hasRevision?'Read the feedback below, prepare a corrected take, and submit a new attempt.':reviewPending?'Your file is safely recorded. You do not need to submit again while the instructor review is pending.':'Complete the four submission steps below when your take is ready.'}</small></div>
@@ -162,6 +162,7 @@ export function ModulePage(){
       </div>}
       {assignmentApproved&&<div className="mission-actions"><button className="button button-primary" onClick={()=>document.getElementById('mission-master')?.scrollIntoView({behavior:'smooth',block:'start'})}>Continue to mastery checklist</button></div>}
     </section>}
+    </section>
     <AriaFeedback attempt={latestAssessed}/>
     <section id="mission-master" tabIndex={-1}><MasteryChecklist completion={completion}/></section>
     <LevelUpCard completion={completion} bonusEarned={bonusEarned} nextModule={nextModule} courseId={course.id} currentLevel={module.level_number}/>
