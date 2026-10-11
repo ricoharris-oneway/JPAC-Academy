@@ -27,8 +27,9 @@ export function MemberAccessGate({ children, anyCourse = false }: { children: Re
     void check();
     return () => { active = false; };
   }, [key, courseId, anyCourse, staff]);
-  // Recheck on return to this tab, including access revoked by staff elsewhere.
-  useEffect(() => { const refresh = () => setAttempt(value => value + 1); window.addEventListener('focus', refresh); return () => window.removeEventListener('focus', refresh); }, []);
+  // Avoid re-checking on every window focus because file pickers and media controls
+  // trigger focus events and can unnecessarily tear down an active student workflow.
+  // Access is still verified when the route/user/course changes or when the student uses Retry.
   if (staff) return <>{children}</>;
   if (result.key !== key) return <div className="card card-pad" role="status">Checking course access…</div>;
   if (!result.allowed) return <section className="card card-pad locked-course"><span aria-hidden="true">🔒</span><h1>{anyCourse ? 'Unlock your course experience' : 'Course access locked'}</h1><p>{result.error ? 'We could not verify course access. Please retry.' : courseLockedMessage}</p><p>You can keep exploring with your free member account.</p><div className="welcome-actions"><Link className="button button-secondary" to="/programs">Explore Programs</Link><a className="button button-primary" href={enrollmentRequestUrl}>Request Enrollment</a><button className="button button-secondary" onClick={() => setAttempt(value => value + 1)}>Retry access check</button></div></section>;
