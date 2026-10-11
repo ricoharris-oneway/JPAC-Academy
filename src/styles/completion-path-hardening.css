@@ -36,3 +36,5 @@
 .module-assignment-block-head>span{text-transform:uppercase;letter-spacing:.12em;font-size:.76rem;font-weight:800;color:var(--muted)}
 .module-assignment-block-head h2{margin:0}
 .module-assignment-block-head p{margin:0;color:var(--muted)}
+
+.module-resume-shortcut{margin:10px 0 4px;align-self:flex-start}
