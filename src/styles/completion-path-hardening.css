@@ -30,3 +30,9 @@
 .module-learning-content-head h2,.module-video-block-head h2{margin:0}
 .module-learning-content-head p,.module-video-block-head p{margin:0;color:var(--muted)}
 .module-video-block{display:grid;gap:12px;padding:18px;border:1px solid rgba(231,189,87,.24);border-radius:18px;background:rgba(231,189,87,.045)}
+
+.module-assignment-block{display:grid;gap:14px}
+.module-assignment-block-head{display:grid;gap:6px;padding-bottom:6px}
+.module-assignment-block-head>span{text-transform:uppercase;letter-spacing:.12em;font-size:.76rem;font-weight:800;color:var(--muted)}
+.module-assignment-block-head h2{margin:0}
+.module-assignment-block-head p{margin:0;color:var(--muted)}
