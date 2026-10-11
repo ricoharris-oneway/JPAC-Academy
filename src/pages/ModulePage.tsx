@@ -29,6 +29,7 @@ export function ModulePage(){
     setMessage(activityResult.error?.message||completionResult.error?.message||bonusResult.error?.message||historyError);if(!background)setLoading(false);
   }
   useEffect(()=>{lastVideoSecond.current=-10;void load()},[courseId,moduleId,user?.id]);
+  useEffect(()=>{if(!loading&&window.location.hash==='#guided-workflow'){window.setTimeout(()=>document.getElementById('guided-workflow')?.scrollIntoView({behavior:'smooth',block:'start'}),80)}},[loading,moduleId]);
   useEffect(()=>{if(!user||loading||completion?.is_complete)return;const refresh=()=>{if(document.visibilityState==='visible')void load(true)};const timer=window.setInterval(refresh,12000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[user?.id,moduleId,loading,completion?.is_complete]);
 
   const requiredActivity=activities.find(activity=>activity.required)||null;
@@ -107,7 +108,7 @@ export function ModulePage(){
   return <div className="creator-mission"><Link className="text-link" to={`/courses/${course.id}`}>← {course.title}</Link>
     <div className="eyebrow">Level {module.level_number||1} · Mission {module.level_module_number||module.sort_order}</div>
     <MissionNextStep completion={completion} lessons={lessons} progress={progress} requiredActivity={requiredActivity} attempts={requiredAttempts} nextModule={nextModule} courseId={course.id} onStart={()=>void completeIntro()} busy={busy}/>
-    <MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/>
+    <div id="guided-workflow" tabIndex={-1}><MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/></div>
     <MissionBrief module={module} requiredActivity={requiredActivity} bonusAvailable={bonusAvailable} onStart={()=>void completeIntro()} busy={busy} started={Boolean(completion?.intro_complete)}/>
     <JPACCoachPanel context={buildModuleCoachContext({courseId:course.id,module,instructions:requiredActivity?.instructions,rubric:requiredActivity?.rubric,teacherFeedback:latest?.teacher_feedback,hasPreparedEvidence:Boolean(file)})}/>
     <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
