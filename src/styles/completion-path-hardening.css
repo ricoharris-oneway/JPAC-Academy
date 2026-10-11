@@ -11,3 +11,9 @@
 .submission-rubric li{display:flex;justify-content:space-between;gap:12px;padding:9px;border-radius:10px;background:rgba(255,255,255,.04)}
 .submission-rubric strong{color:var(--gold)}
 @media(max-width:720px){.submission-review-detail{grid-template-columns:1fr}}
+
+.video-acknowledgement{margin-top:16px;padding:14px 16px;border:1px solid rgba(231,189,87,.3);border-radius:14px;background:rgba(231,189,87,.06);display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.video-acknowledgement input{margin-top:4px;width:20px;height:20px;accent-color:#e7bd57;flex:0 0 auto}
+.video-acknowledgement span{display:grid;gap:4px}
+.video-acknowledgement small{color:var(--muted);line-height:1.45}
+.video-acknowledgement.complete{border-color:rgba(76,215,145,.35);background:rgba(38,173,112,.08)}
