@@ -140,10 +140,16 @@ export function ModulePage(){
     <div className="eyebrow">Level {module.level_number||1} · Mission {module.level_module_number||module.sort_order}</div>
     <MissionNextStep completion={completion} lessons={lessons} progress={progress} requiredActivity={requiredActivity} attempts={requiredAttempts} nextModule={nextModule} courseId={course.id} onStart={()=>void completeIntro()} busy={busy}/>
     <div id="guided-workflow" tabIndex={-1}><MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/></div>
-    <MissionBrief module={module} requiredActivity={requiredActivity} bonusAvailable={bonusAvailable} onStart={()=>void completeIntro()} busy={busy} started={Boolean(completion?.intro_complete)}/>
-    <JPACCoachPanel context={buildModuleCoachContext({courseId:course.id,module,instructions:requiredActivity?.instructions,rubric:requiredActivity?.rubric,teacherFeedback:latest?.teacher_feedback,hasPreparedEvidence:Boolean(file)})}/>
-    <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
-    <WatchSection videoUrl={module.primary_video_url} percent={Number(completion?.video_percent||0)} onProgress={trackVideo} onAcknowledge={()=>void acknowledgeVideo()} acknowledging={acknowledgingVideo}/>
+    <section className="module-learning-content" aria-labelledby="module-content-title">
+      <div className="module-learning-content-head"><span>Module content</span><h2 id="module-content-title">{module.title}</h2><p>Complete the learning content below in order. Your Guided Workflow above reflects these exact module requirements.</p></div>
+      <MissionBrief module={module} requiredActivity={requiredActivity} bonusAvailable={bonusAvailable} onStart={()=>void completeIntro()} busy={busy} started={Boolean(completion?.intro_complete)}/>
+      <JPACCoachPanel context={buildModuleCoachContext({courseId:course.id,module,instructions:requiredActivity?.instructions,rubric:requiredActivity?.rubric,teacherFeedback:latest?.teacher_feedback,hasPreparedEvidence:Boolean(file)})}/>
+      <LearnSection courseId={course.id} lessons={lessons} progress={progress}/>
+      <div className="module-video-block">
+        <div className="module-video-block-head"><span>Required instructional video</span><h2>Watch: {module.title}</h2><p>This is the video requirement represented in the Guided Workflow above.</p></div>
+        <WatchSection videoUrl={module.primary_video_url} percent={Number(completion?.video_percent||0)} onProgress={trackVideo} onAcknowledge={()=>void acknowledgeVideo()} acknowledging={acknowledgingVideo}/>
+      </div>
+    </section>
     <div id="mission-practice" tabIndex={-1} className="mission-practice-grid"><PracticeChallenge kind="practice" activity={realWorldActivity} moduleData={module.real_world_activity} busy={busy} earned={Boolean(realWorldActivity&&awardedSources.has(realWorldActivity.id))} onComplete={activity=>void completePractice(activity)}/><PracticeChallenge kind="lab" activity={labActivity} moduleData={module.jpac_tool_activity} busy={busy} earned={Boolean(labActivity&&awardedSources.has(labActivity.id))} onComplete={activity=>void completePractice(activity)}/>{otherPractice.map(activity=><PracticeChallenge key={activity.id} kind="practice" activity={activity} busy={busy} earned={awardedSources.has(activity.id)} onComplete={item=>void completePractice(item)}/>)}</div>
     {requiredActivity&&<section id="mission-create" tabIndex={-1} className="mission-card creative-challenge">
       <div className="creative-challenge-head"><div><div className="mission-section-label">Required assignment</div><h2>{requiredActivity.title}</h2></div><strong>{requiredActivity.xp_reward} Core XP</strong></div>
