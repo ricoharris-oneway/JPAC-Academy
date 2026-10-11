@@ -31,7 +31,7 @@ export function ModulePage(){
   useEffect(()=>{lastVideoSecond.current=-10;void load()},[courseId,moduleId,user?.id]);
   useEffect(()=>{if(!loading&&window.location.hash==='#guided-workflow'){window.setTimeout(()=>document.getElementById('guided-workflow')?.scrollIntoView({behavior:'smooth',block:'start'}),80)}},[loading,moduleId]);
   useEffect(()=>{if(!user||loading||completion?.is_complete)return;const refresh=()=>{if(document.visibilityState==='visible')void load(true)};const timer=window.setInterval(refresh,12000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[user?.id,moduleId,loading,completion?.is_complete]);
-  useEffect(()=>{if(!supabase||!user)return;const channel=supabase.channel(`module-submissions-${moduleId}-${user.id}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'submissions',filter:`student_id=eq.${user.id}`},()=>{void load(true)}).subscribe();return()=>{void supabase.removeChannel(channel)}},[moduleId,user?.id]);
+  useEffect(()=>{if(!supabase||!user)return;const client=supabase;const channel=client.channel(`module-submissions-${moduleId}-${user.id}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'submissions',filter:`student_id=eq.${user.id}`},()=>{void load(true)}).subscribe();return()=>{void client.removeChannel(channel)}},[moduleId,user?.id]);
 
   const requiredActivity=activities.find(activity=>activity.required)||null;
   const optionalActivities=activities.filter(activity=>!activity.required&&activity.xp_type==='bonus');
