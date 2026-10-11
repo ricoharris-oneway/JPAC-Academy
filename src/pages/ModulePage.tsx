@@ -13,7 +13,7 @@ const matchesDataTitle=(activity:MissionActivity,data?:Record<string,string>)=>B
 
 export function ModulePage(){
   const{courseId='',moduleId=''}=useParams();const{user}=useAuth();
-  const[course,setCourse]=useState<CourseRecord|null>(null);const[module,setModule]=useState<CourseModule|null>(null);const[courseModules,setCourseModules]=useState<CourseModule[]>([]);const[lessons,setLessons]=useState<Awaited<ReturnType<typeof loadCourseContent>>['lessons']>([]);const[progress,setProgress]=useState<Awaited<ReturnType<typeof loadCourseContent>>['progress']>([]);const[activities,setActivities]=useState<MissionActivity[]>([]);const[completion,setCompletion]=useState<MissionCompletion|null>(null);const[attempts,setAttempts]=useState<MissionAttempt[]>([]);const[bonusAwards,setBonusAwards]=useState<BonusAward[]>([]);const[file,setFile]=useState<File|null>(null);const[submissionReceipt,setSubmissionReceipt]=useState<{fileName:string;submittedAt:string;attempt:number}|null>(null);const[loading,setLoading]=useState(true);const[busy,setBusy]=useState(false);const[acknowledgingVideo,setAcknowledgingVideo]=useState(false);const[message,setMessage]=useState('');const lastVideoSecond=useRef(-10);
+  const[course,setCourse]=useState<CourseRecord|null>(null);const[module,setModule]=useState<CourseModule|null>(null);const[courseModules,setCourseModules]=useState<CourseModule[]>([]);const[lessons,setLessons]=useState<Awaited<ReturnType<typeof loadCourseContent>>['lessons']>([]);const[progress,setProgress]=useState<Awaited<ReturnType<typeof loadCourseContent>>['progress']>([]);const[activities,setActivities]=useState<MissionActivity[]>([]);const[completion,setCompletion]=useState<MissionCompletion|null>(null);const[attempts,setAttempts]=useState<MissionAttempt[]>([]);const[bonusAwards,setBonusAwards]=useState<BonusAward[]>([]);const[file,setFile]=useState<File|null>(null);const[submissionReceipt,setSubmissionReceipt]=useState<{submissionId:string;fileName:string;submittedAt:string;attempt:number;status:string}|null>(null);const[loading,setLoading]=useState(true);const[busy,setBusy]=useState(false);const[acknowledgingVideo,setAcknowledgingVideo]=useState(false);const[message,setMessage]=useState('');const lastVideoSecond=useRef(-10);
 
   async function load(background=false){
     if(!background)setLoading(true);const result=await loadCourseContent(courseId);const selected=result.modules.find(item=>item.id===moduleId)||null;
@@ -45,7 +45,60 @@ export function ModulePage(){
   async function completeIntro(){if(!supabase)return;setBusy(true);const{data,error}=await supabase.rpc('jpac_complete_module_intro',{target_module:moduleId});setBusy(false);setMessage(error?.message||(Number(data)>0?'Mission started. 50 Core XP earned.':'Mission intro was already complete; no duplicate Core XP was awarded.'));if(!error)await load()}
   async function trackVideo({watched:currentTime,duration}:{watched:number;duration:number}){if(!supabase||!Number.isFinite(duration)||duration<=0)return;const watched=Math.floor(currentTime);const ratio=currentTime/duration;if(watched-lastVideoSecond.current<5&&ratio<.9)return;lastVideoSecond.current=watched;const{data,error}=await supabase.rpc('jpac_record_module_video_progress',{target_module:moduleId,watched,duration:Math.floor(duration)});if(error){setMessage(error.message);return}const recorded=Math.max(0,Math.min(100,Number(data||0)));setCompletion(current=>current?{...current,video_percent:Math.max(Number(current.video_percent||0),recorded)}:current);if(recorded>=90&&Number(completion?.video_percent||0)<90)await load()}
   async function acknowledgeVideo(){if(!supabase||acknowledgingVideo||Number(completion?.video_percent||0)>=90)return;setAcknowledgingVideo(true);const{data,error}=await supabase.rpc('jpac_acknowledge_module_video',{target_module:moduleId});setAcknowledgingVideo(false);if(error){setMessage(error.message);return}const recorded=Math.max(90,Math.min(100,Number(data||100)));setCompletion(current=>current?{...current,video_percent:recorded}:current);setMessage('Video acknowledged. This Core requirement is complete.');await load(true)}
-  async function submit(activity:MissionActivity){if(!supabase||!user||!file||!canSubmit)return;const submittedFile=file;const attemptNumber=requiredAttempts.length?Math.max(...requiredAttempts.map(item=>item.attempt_number))+1:1;setBusy(true);setSubmissionReceipt(null);setMessage('Uploading your assignment securely…');const safe=submittedFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');const path=`${user.id}/${crypto.randomUUID()}-${safe}`;const{error:uploadError}=await supabase.storage.from('performance-submissions').upload(path,submittedFile,{contentType:submittedFile.type,upsert:false});if(uploadError){setBusy(false);setMessage(`Upload failed: ${uploadError.message}. Your selected file is still here so you can try again.`);return}const{error}=await supabase.rpc('jpac_submit_module_activity',{target_activity:activity.id,file_name:submittedFile.name,file_type:submittedFile.type,storage_path:path});setBusy(false);if(error){setMessage(`The file uploaded, but JPAC could not finish the submission: ${error.message}. Please try Submit again or contact JPAC support.`);return}setSubmissionReceipt({fileName:submittedFile.name,submittedAt:new Date().toISOString(),attempt:attemptNumber});setFile(null);setMessage('✓ Submission received. Your assignment is recorded and waiting for instructor review.');await load(true);document.getElementById('mission-create')?.scrollIntoView({behavior:'smooth',block:'start'})}
+  async function submit(activity:MissionActivity){
+    if(!supabase||!user||!file||!canSubmit)return;
+    const submittedFile=file;
+    setBusy(true);
+    setSubmissionReceipt(null);
+    setMessage('Uploading your assignment securely…');
+    const safe=submittedFile.name.replace(/[^a-zA-Z0-9._-]+/g,'-');
+    const path=`${user.id}/${crypto.randomUUID()}-${safe}`;
+    const{error:uploadError}=await supabase.storage.from('performance-submissions').upload(path,submittedFile,{contentType:submittedFile.type,upsert:false});
+    if(uploadError){
+      setBusy(false);
+      setMessage(`Upload failed: ${uploadError.message}. Your selected file is still here so you can try again.`);
+      return;
+    }
+
+    setMessage('Upload complete. Verifying your JPAC submission record…');
+    const{data:submissionId,error:submitError}=await supabase.rpc('jpac_submit_module_activity',{
+      target_activity:activity.id,
+      file_name:submittedFile.name,
+      file_type:submittedFile.type,
+      storage_path:path
+    });
+    if(submitError||!submissionId){
+      setBusy(false);
+      setMessage(`JPAC could not verify the assignment submission: ${submitError?.message||'No submission ID was returned.'} Please do not leave this page until the status is confirmed.`);
+      return;
+    }
+
+    const{data:verified,error:verifyError}=await supabase.from('submissions')
+      .select('id,activity_id,attempt_number,status,submitted_at,media_name,media_type,media_url')
+      .eq('id',submissionId)
+      .eq('student_id',user.id)
+      .eq('activity_id',activity.id)
+      .maybeSingle();
+
+    setBusy(false);
+    if(verifyError||!verified||verified.media_name!==submittedFile.name){
+      setMessage(`Your file was sent, but JPAC could not verify the final submission record. Do not submit a duplicate. Refresh this module or contact JPAC support if the submission does not appear.`);
+      await load(true);
+      return;
+    }
+
+    setSubmissionReceipt({
+      submissionId:String(verified.id),
+      fileName:String(verified.media_name||submittedFile.name),
+      submittedAt:String(verified.submitted_at||new Date().toISOString()),
+      attempt:Number(verified.attempt_number||1),
+      status:String(verified.status||'submitted')
+    });
+    setFile(null);
+    setMessage('✓ Submission verified. JPAC confirmed your assignment is recorded and waiting for instructor review.');
+    await load(true);
+    document.getElementById('mission-create')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }
   async function completePractice(activity:MissionActivity){if(!supabase)return;setBusy(true);const{data,error}=await supabase.rpc('jpac_complete_bonus_activity',{target_activity:activity.id});setBusy(false);setMessage(error?.message||(Number(data)>0?`Practice complete. ${data} Bonus XP awarded.`:'Practice was already recorded; no duplicate Bonus XP was awarded.'));if(!error)await load()}
 
   if(loading)return <div className="card card-pad">Loading mission…</div>;
@@ -64,7 +117,7 @@ export function ModulePage(){
       <div className="creative-challenge-head"><div><div className="mission-section-label">Required assignment</div><h2>{requiredActivity.title}</h2></div><strong>{requiredActivity.xp_reward} Core XP</strong></div>
       <p>{requiredActivity.description}</p><p className="muted">{requiredActivity.instructions}</p>
       <div className="submission-state"><strong>{assignmentApproved?'✓ Assignment approved':hasRevision?'Revision requested':reviewPending?'✓ Submitted for review':'Assignment ready'}</strong><small>{assignmentApproved?'Your instructor approved this requirement. Continue with the mastery checklist.':hasRevision?'Read the feedback below, prepare a corrected take, and submit a new attempt.':reviewPending?'Your file is safely recorded. You do not need to submit again while the instructor review is pending.':'Complete the four submission steps below when your take is ready.'}</small></div>
-      {submissionReceipt&&<div className="submission-receipt" role="status"><strong>✓ Assignment submitted successfully</strong><span>{submissionReceipt.fileName}</span><small>Attempt {submissionReceipt.attempt} · {new Date(submissionReceipt.submittedAt).toLocaleString()} · Waiting for instructor review</small></div>}
+      {submissionReceipt&&<div className="submission-receipt" role="status"><strong>✓ Submission verified by JPAC</strong><span>{submissionReceipt.fileName}</span><small>Attempt {submissionReceipt.attempt} · {new Date(submissionReceipt.submittedAt).toLocaleString()} · Status: {submissionReceipt.status.replace('_',' ')}</small><small>Confirmation ID: {submissionReceipt.submissionId.slice(0,8).toUpperCase()}</small></div>}
       <SubmissionHistory attempts={requiredAttempts}/>
       {!assignmentApproved&&<div className="card" style={{padding:18,marginTop:16}}><div className="eyebrow">Assignment submission workflow</div><h3>{hasRevision?'Submit your revision':reviewPending?'Submission received':'Turn in your assignment'}</h3><ol style={{display:'grid',gap:10,paddingLeft:22}}><li><strong>Prepare your take.</strong> Confirm it follows the assignment directions and rubric.</li><li><strong>Select your file.</strong> JPAC will show the filename before anything is submitted.</li><li><strong>Submit for instructor review.</strong> You will receive an on-screen confirmation and the file will appear in Submission History.</li><li><strong>Track the review.</strong> Stay on this module page for approval, revision feedback, and the next required step.</li></ol>
         {reviewPending?<div className="auth-message" role="status"><strong>✓ Submission received.</strong> Your uploaded file is recorded above. No additional submission is needed until your instructor reviews it.</div>:<><label className="practice-drop"><input type="file" accept="audio/*,video/*" onChange={event=>{setSubmissionReceipt(null);setFile(event.target.files?.[0]||null)}}/><strong>{file?.name||'Choose audio or video assignment file'}</strong><small>{file?`${Math.max(.01,file.size/1024/1024).toFixed(2)} MB · selected · not submitted yet`:'Accepted evidence: audio or video. Selecting a file does not submit it automatically.'}</small></label>{file&&<div className="submission-ready"><strong>Ready to submit</strong><span>{file.name}</span><small>Review the filename, then use the button below to send this attempt to your instructor.</small></div>}<button className="button button-primary" disabled={!file||busy||!canSubmit} onClick={()=>void submit(requiredActivity)}>{busy?'Uploading and submitting…':hasRevision?`Submit revision attempt ${nextAttempt}`:'Submit assignment for review'}</button></>}
