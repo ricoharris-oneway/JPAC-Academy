@@ -15,9 +15,9 @@ export function ModulePage(){
   const{courseId='',moduleId=''}=useParams();const{user}=useAuth();
   const[course,setCourse]=useState<CourseRecord|null>(null);const[module,setModule]=useState<CourseModule|null>(null);const[courseModules,setCourseModules]=useState<CourseModule[]>([]);const[lessons,setLessons]=useState<Awaited<ReturnType<typeof loadCourseContent>>['lessons']>([]);const[progress,setProgress]=useState<Awaited<ReturnType<typeof loadCourseContent>>['progress']>([]);const[activities,setActivities]=useState<MissionActivity[]>([]);const[completion,setCompletion]=useState<MissionCompletion|null>(null);const[attempts,setAttempts]=useState<MissionAttempt[]>([]);const[bonusAwards,setBonusAwards]=useState<BonusAward[]>([]);const[file,setFile]=useState<File|null>(null);const[loading,setLoading]=useState(true);const[busy,setBusy]=useState(false);const[message,setMessage]=useState('');const lastVideoSecond=useRef(-10);
 
-  async function load(){
-    setLoading(true);const result=await loadCourseContent(courseId);const selected=result.modules.find(item=>item.id===moduleId)||null;
-    setCourse(result.course as CourseRecord|null);setModule(selected);setCourseModules(result.modules);setLessons(selected?result.lessons.filter(item=>item.module_id===selected.id):[]);setProgress(result.progress);setActivities([]);setCompletion(null);setAttempts([]);setBonusAwards([]);
+  async function load(background=false){
+    if(!background)setLoading(true);const result=await loadCourseContent(courseId);const selected=result.modules.find(item=>item.id===moduleId)||null;
+    setCourse(result.course as CourseRecord|null);setModule(selected);setCourseModules(result.modules);setLessons(selected?result.lessons.filter(item=>item.module_id===selected.id):[]);setProgress(result.progress);if(!background){setActivities([]);setCompletion(null);setAttempts([]);setBonusAwards([]);}
     if(result.error||!selected||!supabase||!user){setMessage(result.error||(!selected?'This mission is locked, unavailable, or outside your enrolled course.':''));setLoading(false);return}
     const[activityResult,completionResult,bonusResult]=await Promise.all([
       supabase.from('activities').select('id,title,description,instructions,activity_type,submission_type,xp_reward,xp_type,required,rubric').eq('module_id',selected.id).eq('status','published'),
@@ -26,10 +26,10 @@ export function ModulePage(){
     ]);
     const activityRows=(activityResult.data as MissionActivity[]|null)||[];setActivities(activityRows);setCompletion(Array.isArray(completionResult.data)?(completionResult.data[0]as MissionCompletion||null):null);setBonusAwards((bonusResult.data as BonusAward[]|null)||[]);
     let historyError='';if(activityRows.length){const historyResult=await supabase.from('submissions').select('id,activity_id,attempt_number,status,score,teacher_feedback,submitted_at').eq('student_id',user.id).in('activity_id',activityRows.map(item=>item.id)).order('attempt_number',{ascending:false});setAttempts((historyResult.data as MissionAttempt[]|null)||[]);historyError=historyResult.error?.message||''}
-    setMessage(activityResult.error?.message||completionResult.error?.message||bonusResult.error?.message||historyError);setLoading(false);
+    setMessage(activityResult.error?.message||completionResult.error?.message||bonusResult.error?.message||historyError);if(!background)setLoading(false);
   }
   useEffect(()=>{lastVideoSecond.current=-10;void load()},[courseId,moduleId,user?.id]);
-  useEffect(()=>{if(!user||loading||completion?.is_complete)return;const refresh=()=>{if(document.visibilityState==='visible')void load()};const timer=window.setInterval(refresh,12000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[user?.id,moduleId,loading,completion?.is_complete]);
+  useEffect(()=>{if(!user||loading||completion?.is_complete)return;const refresh=()=>{if(document.visibilityState==='visible')void load(true)};const timer=window.setInterval(refresh,12000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[user?.id,moduleId,loading,completion?.is_complete]);
 
   const requiredActivity=activities.find(activity=>activity.required)||null;
   const optionalActivities=activities.filter(activity=>!activity.required&&activity.xp_type==='bonus');
