@@ -139,6 +139,7 @@ export function ModulePage(){
   const nextAttempt=requiredAttempts.length?Math.max(...requiredAttempts.map(item=>item.attempt_number))+1:1;
   return <div className="creator-mission"><Link className="text-link" to={`/courses/${course.id}`}>← {course.title}</Link>
     <div className="eyebrow">Level {module.level_number||1} · Mission {module.level_module_number||module.sort_order}</div>
+    <button className="button button-primary module-resume-shortcut" type="button" onClick={()=>{const target=document.getElementById('guided-workflow');target?.scrollIntoView({behavior:'smooth',block:'start'});target?.focus({preventScroll:true})}}>▶ Pick Up Guided Workflow</button>
     <MissionNextStep completion={completion} lessons={lessons} progress={progress} requiredActivity={requiredActivity} attempts={requiredAttempts} nextModule={nextModule} courseId={course.id} onStart={()=>void completeIntro()} busy={busy}/>
     <div id="guided-workflow" tabIndex={-1}><MissionProgress completion={completion} lessons={lessons} progress={progress} bonusEarned={bonusEarned} bonusAvailable={bonusAvailable} hasRevision={hasRevision}/></div>
     <section className="module-learning-content" aria-labelledby="module-content-title">
