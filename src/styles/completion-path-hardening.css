@@ -23,3 +23,10 @@
 .submission-receipt{border:1px solid rgba(76,215,145,.35);background:rgba(38,173,112,.09)}
 .submission-ready span,.submission-receipt span{font-weight:700;word-break:break-word}
 .submission-ready small,.submission-receipt small{color:var(--muted);line-height:1.45}
+
+.module-learning-content{display:grid;gap:18px;margin-top:18px}
+.module-learning-content-head,.module-video-block-head{display:grid;gap:6px}
+.module-learning-content-head>span,.module-video-block-head>span{text-transform:uppercase;letter-spacing:.12em;font-size:.76rem;font-weight:800;color:var(--muted)}
+.module-learning-content-head h2,.module-video-block-head h2{margin:0}
+.module-learning-content-head p,.module-video-block-head p{margin:0;color:var(--muted)}
+.module-video-block{display:grid;gap:12px;padding:18px;border:1px solid rgba(231,189,87,.24);border-radius:18px;background:rgba(231,189,87,.045)}
