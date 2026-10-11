@@ -3,7 +3,7 @@ import type{CourseLesson,CourseModule,LessonProgress}from'../lib/studentAccess';
 import{ProviderAwareVideo,type VideoProgress}from'./ProviderAwareVideo';
 
 export type MissionActivity={id:string;title:string;description:string;instructions:string;activity_type:string;submission_type:string;xp_reward:number;xp_type:'core'|'bonus';required:boolean;rubric:Record<string,unknown>};
-export type MissionAttempt={id:string;activity_id:string;attempt_number:number;status:string;score:number|null;teacher_feedback:string|null;submitted_at:string};
+export type MissionAttempt={id:string;activity_id:string;attempt_number:number;status:string;score:number|null;teacher_feedback:string|null;submitted_at:string;media_name?:string|null;media_type?:string|null;media_url?:string|null};
 export type MissionCompletion={video_percent:number;assignment_score:number;core_xp_earned:number;core_xp_available:number;core_xp_threshold:number;intro_complete:boolean;assignment_submitted:boolean;assessment_passed:boolean;mastery_awarded:boolean;is_complete:boolean};
 type StageState='locked'|'available'|'active'|'complete'|'revision';
 type WorkflowStep={label:string;detail:string;state:StageState;target:string};
@@ -12,21 +12,32 @@ const stageLabel:Record<StageState,string>={locked:'Locked',available:'Do this n
 function statusLabel(value:string){return value.replaceAll('_',' ').replace(/\b\w/g,letter=>letter.toUpperCase())}
 
 export function MissionProgress({completion,lessons,progress,bonusEarned,bonusAvailable,hasRevision}:{completion:MissionCompletion|null;lessons:CourseLesson[];progress:LessonProgress[];bonusEarned:number;bonusAvailable:number;hasRevision:boolean}){
-  const lessonsComplete=lessons.length>0&&lessons.every(lesson=>progress.find(item=>item.lesson_id===lesson.id)?.status==='completed');
+  const completedLessons=progress.filter(item=>item.status==='completed'&&lessons.some(lesson=>lesson.id===item.lesson_id)).length;
+  const lessonsComplete=!lessons.length||completedLessons===lessons.length;
+  const videoComplete=Number(completion?.video_percent||0)>=90;
+  const submitted=Boolean(completion?.assignment_submitted);
+  const approved=Boolean(completion?.assessment_passed);
+  const mastered=Boolean(completion?.is_complete);
   const practiceComplete=!bonusAvailable||bonusEarned>0;
+  const currentRequired=!completion?.intro_complete?'overview':!lessonsComplete?'lessons':!videoComplete?'video':hasRevision?'assignment':!submitted?'assignment':!approved?'review':!mastered?'complete':'done';
+  const stateFor=(key:'overview'|'lessons'|'video'|'practice'|'assignment'|'review'|'complete',done:boolean):StageState=>{
+    if(done)return'complete';
+    if(key==='practice')return practiceComplete?'complete':'available';
+    if(key==='assignment'&&hasRevision)return'revision';
+    return currentRequired===key?'active':'available';
+  };
   const stages:WorkflowStep[]=[
-    {label:'Overview',detail:'Mission brief',state:completion?.intro_complete?'complete':'active',target:'mission-brief'},
-    {label:'Lessons',detail:lessons.length?`${progress.filter(item=>item.status==='completed'&&lessons.some(lesson=>lesson.id===item.lesson_id)).length}/${lessons.length} complete`:'Not published yet',state:lessonsComplete||!lessons.length?'complete':completion?.intro_complete?'active':'available',target:'mission-learn'},
-    {label:'Video',detail:`${Math.round(completion?.video_percent||0)}% watched`,state:(completion?.video_percent||0)>=90?'complete':lessonsComplete||!lessons.length?'active':'available',target:'mission-watch'},
-    {label:'Practice',detail:bonusAvailable?`${bonusEarned}/${bonusAvailable} Bonus XP`:'Not required',state:practiceComplete?'complete':'active',target:'mission-practice'},
-    {label:'Assignment',detail:hasRevision?'Revision needed':completion?.assignment_submitted?'Submitted':'Ready to submit',state:hasRevision?'revision':completion?.assessment_passed?'complete':completion?.assignment_submitted?'complete':'active',target:'mission-create'},
-    {label:'Review',detail:completion?.assessment_passed?'Approved':completion?.assignment_submitted?'Waiting for teacher':'Not started',state:completion?.assessment_passed?'complete':completion?.assignment_submitted?'active':'available',target:'mission-feedback'},
-    {label:'Complete',detail:completion?.is_complete?'Mission mastered':'Finish every required step',state:completion?.is_complete?'complete':hasRevision?'revision':'available',target:'mission-master'},
+    {label:'Overview',detail:completion?.intro_complete?'Mission started':'Start the mission brief',state:stateFor('overview',Boolean(completion?.intro_complete)),target:'mission-brief'},
+    {label:'Lessons',detail:lessons.length?`${completedLessons}/${lessons.length} complete`:'No required lessons',state:stateFor('lessons',lessonsComplete),target:'mission-learn'},
+    {label:'Video',detail:videoComplete?'Video requirement complete':`${Math.round(completion?.video_percent||0)}% watched`,state:stateFor('video',videoComplete),target:'mission-watch'},
+    {label:'Practice',detail:bonusAvailable?(practiceComplete?`${bonusEarned} Bonus XP earned`:'Optional bonus practice'):'Not required',state:stateFor('practice',practiceComplete),target:'mission-practice'},
+    {label:'Assignment',detail:hasRevision?'Revision required':approved?'Approved':submitted?'Submitted for review':'Ready to submit',state:stateFor('assignment',approved||submitted&&!hasRevision),target:'mission-create'},
+    {label:'Review',detail:approved?'Instructor review complete':submitted?'Waiting for instructor':'Not submitted yet',state:stateFor('review',approved),target:'mission-feedback'},
+    {label:'Complete',detail:mastered?'Module mastered':approved?'Finalizing module completion':'Complete required steps',state:stateFor('complete',mastered),target:'mission-master'},
   ];
   const jumpTo=(id:string)=>{const target=document.getElementById(id);if(!target)return;target.scrollIntoView({behavior:'smooth',block:'start'});if(!target.hasAttribute('tabindex'))target.setAttribute('tabindex','-1');target.focus({preventScroll:true});};
-  return <section className="mission-progress" aria-label="Mission progress"><div className="mission-progress-head"><div><span>Guided workflow</span><h2>Follow the mission in order</h2><p className="muted">Do each required step in sequence. Optional practice never replaces a Core requirement.</p></div><div className="mission-xp-summary"><strong>{completion?.core_xp_earned||0} / {completion?.core_xp_available||625}</strong><small>Core XP</small><b>{bonusEarned} / {bonusAvailable}</b><small>Bonus XP</small></div></div><ol>{stages.map((stage,index)=><li className={`mission-stage state-${stage.state}`} key={stage.label}><button type="button" onClick={()=>jumpTo(stage.target)} aria-label={`Jump to ${stage.label}: ${stage.detail}`}><span>{stage.state==='complete'?'✓':index+1}</span><div><strong>{stage.label}</strong><small>{stage.detail}</small></div><em>{stageLabel[stage.state]}</em></button></li>)}</ol></section>
+  return <section className="mission-progress" aria-label="Mission progress"><div className="mission-progress-head"><div><span>Guided workflow</span><h2>Follow the mission in order</h2><p className="muted">The highlighted step is the next required action. Optional practice never blocks progression.</p></div><div className="mission-xp-summary"><strong>{completion?.core_xp_earned||0} / {completion?.core_xp_available||625}</strong><small>Core XP</small><b>{bonusEarned} / {bonusAvailable}</b><small>Bonus XP</small></div></div><ol>{stages.map((stage,index)=><li className={`mission-stage state-${stage.state}`} key={stage.label}><button type="button" onClick={()=>jumpTo(stage.target)} aria-label={`Jump to ${stage.label}: ${stage.detail}`}><span>{stage.state==='complete'?'✓':index+1}</span><div><strong>{stage.label}</strong><small>{stage.detail}</small></div><em>{stageLabel[stage.state]}</em></button></li>)}</ol></section>
 }
-
 export function MissionNextStep({completion,lessons,progress,requiredActivity,attempts,nextModule,courseId,onStart,busy}:{completion:MissionCompletion|null;lessons:CourseLesson[];progress:LessonProgress[];requiredActivity:MissionActivity|null;attempts:MissionAttempt[];nextModule:CourseModule|null;courseId:string;onStart?:()=>void;busy?:boolean}){
   const firstIncomplete=lessons.find(lesson=>progress.find(item=>item.lesson_id===lesson.id)?.status!=='completed');
   const latest=attempts[0];
@@ -65,7 +76,7 @@ export function PracticeChallenge({kind,activity,moduleData,busy,earned,onComple
 }
 
 export function SubmissionHistory({attempts}:{attempts:MissionAttempt[]}){
-  if(!attempts.length)return null;return <div className="attempt-timeline"><div className="mission-section-label">Submission history</div>{attempts.map(attempt=><article key={attempt.id}><span>{attempt.attempt_number}</span><div><strong>Attempt {attempt.attempt_number}</strong><small>{new Date(attempt.submitted_at).toLocaleDateString()} · {statusLabel(attempt.status)}</small>{attempt.teacher_feedback&&<p>{attempt.teacher_feedback}</p>}</div><b>{attempt.score===null?'Awaiting review':`${attempt.score}%`}</b></article>)}</div>
+  if(!attempts.length)return null;return <div className="attempt-timeline"><div className="mission-section-label">Submission history</div>{attempts.map(attempt=><article key={attempt.id}><span>{attempt.attempt_number}</span><div><strong>Attempt {attempt.attempt_number}</strong><small>{new Date(attempt.submitted_at).toLocaleString()} · {statusLabel(attempt.status)}</small>{attempt.media_name&&<p><strong>Uploaded file:</strong> {attempt.media_name}</p>}{attempt.teacher_feedback&&<p>{attempt.teacher_feedback}</p>}</div><b>{attempt.score===null?'Awaiting review':`${attempt.score}%`}</b></article>)}</div>
 }
 
 export function AriaFeedback({attempt}:{attempt:MissionAttempt|null}){
