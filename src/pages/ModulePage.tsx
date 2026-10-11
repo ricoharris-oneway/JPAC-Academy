@@ -29,6 +29,7 @@ export function ModulePage(){
     setMessage(activityResult.error?.message||completionResult.error?.message||bonusResult.error?.message||historyError);setLoading(false);
   }
   useEffect(()=>{lastVideoSecond.current=-10;void load()},[courseId,moduleId,user?.id]);
+  useEffect(()=>{if(!user||loading||completion?.is_complete)return;const refresh=()=>{if(document.visibilityState==='visible')void load()};const timer=window.setInterval(refresh,12000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[user?.id,moduleId,loading,completion?.is_complete]);
 
   const requiredActivity=activities.find(activity=>activity.required)||null;
   const optionalActivities=activities.filter(activity=>!activity.required&&activity.xp_type==='bonus');
@@ -39,6 +40,7 @@ export function ModulePage(){
   const bonusAvailable=optionalActivities.length?optionalActivities.reduce((sum,item)=>sum+Number(item.xp_reward||0),0):Number(module?.bonus_xp_available||0);
   const requiredAttempts=requiredActivity?attempts.filter(item=>item.activity_id===requiredActivity.id):[];const latest=requiredAttempts[0]||null;const latestAssessed=requiredAttempts.find(item=>item.score!==null)||null;const hasRevision=latest?.status==='revision_requested';const reviewPending=latest?.status==='submitted'||latest?.status==='under_review';const assignmentApproved=latest?.status==='approved'||Boolean(completion?.assessment_passed);const canSubmit=!latest||hasRevision;
   const nextModule=useMemo(()=>{if(!module)return null;return courseModules.filter(item=>item.sort_order>module.sort_order).sort((a,b)=>a.sort_order-b.sort_order)[0]||null},[courseModules,module]);
+  const sameLevelNext=Boolean(nextModule&&nextModule.level_number===module?.level_number);
 
   async function completeIntro(){if(!supabase)return;setBusy(true);const{data,error}=await supabase.rpc('jpac_complete_module_intro',{target_module:moduleId});setBusy(false);setMessage(error?.message||(Number(data)>0?'Mission started. 50 Core XP earned.':'Mission intro was already complete; no duplicate Core XP was awarded.'));if(!error)await load()}
   async function trackVideo({watched:currentTime,duration}:{watched:number;duration:number}){if(!supabase||!Number.isFinite(duration)||duration<=0)return;const watched=Math.floor(currentTime);const ratio=currentTime/duration;if(watched-lastVideoSecond.current<5&&ratio<.9)return;lastVideoSecond.current=watched;const{data,error}=await supabase.rpc('jpac_record_module_video_progress',{target_module:moduleId,watched,duration:Math.floor(duration)});if(error){setMessage(error.message);return}const recorded=Math.max(0,Math.min(100,Number(data||0)));setCompletion(current=>current?{...current,video_percent:Math.max(Number(current.video_percent||0),recorded)}:current);if(recorded>=90&&Number(completion?.video_percent||0)<90)await load()}
@@ -70,6 +72,7 @@ export function ModulePage(){
     <AriaFeedback attempt={latestAssessed}/>
     <section id="mission-master" tabIndex={-1}><MasteryChecklist completion={completion}/></section>
     <LevelUpCard completion={completion} bonusEarned={bonusEarned} nextModule={nextModule} courseId={course.id} currentLevel={module.level_number}/>
+    {completion?.is_complete&&nextModule&&sameLevelNext&&<section className="course-next-step"><div><span>Next module unlocked</span><small>Continue Level {module.level_number||1}</small><h2>{nextModule.title}</h2><p>Module {nextModule.level_module_number||nextModule.sort_order} is the next mission in this level. Your completed module has unlocked it automatically.</p></div><Link className="button button-primary" to={`/courses/${course.id}/modules/${nextModule.id}`}>Start Module {nextModule.level_module_number||nextModule.sort_order}</Link></section>}
     {message&&<div className="auth-message" role="status">{message}</div>}
   </div>
 }
