@@ -1,6 +1,7 @@
 import{useEffect,useMemo,useState}from'react';
 import{supabase}from'../lib/supabase';
 import{useAuth,type AppRole}from'../context/AuthContext';
+import{AssignmentReviewQueue}from'../components/AssignmentReviewQueue';
 
 type Profile={id:string;display_name:string|null;email:string|null;role:AppRole;total_xp:number|null};
 type Course={id:string;title:string;status:string;total_xp:number};
@@ -88,6 +89,7 @@ export function AdminPage(){
     <div className="page-hero"><div><div className="eyebrow">Academy operations</div><h1 className="page-title">Admin Command Center</h1><p className="muted">Manage people, roles, enrollment, XP, credentials, and notification routing through visual workflows.</p></div><div className="studio-signal">● Live Supabase data</div></div>
     <div className="admin-metrics"><div><strong>{users.length}</strong><span>Total accounts</span></div><div><strong>{students.length}</strong><span>Students</span></div><div><strong>{teachers.length}</strong><span>Staff</span></div><div><strong>{courses.length}</strong><span>Courses</span></div></div>
     {message&&<div className="admin-message">{message}</div>}
+    <AssignmentReviewQueue/>
     <div className="admin-grid">
       <section className="card admin-panel"><div className="section-head"><h2>People & access</h2><button className="button button-secondary" onClick={()=>void load()}>Refresh</button></div>{loading?<p className="muted">Loading accounts…</p>:<div className="user-list">{users.map(user=>{const name=user.display_name?.trim()||'Unnamed user';return <article className="user-row" key={user.id}><div className="avatar">{name.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><div className="user-details"><strong>{name}</strong><small>{user.email||'No email'}</small><span>{Number(user.total_xp||0).toLocaleString()} XP</span></div><select aria-label={`Role for ${name}`} value={user.role} onChange={e=>void changeRole(user.id,e.target.value as AppRole)} disabled={user.id===profile.id}>{Object.entries(roleLabels).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></article>})}</div>}</section>
       <aside className="card admin-panel quick-actions"><h2>Quick academy actions</h2><label>Student<select value={selectedUser} onChange={e=>setSelectedUser(e.target.value)}><option value="">Select a student</option>{students.map(s=><option value={s.id} key={s.id}>{s.display_name}</option>)}</select></label><label>Course<select value={selectedCourse} onChange={e=>setSelectedCourse(e.target.value)}><option value="">Select a course</option>{courses.map(c=><option value={c.id} key={c.id}>{c.title}</option>)}</select></label><div className="action-box"><h3>Award XP</h3><input type="number" value={xp} onChange={e=>setXp(e.target.value)}/><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason"/><button className="button button-primary" disabled={!selectedUser} onClick={()=>void awardXp()}>Award XP</button></div><button className="button button-secondary wide" disabled={!selectedUser||!selectedCourse} onClick={()=>void enroll()}>Enroll in selected course</button></aside>
