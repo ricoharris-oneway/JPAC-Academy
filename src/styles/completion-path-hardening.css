@@ -17,3 +17,9 @@
 .video-acknowledgement span{display:grid;gap:4px}
 .video-acknowledgement small{color:var(--muted);line-height:1.45}
 .video-acknowledgement.complete{border-color:rgba(76,215,145,.35);background:rgba(38,173,112,.08)}
+
+.submission-ready,.submission-receipt{margin-top:12px;padding:14px 16px;border-radius:14px;display:grid;gap:4px}
+.submission-ready{border:1px solid rgba(231,189,87,.32);background:rgba(231,189,87,.07)}
+.submission-receipt{border:1px solid rgba(76,215,145,.35);background:rgba(38,173,112,.09)}
+.submission-ready span,.submission-receipt span{font-weight:700;word-break:break-word}
+.submission-ready small,.submission-receipt small{color:var(--muted);line-height:1.45}
