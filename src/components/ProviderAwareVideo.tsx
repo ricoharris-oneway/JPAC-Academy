@@ -30,16 +30,19 @@ export function ProviderAwareVideo({ url, title, onProgress }: { url: string; ti
   const media = normalizeInstructionalMediaUrl(url);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const intervalRef = useRef<number | null>(null);
+  const onProgressRef = useRef(onProgress);
   const id = useId().replaceAll(':', '');
 
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
+
   useEffect(() => {
-    if (media?.provider !== 'youtube' || !onProgress || !iframeRef.current) return;
+    if (media?.provider !== 'youtube' || !onProgressRef.current || !iframeRef.current) return;
     let disposed = false;
     let player: YouTubePlayer | null = null;
     const report = (target: YouTubePlayer) => {
       const watched = target.getCurrentTime();
       const duration = target.getDuration();
-      if (Number.isFinite(watched) && Number.isFinite(duration) && duration > 0) onProgress({ watched, duration });
+      if (Number.isFinite(watched) && Number.isFinite(duration) && duration > 0) onProgressRef.current?.({ watched, duration });
     };
     void loadYouTubeApi().then(api => {
       if (disposed || !iframeRef.current) return;
@@ -53,7 +56,7 @@ export function ProviderAwareVideo({ url, title, onProgress }: { url: string; ti
       } });
     }).catch(() => { /* The iframe remains playable if progress integration is unavailable. */ });
     return () => { disposed = true; if (intervalRef.current !== null) window.clearInterval(intervalRef.current); player?.destroy(); };
-  }, [media?.provider, media?.providerMediaId, onProgress]);
+  }, [media?.provider, media?.providerMediaId]);
 
   if (!media) return null;
   if (media.provider === 'direct') return <video className="module-video" controls preload="metadata" src={media.normalizedUrl} onTimeUpdate={event => onProgress?.({ watched: event.currentTarget.currentTime, duration: event.currentTarget.duration })} />;
