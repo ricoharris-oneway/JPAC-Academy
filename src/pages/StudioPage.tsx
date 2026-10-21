@@ -46,12 +46,28 @@ export function StudioPage() {
   }, [profile]);
 
   return <div className="creative-studio-page">
-    <div className="page-hero"><div><div className="eyebrow">JPAC Creator Lab</div><h1 className="page-title">Creative Studio</h1><p className="muted">Practice, plan, and build your creative work with JPAC studio tools.</p></div></div>
+    <header className="studio-tools-hero">
+      <div className="studio-tools-hero-copy">
+        <span className="studio-hero-kicker">JPAC Creator Lab · Free member access</span>
+        <h1 className="page-title">Make something unforgettable.</h1>
+        <p>Practice, play, and shape your next idea with a cinematic toolkit built for curious creators.</p>
+        <div className="studio-hero-actions">
+          <a className="button button-primary" href="#jpac-creator-tools-title">Explore the tools</a>
+          <span className="studio-hero-note">Local-first · no uploads required</span>
+        </div>
+      </div>
+      <div className="studio-hero-orbit" aria-hidden="true"><span>JPAC</span><strong>TOOLS</strong><i>✦</i></div>
+      <div className="studio-hero-stats" aria-label="Creator Tools highlights">
+        <div><strong>08</strong><span>creative tools</span></div>
+        <div><strong>20</strong><span>prompts per tool</span></div>
+        <div><strong>∞</strong><span>ways to explore</span></div>
+      </div>
+    </header>
     {message ? <div className="admin-message">{message}</div> : null}
 
     <section className="studio-premium-section" aria-labelledby="jpac-creator-tools-title">
-      <div className="studio-premium-heading"><div><div className="eyebrow">Premium local practice</div><h2 id="jpac-creator-tools-title">JPAC Creator Tools</h2></div><small>No uploads, recording, XP, or assignment submission.</small></div>
-      <div className="studio-premium-grid">{premiumCreatorTools.map((tool) => <Link className="studio-premium-card" to={`/studio/tools/${tool.slug}`} key={tool.slug}><span className="icon" aria-hidden="true">{tool.icon}</span><strong>{tool.title}</strong><span>{tool.description}</span><b>Open tool →</b></Link>)}</div>
+      <div className="studio-premium-heading"><div><div className="eyebrow">Premium local practice</div><h2 id="jpac-creator-tools-title">Your creative playground</h2><p>Pick a lane, follow the spark, and make the session yours.</p></div><small>No uploads, recording, XP, or assignment submission.</small></div>
+      <div className="studio-premium-grid">{premiumCreatorTools.map((tool, index) => <Link className="studio-premium-card" to={`/studio/tools/${tool.slug}`} key={tool.slug}><span className="studio-tool-icon" aria-hidden="true">{tool.icon}</span><span className="studio-tool-index" aria-hidden="true">0{index + 1}</span><strong>{tool.title}</strong><span>{tool.description}</span><b>Enter tool <span aria-hidden="true">↗</span></b></Link>)}</div>
     </section>
 
     <section className="studio-assigned-tools" aria-labelledby="assigned-tools-title">
