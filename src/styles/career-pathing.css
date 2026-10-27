@@ -89,3 +89,19 @@
   .career-experience-v2 *, .career-experience-v2 *::before, .career-experience-v2 *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .career-experience-v2 .career-path-grid article:hover, .career-experience-v2 .career-path-grid article:focus-within, .career-experience-v2 .career-tool-grid a:hover { transform: none; }
 }
+
+.career-primary-action,.career-next-big,.career-roadmap-cta,.career-save-big{min-height:62px;padding:16px 24px;font-size:1rem;font-weight:950;letter-spacing:.02em;box-shadow:0 14px 34px #0006,0 0 24px #f7c64c33}
+.career-next-big,.career-roadmap-cta{width:100%}
+.career-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.career-stat-grid article{display:grid;gap:4px;padding:14px;border:1px solid #f7c64c33;border-radius:14px;background:#ffffff08;text-align:center}
+.career-stat-grid strong{font-size:1.65rem;color:#ffdb84}
+.career-stat-grid span{font-size:.72rem;color:#d9cde2}
+.career-popup-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:22px;background:#07030db8;backdrop-filter:blur(8px)}
+.career-milestone-popup{position:relative;display:grid;justify-items:center;gap:14px;width:min(560px,100%);padding:34px;border:1px solid #f7c64c99;border-radius:26px;background:radial-gradient(circle at 50% 10%,#7545a95c,transparent 35%),linear-gradient(145deg,#2a173b,#0e0816);color:#fff;text-align:center;box-shadow:0 28px 90px #000b,0 0 50px #bc7cff2e}
+.career-milestone-popup>span{color:#f0ca64;font-size:.72rem;font-weight:950;letter-spacing:.16em}
+.career-milestone-popup h2{margin:0;font-size:clamp(1.8rem,5vw,2.8rem)}
+.career-milestone-popup p{max-width:460px;margin:0;color:#e0d3ea;line-height:1.65}
+.career-popup-icon{display:grid;place-items:center;width:92px;height:92px;border-radius:50%;background:linear-gradient(145deg,#ffd979,#9e5fd0);color:#1d0b2a;font-size:3rem;box-shadow:0 0 0 10px #f7c64c12,0 0 40px #f7c64c55}
+.career-popup-close{position:absolute;top:14px;right:16px;width:42px;height:42px;border:1px solid #ffffff22;border-radius:50%;background:#ffffff0b;color:#fff;font-size:1.6rem;cursor:pointer}
+.career-popup-action{width:100%;min-height:58px}
+@media(max-width:760px){.career-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.career-primary-action,.career-next-big,.career-roadmap-cta,.career-save-big{width:100%}}
