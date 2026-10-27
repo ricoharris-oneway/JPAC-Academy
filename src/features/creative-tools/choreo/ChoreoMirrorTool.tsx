@@ -24,6 +24,7 @@ export function ChoreoMirrorTool() {
   const [cameraState, setCameraState] = useState<CameraState>('idle'); const [message, setMessage] = useState('Your camera is off.'); const [mode, setMode] = useState<PracticeMode>('Warm-Up'); const [mirrored, setMirrored] = useState(true); const [metrics, setMetrics] = useState<MotionMetrics>(emptyMetrics); const [baseline, setBaseline] = useState(0); const [calibrated, setCalibrated] = useState(false);
   const [goal, setGoal] = useState<ChoreoGoal>('Warm up movement'); const [selectedActivityId, setSelectedActivityId] = useState(choreoActivities[0].id); const [lastMetrics, setLastMetrics] = useState<MotionMetrics | null>(null); const [modeChosen, setModeChosen] = useState(false); const [cameraStarted, setCameraStarted] = useState(false); const [feedbackSeen, setFeedbackSeen] = useState(false); const [stoppedAfterPractice, setStoppedAfterPractice] = useState(false); const [saved, setSaved] = useState(false); const [sessionSeconds, setSessionSeconds] = useState(0); const [loadedSummary, setLoadedSummary] = useState<ChoreoProject | null>(null);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [guidePanel,setGuidePanel]=useState<'quick'|'coach'|'privacy'|'save'|'extra'|'recording'|null>('quick');
   const videoRef = useRef<HTMLVideoElement | null>(null); const canvasRef = useRef<HTMLCanvasElement | null>(null); const streamRef = useRef<MediaStream | null>(null); const animationRef = useRef<number | null>(null); const previousFrameRef = useRef<Uint8ClampedArray | null>(null); const lastAnalysisRef = useRef(0); const latestMetricsRef = useRef(emptyMetrics); const mountedRef = useRef(true); const requestIdRef = useRef(0); const sessionStartedRef = useRef(false);
   const recording = useLocalMediaRecorder(mediaStream, 'video');
 
@@ -62,32 +63,98 @@ export function ChoreoMirrorTool() {
   const extraCreditSummary = projectAsText({ title: `${goal} · ${mode}`, notes: `Coach activity: ${selectedActivity.title}. Reflection: ${selectedActivity.reflectionPrompt}`, savedAt: new Date().toISOString(), data: snapshot }, 'Choreo Mirror');
   function loadProject(project: LocalToolProject<ChoreoProject>) { const data = project.data; stopCamera(); sessionStartedRef.current = false; setGoal(data.practice_goal); setSelectedActivityId(choreoActivities.find((activity) => activity.title === data.instructor_activity)?.id ?? choreoActivities[0].id); setMode(data.practice_mode); setModeChosen(true); setMirrored(data.mirrored_view === 'On'); setCalibrated(data.calibration_status === 'Calibrated'); setLoadedSummary(data); setMessage('Local text summary loaded. Start Camera when you want new live feedback.'); }
 
-  return <ToolShell title="Choreo Mirror" eyebrow="JPAC Creator Tool" description="Practice beside a reference frame while using your private tracking frame for movement feedback.">
-    <section className="premium-tool-panel choreo-mirror-tool performance-coach-lab">
-      <div className="instrument-lab-intro"><div><span className="premium-kicker">Performance coach</span><h2>Choose your practice goal</h2><p>Practice with a clear focus, review local movement feedback, and save text-only notes on this device.</p></div><div className="practice-goal-grid">{choreoGoals.map((item) => <button type="button" key={item} className={goal === item ? 'active' : ''} aria-pressed={goal === item} onClick={() => setGoal(item)}>{item}</button>)}</div></div>
-      <section className="practice-mission"><header><div><span className="premium-kicker">Practice Mission</span><h2>{goal}</h2></div><strong>{[modeChosen, cameraStarted, sessionSeconds >= 3, feedbackSeen, stoppedAfterPractice && saved].filter(Boolean).length}/5 steps</strong></header><ol>{['Choose practice mode', 'Start camera', 'Follow the Reference Frame', 'Watch Tracking Frame feedback', 'Stop camera and save locally'].map((step, index) => <li key={step} className={[modeChosen, cameraStarted, sessionSeconds >= 3, feedbackSeen, stoppedAfterPractice && saved][index] ? 'complete' : ''}><span>{index + 1}</span>{step}</li>)}</ol></section>
-      <InstructorActivityPanel activities={choreoActivities} selectedId={selectedActivityId} onSelect={setSelectedActivityId} />
-      <div className="instrument-session-strip choreo-session-strip" aria-label="Movement practice statistics"><div><small>Practice goal</small><strong>{goal}</strong></div><div><small>Practice mode</small><strong>{mode}</strong></div><div><small>Motion energy</small><strong>{summaryEnergy}</strong></div><div><small>Balance</small><strong>{summaryBalance}</strong></div><div><small>View quality</small><strong>{summaryView}</strong></div><div><small>Mirrored view</small><strong>{mirrored ? 'On' : 'Off'}</strong></div><div><small>Calibration</small><strong>{calibrated ? 'Calibrated' : 'Not calibrated'}</strong></div></div>
-      <section className="choreo-permission" aria-labelledby="camera-permission-title"><div><div className="eyebrow">Camera privacy</div><h2 id="camera-permission-title">You decide when the camera starts</h2><p>The preview and motion calculations stay on this device. Recording starts only when you select Record and never uploads. Microphone access is never requested.</p></div><div className="premium-action-row"><button type="button" className="button button-primary" disabled={cameraState === 'active' || cameraState === 'requesting'} onClick={() => void startCamera()}>{cameraState === 'requesting' ? 'Requesting…' : 'Start Camera'}</button><button type="button" className="button button-secondary" disabled={cameraState !== 'active'} onClick={stopCamera}>Stop Camera</button><button type="button" className="button button-secondary" onClick={reset}>Reset</button></div></section>
-      <LocalRecordingPanel kind="video" status={recording.status} recordingUrl={recording.recordingUrl} error={recording.error} disabled={cameraState !== 'active'} filename="jpac-choreo-mirror-practice.webm" onRecord={recording.startRecording} onStop={recording.stopRecording} onClear={recording.clearRecording} />
-      <div className={`choreo-status ${cameraState === 'denied' || cameraState === 'error' ? 'error' : ''}`} role="status">{message}</div>
-      <div className="premium-control-grid choreo-controls"><label>Practice mode<select value={mode} onChange={(event) => { setMode(event.target.value as PracticeMode); setModeChosen(true); }}>{modes.map((item) => <option key={item}>{item}</option>)}</select></label><button type="button" className={`premium-toggle ${mirrored ? 'active' : ''}`} aria-pressed={mirrored} onClick={() => setMirrored((value) => !value)}>Mirrored view {mirrored ? 'on' : 'off'}</button><button type="button" className="button button-secondary" disabled={cameraState !== 'active'} onClick={calibrate}>{calibrated ? 'Recalibrate' : 'Calibrate view'}</button></div>
-      <section className="choreo-frame-grid" aria-label="Reference and tracking frames">
-        <article className="choreo-frame-panel choreo-reference-panel">
-          <header><div className="eyebrow">Teacher / Reference Side</div><h2>Reference Frame</h2><p>This is the choreography reference space. Follow your teacher, routine, or practice target here.</p></header>
-          <div className="choreo-reference-placeholder"><span aria-hidden="true">🎬</span><strong>Coming soon: reference video</strong><small>Use this side to follow choreography</small></div>
+  return <ToolShell title="Choreo Mirror" eyebrow="JPAC Performance Lab" description="Move. Mirror. Rehearse. Build stage confidence." immersive>
+    <section className="premium-tool-panel choreo-mirror-tool choreo-app-shell">
+      <div className="choreo-app-toolbar">
+        <div className="choreo-brand-lockup"><span>CHOREO MIRROR</span><strong>{goal}</strong><small>{mode} · {cameraState==='active'?'Camera live':'Camera off'}</small></div>
+        <div className="choreo-toolbar-actions">
+          <button type="button" className="choreo-main-control" disabled={cameraState==='active'||cameraState==='requesting'} onClick={()=>void startCamera()}>{cameraState==='requesting'?'Starting…':'▶ Start Camera'}</button>
+          <button type="button" className="choreo-stop-control" disabled={cameraState!=='active'} onClick={stopCamera}>■ Stop</button>
+          <button type="button" className={recording.status==='recording'?'choreo-record-control active':'choreo-record-control'} disabled={cameraState!=='active'||recording.status==='recording'} onClick={recording.startRecording}>● Record</button>
+          <button type="button" className="choreo-stop-control" disabled={recording.status!=='recording'} onClick={recording.stopRecording}>Stop Take</button>
+        </div>
+      </div>
+
+      <div className="choreo-mode-rail" aria-label="Choose practice goal">
+        {choreoGoals.map((item)=><button type="button" key={item} className={goal===item?'active':''} aria-pressed={goal===item} onClick={()=>setGoal(item)}>{item}</button>)}
+      </div>
+
+      <section className="choreo-stage" aria-label="Choreography mirror workspace">
+        <article className="choreo-stage-pane reference">
+          <div className="choreo-pane-label"><span>REFERENCE</span><strong>{selectedActivity.title}</strong></div>
+          <div className="choreo-reference-visual">
+            <div className="choreo-reference-orbit" aria-hidden="true"><i/><i/><i/></div>
+            <span className="choreo-reference-icon" aria-hidden="true">✦</span>
+            <strong>Reference Stage</strong>
+            <small>Teacher routine or choreography video can live here.</small>
+            <button type="button" className="choreo-overlay-action" onClick={()=>setGuidePanel('coach')}>Open Coach Cue</button>
+          </div>
         </article>
-        <article className="choreo-frame-panel choreo-tracking-panel">
-          <header><div className="eyebrow">Your Practice Side</div><h2>Tracking Frame</h2><p>This is your live mirror. Movement feedback is calculated locally from this frame.</p></header>
-          <div className={`choreo-video-shell ${mirrored ? 'mirrored' : ''}`}><video ref={videoRef} playsInline muted aria-label="Local live camera preview in Tracking Frame" /><div className="choreo-camera-placeholder" hidden={cameraState === 'active'}><span aria-hidden="true">🕺</span><strong>Camera preview</strong><small>Select Start Camera when you are ready.</small></div><span className="choreo-local-badge">Local-only · {recording.status === 'recording' ? 'Recording video' : 'Not recording'}</span></div>
+
+        <article className="choreo-stage-pane tracking">
+          <div className="choreo-pane-label"><span>YOU</span><strong>{cameraState==='active'?'Live Mirror':'Ready when you are'}</strong></div>
+          <div className={`choreo-video-shell choreo-app-video ${mirrored?'mirrored':''}`}>
+            <video ref={videoRef} playsInline muted aria-label="Local live camera preview"/>
+            <div className="choreo-camera-placeholder" hidden={cameraState==='active'}>
+              <span aria-hidden="true">🕺</span><strong>Step into frame</strong><small>Start the camera when you are ready to move.</small>
+            </div>
+            <span className="choreo-local-badge">LOCAL ONLY · {recording.status==='recording'?'REC':'PRIVATE'}</span>
+            <div className="choreo-live-overlay" hidden={cameraState!=='active'}>
+              <span><small>ENERGY</small><strong>{Math.round(adjustedEnergy)}%</strong></span>
+              <span><small>BALANCE</small><strong>{balanceLabel(metrics.balance)}</strong></span>
+              <span><small>VIEW</small><strong>{metrics.brightness<42?'Add light':'Clear'}</strong></span>
+            </div>
+          </div>
         </article>
-        <canvas ref={canvasRef} width="160" height="120" hidden aria-hidden="true" />
+        <canvas ref={canvasRef} width="160" height="120" hidden aria-hidden="true"/>
       </section>
-      <section className="motion-dashboard" aria-label="Practice feedback"><article><span>Motion energy</span><div className="motion-meter"><i style={{ width: `${adjustedEnergy}%` }} /></div><strong>{cameraState === 'active' ? `${Math.round(adjustedEnergy)}%` : '—'}</strong></article><article><span>Movement balance</span><div className="balance-meter"><i /><b style={{ left: `${50 + metrics.balance / 2}%` }} /></div><strong>{cameraState === 'active' ? balanceLabel(metrics.balance) : 'Waiting for camera'}</strong></article><article><span>View quality</span><strong>{cameraState !== 'active' ? 'Waiting' : metrics.brightness < 42 ? 'Needs more light' : 'View is clear'}</strong><small>{calibrated ? 'Calibrated' : 'Calibrate before practice'}</small></article></section>
-      <div className="premium-learning-grid"><article><h2>Practice feedback</h2><p>{cameraState === 'active' ? feedback : 'Start the camera to see simple movement-energy feedback.'}</p><small>This uses frame differences only—not skeletal tracking, medical analysis, or dance assessment.</small></article><article><h2>Timing and stillness prompt</h2><p>{modePrompts[mode]}</p></article></div>
-      <div className="beginner-helper-grid">{choreoHelpers.map(([title, text]) => <article key={title}><strong>{title}</strong><span>{text}</span></article>)}</div>
-      <LocalProjectPanel toolType="choreo-mirror" toolLabel="Choreo Mirror" snapshot={snapshot} onLoad={loadProject} onSaved={() => setSaved(true)} />
-      <ExtraCreditPanel summary={extraCreditSummary} />
+
+      <div className="choreo-control-deck">
+        <div className="choreo-mode-picker">
+          {modes.map(item=><button type="button" key={item} className={mode===item?'active':''} onClick={()=>{setMode(item);setModeChosen(true)}}>{item}</button>)}
+        </div>
+        <div className="choreo-deck-actions">
+          <button type="button" className={mirrored?'active':''} onClick={()=>setMirrored(value=>!value)}>⇄ Mirror {mirrored?'On':'Off'}</button>
+          <button type="button" disabled={cameraState!=='active'} onClick={calibrate}>{calibrated?'✓ Calibrated':'◎ Calibrate'}</button>
+          <button type="button" onClick={()=>setGuidePanel('recording')}>▣ Takes</button>
+          <button type="button" onClick={reset}>↻ Reset</button>
+        </div>
+      </div>
+
+      <div className={`choreo-status-toast ${cameraState==='denied'||cameraState==='error'?'error':''}`} role="status">{message}</div>
+
+      <div className="choreo-mini-feedback">
+        <article><span>MOVE</span><strong>{cameraState==='active'?feedback:'Start camera to activate movement feedback.'}</strong></article>
+        <article><span>FOCUS</span><strong>{modePrompts[mode]}</strong></article>
+      </div>
+
+      <div className="choreo-guide-dock" aria-label="Choreo Mirror guide">
+        <button type="button" onClick={()=>setGuidePanel('quick')}><span>?</span><strong>Guide</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('coach')}><span>✦</span><strong>Coach</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('privacy')}><span>◉</span><strong>Privacy</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('save')}><span>◇</span><strong>Save</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('extra')}><span>★</span><strong>Extra</strong></button>
+      </div>
+
+      {guidePanel&&<div className="choreo-guide-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setGuidePanel(null)}}>
+        <aside className="choreo-guide-panel" role="dialog" aria-modal="true" aria-label="Choreo Mirror guidance">
+          <button type="button" className="choreo-guide-close" aria-label="Close guide" onClick={()=>setGuidePanel(null)}>×</button>
+          {guidePanel==='quick'&&<div className="choreo-guide-content">
+            <span className="premium-kicker">Quick Start</span><h2>Move first. Read only when you need it.</h2>
+            <div className="choreo-guide-steps">
+              <button type="button" onClick={()=>{setModeChosen(true);setGuidePanel(null)}}><b>1</b><span><strong>Pick a practice mode</strong><small>Warm-Up, Choreography, Stage Presence, or Freestyle.</small></span></button>
+              <button type="button" onClick={()=>{setGuidePanel(null);void startCamera()}}><b>2</b><span><strong>Start your camera</strong><small>Your live mirror stays in this browser.</small></span></button>
+              <button type="button" onClick={()=>setGuidePanel('coach')}><b>3</b><span><strong>Follow one coach cue</strong><small>Use a single focus instead of reading a full lesson.</small></span></button>
+              <button type="button" onClick={()=>setGuidePanel('save')}><b>4</b><span><strong>Save your reflection</strong><small>Keep a local note or prepare a teacher-reviewed snapshot.</small></span></button>
+            </div>
+          </div>}
+          {guidePanel==='coach'&&<div className="choreo-guide-content"><InstructorActivityPanel activities={choreoActivities} selectedId={selectedActivityId} onSelect={setSelectedActivityId}/></div>}
+          {guidePanel==='privacy'&&<div className="choreo-guide-content"><span className="premium-kicker">Camera Privacy</span><h2>You control the camera.</h2><div className="choreo-guide-cards"><article><strong>Local analysis</strong><p>Camera frames and motion calculations stay in this browser.</p></article><article><strong>No microphone</strong><p>Choreo Mirror does not request microphone access.</p></article><article><strong>Recording is optional</strong><p>Recording begins only when you press Record and remains local unless you download it.</p></article><article><strong>No automatic grading</strong><p>Movement feedback is practice guidance, not a medical or dance assessment.</p></article></div></div>}
+          {guidePanel==='recording'&&<div className="choreo-guide-content"><LocalRecordingPanel kind="video" status={recording.status} recordingUrl={recording.recordingUrl} error={recording.error} disabled={cameraState!=='active'} filename="jpac-choreo-mirror-practice.webm" onRecord={recording.startRecording} onStop={recording.stopRecording} onClear={recording.clearRecording}/></div>}
+          {guidePanel==='save'&&<div className="choreo-guide-content"><LocalProjectPanel toolType="choreo-mirror" toolLabel="Choreo Mirror" snapshot={snapshot} onLoad={loadProject} onSaved={()=>setSaved(true)}/></div>}
+          {guidePanel==='extra'&&<div className="choreo-guide-content"><ExtraCreditPanel summary={extraCreditSummary}/></div>}
+        </aside>
+      </div>}
     </section>
   </ToolShell>;
 }
