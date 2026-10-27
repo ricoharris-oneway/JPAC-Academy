@@ -7,3 +7,9 @@
 .resume-learning-card p{margin:0;max-width:760px}
 .resume-learning-button{min-height:58px;padding-inline:24px;font-size:1rem;white-space:nowrap}
 @media(max-width:760px){.resume-learning-card{grid-template-columns:1fr;padding:22px}.resume-learning-button{width:100%;white-space:normal;text-align:center}}
+
+.career-home-feature{margin:20px 0 26px;padding:26px 28px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:center;border:1px solid rgba(181,126,255,.36);border-radius:22px;background:radial-gradient(circle at 85% 15%,rgba(247,198,76,.12),transparent 34%),linear-gradient(135deg,rgba(64,31,91,.9),rgba(20,11,31,.96));box-shadow:0 16px 46px rgba(0,0,0,.22)}
+.career-home-feature h2{margin:5px 0 7px;font-size:clamp(1.4rem,3vw,2rem)}
+.career-home-feature p{margin:0;max-width:780px}
+.career-home-button{min-height:58px;padding-inline:22px;white-space:normal;text-align:center}
+@media(max-width:760px){.career-home-feature{grid-template-columns:1fr;padding:22px}.career-home-button{width:100%}}
