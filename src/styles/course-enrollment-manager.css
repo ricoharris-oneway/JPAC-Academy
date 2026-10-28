@@ -21,3 +21,24 @@
 .onboarding-page input::placeholder, .onboarding-page textarea::placeholder { color: #bfb0ce; }
 @media(max-width:1100px) { .onboarding-status-grid { grid-template-columns: 1fr; } }
 @media(max-width:650px) { .onboarding-checklist { grid-template-columns: 1fr; } }
+
+/* Direct one-course and all-course access */
+.course-access-overview{display:grid;gap:18px}
+.course-access-overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.course-access-overview-head h2{margin:5px 0}
+.course-access-count{display:grid;justify-items:center;flex:0 0 auto;min-width:96px;padding:12px 16px;border:1px solid rgba(255,215,120,.24);border-radius:16px;background:rgba(255,215,120,.06)}
+.course-access-count strong{font-size:1.5rem;color:var(--gold)}
+.course-access-count span{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+.course-access-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.course-access-status-grid article{display:flex;align-items:center;gap:10px;min-height:68px;padding:12px 13px;border:1px solid var(--border);border-radius:14px;background:#160a22}
+.course-access-status-grid article>span{display:grid;place-items:center;flex:0 0 28px;height:28px;border-radius:50%;background:#2a1737;color:#b9a9c8}
+.course-access-status-grid article>div{display:grid;gap:3px;min-width:0}
+.course-access-status-grid article strong{font-size:.86rem}
+.course-access-status-grid article small{color:var(--muted)}
+.course-access-status-grid article.active{border-color:rgba(94,225,165,.36);background:linear-gradient(145deg,rgba(27,92,67,.24),#160a22)}
+.course-access-status-grid article.active>span{background:#267c59;color:#fff}
+.course-access-status-grid article.active small{color:#8ff0be}
+.course-access-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grant-all-courses{border-color:rgba(255,215,120,.35)!important}
+@media(max-width:1000px){.course-access-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.course-access-overview-head{flex-direction:column}.course-access-count{justify-items:start;width:100%}.course-access-status-grid,.course-access-actions{grid-template-columns:1fr}}
