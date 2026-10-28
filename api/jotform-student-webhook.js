@@ -81,9 +81,9 @@ export default async function handler(req,res){
   if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});
   try{
     const supabase=createServerSupabase();
-    const supplied=text(req.query?.secret||req.headers['x-jpac-jotform-secret']);
-    if(!await validSecret(supabase,supplied))return json(res,401,{error:'Unauthorized'});
-    const body=parseBody(req);
+    const supplied=text(req.query?.secret||req.headers['x-jpac-jotform-secret']||req.headers.authorization?.replace(/^Bearer\\s+/i,''));
+    if(!await validSecret(supabase,supplied)){console.error('JPAC Jotform webhook rejected: invalid or missing shared secret');return json(res,401,{error:'Unauthorized'});}
+    // Jotform sends application/x-www-form-urlencoded by default; JSON-only parsing silently discards those submissions.\n    let body=parseBody(req);\n    if(typeof req.body==='string'&&(!body||Object.keys(body).length===0)){\n      const fields=new URLSearchParams(req.body);body=Object.fromEntries(fields.entries());\n    }\n    if(!body||typeof body!=='object')body={};
     let raw=body;
     if(typeof body.rawRequest==='string'){try{raw=JSON.parse(body.rawRequest)}catch{raw=body}}
     else if(body.rawRequest&&typeof body.rawRequest==='object')raw=body.rawRequest;
@@ -93,7 +93,7 @@ export default async function handler(req,res){
     for(const[k,v]of Object.entries(body))if(typeof v!=='object'&&v!=null&&!answers.has(norm(k)))answers.set(norm(k),String(v));
 
     const submissionId=text(body.submissionID||body.submissionId||raw?.submissionID||raw?.submissionId)||pick(answers,'submission id');
-    if(!submissionId)return json(res,400,{error:'Submission ID missing'});
+    if(!submissionId){console.error('JPAC Jotform webhook: submission ID missing; received keys:',Object.keys(body).slice(0,25));return json(res,400,{error:'Submission ID missing'});}
 
     const first=pick(answers,'Student First Name','student first');
     const middle=pick(answers,'Student Middle Name','student middle');
@@ -133,7 +133,7 @@ export default async function handler(req,res){
       intake_payload:{submission_id:submissionId,preferred_name:preferred,middle_name:middle,primary_program:primary,secondary_program:secondary,student_interests_goals:pick(answers,'Student Interests and Goals'),secondary_guardian_name:pick(answers,'Secondary Guardian Name'),secondary_guardian_email:pick(answers,'Secondary Guardian Email'),secondary_guardian_phone:pick(answers,'Secondary Guardian Phone'),emergency_contact_name:pick(answers,'Emergency Contact Name'),emergency_contact_relationship:pick(answers,'Emergency Contact Relationship'),emergency_contact_phone:pick(answers,'Emergency Contact Phone'),typed_signature:pick(answers,'Typed Full Name / Electronic Signature'),tuition_option:scholarshipChoice},
       updated_at:new Date().toISOString()
     };
-    if(!row.first_name||!row.last_name)return json(res,422,{error:'Student name fields could not be mapped',submission_id:submissionId});
+    if(!row.first_name||!row.last_name){console.error('JPAC Jotform webhook: student name mapping failed for submission',submissionId);return json(res,422,{error:'Student name fields could not be mapped',submission_id:submissionId});}
     const {data:prior,error:priorError}=await supabase.from('pending_students').select('id,linked_profile_id,wix_member_id,invitation_status,admissions_stage,enrollment_status').eq('external_student_id',externalId).maybeSingle();
     if(priorError)throw priorError;
     // Do not downgrade an existing applicant's approval or account state on webhook retries.
@@ -156,5 +156,5 @@ export default async function handler(req,res){
     }
     await supabase.from('integration_events').upsert({provider:'jotform',external_event_id:submissionId,event_type:'student.enrollment.submitted',processing_status:'processed',payload:{form_id:FORM_ID,external_student_id:externalId,wix_member_id:wixMemberId,academy_invitation:login.status},processed_at:new Date().toISOString()},{onConflict:'provider,external_event_id'});
     return json(res,200,{ok:true,studentId:data.id,wixMemberLinked:true,academyInvitation:login.status,courseAccessGranted:false});
-  }catch(error){return json(res,500,{error:error instanceof Error?error.message:'Webhook processing failed'})}
+  }catch(error){console.error('JPAC Jotform enrollment processing failed:',error instanceof Error?error.message:'Unknown error');return json(res,500,{error:error instanceof Error?error.message:'Webhook processing failed'})}
 }
