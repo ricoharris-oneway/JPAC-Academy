@@ -110,10 +110,10 @@ export function buildCurriculumReadiness(input:CurriculumReadinessInput):Curricu
   const structure:CurriculumReadinessCategory={key:'structure',title:'Structure',label:structureComplete===total&&total>0?'COMPLETE':'INCOMPLETE',state:structureComplete===total&&total>0?'complete':'blocked',detail:`${structureComplete}/${total} modules have lessons, an optional Practice, a required Core Challenge, and a valid 100-point rubric.`,complete:structureComplete,total};
   const xp:CurriculumReadinessCategory={key:'xp',title:'XP',label:xpComplete===total&&total>0?'COMPLETE':'REVIEW REQUIRED',state:xpComplete===total&&total>0?'complete':'blocked',detail:`${xpComplete}/${total} modules match the canonical 50/100/350/125/625 XP contract and 438 unlock threshold.`,complete:xpComplete,total};
   const teacherReviewed=total>0&&input.modules.every(module=>['approved','published'].includes(module.status));
-  const alreadyOperational=allPublished;
+  const alreadyOperational=total>0&&input.modules.every(module=>module.status==='published');
   const publicationReady=alreadyOperational||(structureComplete===total&&xpComplete===total&&mediaReady&&toolsReady&&teacherReviewed&&total>0);
   const publication:CurriculumReadinessCategory=alreadyOperational
-    ?{key:'publication',title:'Publication',label:'PUBLISHED / OPERATIONAL',state:'operational',detail:'This level is already published. Readiness reporting does not alter publication.'}
+    ?{key:'publication',title:'Publication',label:'PUBLISHED / OPERATIONAL',state:'operational',detail:'All modules in this level are published. Draft or review-only revision records remain hidden from students and do not make the published level unavailable.'}
     :publicationReady
       ?{key:'publication',title:'Publication',label:'READY FOR CONTROLLED REVIEW',state:'complete',detail:'All tracked readiness categories pass. Publication still requires the authorized workflow.'}
       :{key:'publication',title:'Publication',label:'NOT READY',state:'blocked',detail:[structureComplete!==total?'structure':null,xpComplete!==total?'XP':null,!mediaReady?'media':null,!toolsReady?'tools':null,!teacherReviewed?'teacher review':null].filter(Boolean).join(', ')+' remain unresolved.'};
