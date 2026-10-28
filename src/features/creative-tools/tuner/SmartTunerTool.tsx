@@ -27,6 +27,7 @@ export function SmartTunerTool() {
   const [mode, setMode] = useState<'Vocal' | 'Instrument'>('Vocal'); const [permission, setPermission] = useState<PermissionState>('idle'); const [reading, setReading] = useState<Reading | null>(null); const [stable, setStable] = useState(false); const [message, setMessage] = useState('Your microphone is off.'); const [signalStatus,setSignalStatus]=useState<SignalStatus>('off'); const[inputLevel,setInputLevel]=useState(0);const[confidence,setConfidence]=useState(0);
   const [goal, setGoal] = useState<TunerGoal>('Match pitch'); const [selectedActivityId, setSelectedActivityId] = useState(tunerActivities[0].id); const [lastReading, setLastReading] = useState<Reading | null>(null); const [referenceNote, setReferenceNote] = useState('None yet'); const [bestCenteredNote, setBestCenteredNote] = useState('None yet'); const [modeChosen, setModeChosen] = useState(false); const [micStarted, setMicStarted] = useState(false); const [noteObserved, setNoteObserved] = useState(false); const [feedbackObserved, setFeedbackObserved] = useState(false); const [stoppedAfterPractice, setStoppedAfterPractice] = useState(false); const [saved, setSaved] = useState(false);
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [guidePanel,setGuidePanel]=useState<'quick'|'coach'|'privacy'|'recording'|'save'|'extra'|null>('quick');
   const streamRef = useRef<MediaStream | null>(null); const contextRef = useRef<AudioContext | null>(null); const referenceContextRef = useRef<AudioContext | null>(null); const animationRef = useRef<number | null>(null); const historyRef = useRef<number[]>([]); const lastDetectionRef = useRef(0); const lastUiUpdateRef=useRef(0);const modeRef=useRef(mode); const mountedRef = useRef(true); const requestIdRef = useRef(0); const sessionStartedRef = useRef(false);
   const recording = useLocalMediaRecorder(mediaStream, 'audio');
 
@@ -76,33 +77,87 @@ export function SmartTunerTool() {
   const extraCreditSummary = projectAsText({ title: `${goal} · ${mode}`, notes: `Coach activity: ${selectedActivity.title}. Reflection: ${selectedActivity.reflectionPrompt}`, savedAt: new Date().toISOString(), data: snapshot }, 'Smart Tuner');
   function loadProject(project: LocalToolProject<TunerProject>) { const data = project.data; stopMic(); sessionStartedRef.current = false; setGoal(data.practice_goal); setSelectedActivityId(tunerActivities.find((activity) => activity.title === data.instructor_activity)?.id ?? tunerActivities[0].id); setMode(data.mode); setModeChosen(true); setReferenceNote(data.reference_note_used); setBestCenteredNote(data.best_centered_note); const frequency = Number(data.frequency_hz); const cents = Number(data.cents_sharp_flat); setLastReading(Number.isFinite(frequency) && Number.isFinite(cents) ? { note: data.detected_note, frequency, cents } : null); setMessage('Local text summary loaded. Start Mic when you want new live feedback.'); }
 
-  return <ToolShell title="Smart Tuner" eyebrow="JPAC Creator Tool" description="Practice matching pitch with encouraging, browser-local microphone feedback." immersive>
-    <section className="premium-tool-panel smart-tuner performance-coach-lab">
-      <div className="instrument-lab-intro"><div><span className="premium-kicker">Pitch coach</span><h2>Choose your practice goal</h2><p>Listen, match, adjust, and save text-only practice notes on this device.</p></div><div className="practice-goal-grid">{tunerGoals.map((item) => <button type="button" key={item} className={goal === item ? 'active' : ''} aria-pressed={goal === item} onClick={() => setGoal(item)}>{item}</button>)}</div></div>
-      <section className="practice-mission"><header><div><span className="premium-kicker">Practice Mission</span><h2>{goal}</h2></div><strong>{[modeChosen, micStarted, noteObserved, feedbackObserved, stoppedAfterPractice && saved].filter(Boolean).length}/5 steps</strong></header><ol>{['Choose vocal or instrument mode', 'Start microphone', 'Sing or play one note', 'Watch sharp/flat feedback', 'Stop microphone and save locally'].map((step, index) => <li key={step} className={[modeChosen, micStarted, noteObserved, feedbackObserved, stoppedAfterPractice && saved][index] ? 'complete' : ''}><span>{index + 1}</span>{step}</li>)}</ol></section>
-      <InstructorActivityPanel activities={tunerActivities} selectedId={selectedActivityId} onSelect={setSelectedActivityId} />
-      <div className="instrument-session-strip tuner-session-strip" aria-label="Pitch practice statistics"><div><small>Practice goal</small><strong>{goal}</strong></div><div><small>Detected note</small><strong>{lastReading?.note ?? '—'}</strong></div><div><small>Frequency</small><strong>{lastReading ? `${lastReading.frequency.toFixed(1)} Hz` : '—'}</strong></div><div><small>Cents</small><strong>{lastReading ? `${lastReading.cents > 0 ? '+' : ''}${lastReading.cents}` : '—'}</strong></div><div><small>Mode</small><strong>{mode}</strong></div><div><small>Reference</small><strong>{referenceNote}</strong></div><div><small>Best centered</small><strong>{bestCenteredNote}</strong></div></div>
-      <section className="tuner-permission" aria-labelledby="mic-permission-title"><div><div className="eyebrow">You stay in control</div><h2 id="mic-permission-title">Microphone permission</h2><p>JPAC listens only while this page is open and you select Start Mic. Recording starts only when you select Record and never uploads.</p></div><div className="premium-action-row"><button type="button" className="button button-primary" disabled={permission === 'active' || permission === 'requesting'} onClick={() => void startMic()}>{permission === 'requesting' ? 'Requesting…' : 'Start Mic'}</button><button type="button" className="button button-secondary" disabled={permission !== 'active'} onClick={stopMic}>Stop Mic</button><button type="button" className="button button-secondary" onClick={reset}>Reset</button></div></section>
-      <LocalRecordingPanel kind="audio" status={recording.status} recordingUrl={recording.recordingUrl} error={recording.error} disabled={permission !== 'active'} filename="jpac-smart-tuner-practice.webm" onRecord={recording.startRecording} onStop={recording.stopRecording} onClear={recording.clearRecording} />
-      <div className={`tuner-status ${permission === 'denied' || permission === 'error' ? 'error' : ''}`} role="status">{message}</div>
-      <div className="tuner-mode" role="group" aria-label="Tuner mode"><button type="button" className={mode === 'Vocal' ? 'active' : ''} aria-pressed={mode === 'Vocal'} onClick={() => { setMode('Vocal'); setModeChosen(true); }}>Vocal mode</button><button type="button" className={mode === 'Instrument' ? 'active' : ''} aria-pressed={mode === 'Instrument'} onClick={() => { setMode('Instrument'); setModeChosen(true); }}>Instrument mode</button></div>
-      <section className="tuner-display" aria-live="polite">
-        <div className={`tuner-input-status tuner-input-status-${signalStatus}`}>
-          <div><small>Live input</small><strong>{signalLabel[signalStatus]}</strong></div>
-          <div className="tuner-input-meter" role="meter" aria-label="Microphone input level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={inputPercent}><i style={{ width: `${inputPercent}%` }} /></div>
-          <small>{signalStatus === 'detected' ? `${Math.round(confidence * 100)}% pitch confidence` : signalStatus === 'quiet' ? 'Move closer or make a stronger steady sound.' : signalStatus === 'unclear' ? 'Hold one clear note and reduce background noise.' : permission === 'active' ? 'Make one steady note when you are ready.' : 'Select Start Mic to begin local analysis.'}</small>
+  return <ToolShell title="Smart Tuner" eyebrow="JPAC Performance Lab" description="Hear it. Center it. Lock the pitch." immersive>
+    <section className="premium-tool-panel smart-tuner tuner-app-shell">
+      <div className="tuner-app-toolbar">
+        <div className="tuner-brand-lockup"><span>SMART TUNER</span><strong>{goal}</strong><small>{mode} mode · {permission==='active'?'Listening live':'Mic off'}</small></div>
+        <div className="tuner-toolbar-actions">
+          <button type="button" className="tuner-start-primary" disabled={permission==='active'||permission==='requesting'} onClick={()=>void startMic()}>{permission==='requesting'?'Starting…':'● Start Mic'}</button>
+          <button type="button" disabled={permission!=='active'} onClick={stopMic}>■ Stop</button>
+          <button type="button" className={recording.status==='recording'?'tuner-record active':'tuner-record'} disabled={permission!=='active'||recording.status==='recording'} onClick={recording.startRecording}>● Record</button>
+          <button type="button" disabled={recording.status!=='recording'} onClick={recording.stopRecording}>Stop Take</button>
+          <button type="button" onClick={reset}>Reset</button>
         </div>
-        <div className="tuner-note"><small>{reading && signalStatus !== 'detected' ? 'Last detected note' : 'Detected note'}</small><strong>{reading?.note || '—'}</strong></div>
-        <div className="tuner-reading"><span>{reading ? `${reading.cents > 0 ? '+' : ''}${reading.cents} cents` : signalLabel[signalStatus]}</span><span>{reading && signalStatus === 'detected' ? `${reading.frequency.toFixed(1)} Hz` : '— Hz'}</span></div>
-        <div className="tuning-meter" aria-label={reading ? `${reading.cents} cents from center, ${tuningState}` : 'Waiting for a steady note'}><span className="meter-flat">Flat</span><div className="meter-track"><i className="meter-center" /><b style={{ left: `${50 + meter}%` }} /></div><span className="meter-sharp">Sharp</span></div>
-        <div className="tuner-state-row" aria-label="Tuning state"><span className={tuningState === 'Flat' ? 'active' : ''}>Flat</span><span className={tuningState === 'In tune' ? 'active centered' : ''}>In tune</span><span className={tuningState === 'Sharp' ? 'active' : ''}>Sharp</span></div>
-        <h2 className={tuningState === 'In tune' ? 'centered' : ''}>{reading ? feedback : signalLabel[signalStatus]}</h2>
+      </div>
+
+      <div className="tuner-mode-switch" role="group" aria-label="Tuner mode">
+        <button type="button" className={mode==='Vocal'?'active':''} onClick={()=>{setMode('Vocal');setModeChosen(true)}}>VOCAL</button>
+        <button type="button" className={mode==='Instrument'?'active':''} onClick={()=>{setMode('Instrument');setModeChosen(true)}}>INSTRUMENT</button>
+      </div>
+
+      <section className="tuner-visual-stage" aria-live="polite">
+        <div className="tuner-note-neighbors" aria-hidden="true"><span>{reading?.note?reading.note.replace(/[0-9]/g,''):''}</span></div>
+        <div className={`tuner-note-hero ${tuningState==='In tune'?'centered':''}`}>
+          <span>{signalStatus==='detected'?'DETECTED NOTE':signalLabel[signalStatus]}</span>
+          <strong>{reading?.note||'—'}</strong>
+          <small>{reading?reading.frequency.toFixed(1)+' Hz':'Waiting for pitch'}</small>
+        </div>
+
+        <div className={`tuner-dial ${tuningState==='In tune'?'centered':''}`} role="meter" aria-valuemin={-50} aria-valuemax={50} aria-valuenow={reading?meter:0} aria-label={reading?`${reading.cents} cents from center`:'Waiting for pitch'}>
+          <div className="tuner-dial-scale">
+            {[-50,-40,-30,-20,-10,0,10,20,30,40,50].map(value=><span key={value} style={{'--tick':String(value)} as any}>{Math.abs(value)}</span>)}
+          </div>
+          <div className="tuner-dial-needle" style={{transform:`translateX(-50%) rotate(${meter*.9}deg)`}}><i/></div>
+          <div className="tuner-dial-center"/>
+          <div className="tuner-dial-readout">
+            <strong>{reading?`${reading.cents>0?'+':''}${reading.cents}`:'—'}</strong>
+            <small>CENTS</small>
+          </div>
+          <span className="tuner-flat-label">FLAT</span>
+          <span className="tuner-sharp-label">SHARP</span>
+        </div>
+
+        <div className="tuner-live-message">
+          <strong>{reading?feedback:signalLabel[signalStatus]}</strong>
+          <small>{signalStatus==='detected'?Math.round(confidence*100)+'% pitch confidence':permission==='active'?'Hold one clear steady note.':'Start the mic when you are ready.'}</small>
+        </div>
+
+        <div className="tuner-reference-row" aria-label="Reference pitch player">
+          {referencePitches.slice(0,8).map(pitch=><button type="button" key={pitch.note} className={referenceNote===pitch.note?'active':''} onClick={()=>void playReference(pitch.frequency,pitch.note)}><strong>{pitch.note}</strong><small>{pitch.frequency.toFixed(0)} Hz</small></button>)}
+        </div>
       </section>
-      <section className="reference-pitches"><div><h2>Reference pitch player</h2><p>Listen, then match the pitch with your voice or instrument.</p></div><div>{referencePitches.map((pitch) => <button type="button" key={pitch.note} onClick={() => void playReference(pitch.frequency, pitch.note)}>{pitch.note}<small>{pitch.frequency.toFixed(2)} Hz</small></button>)}</div></section>
-      <div className="premium-learning-grid"><article><h2>What tuning means</h2><p>Tuning means matching a note’s target pitch. “Sharp” is slightly too high, “flat” is slightly too low, and “centered” is close to the target. This beginner tool gives practice guidance, not professional studio measurement.</p></article><article><h2>Try this next</h2><p>{practicePrompt(reading?.cents ?? null, stable, mode)}</p></article></div>
-      <div className="beginner-helper-grid">{tunerHelpers.map(([title, text]) => <article key={title}><strong>{title}</strong><span>{text}</span></article>)}</div>
-      <LocalProjectPanel toolType="smart-tuner" toolLabel="Smart Tuner" snapshot={snapshot} onLoad={loadProject} onSaved={() => setSaved(true)} />
-      <ExtraCreditPanel summary={extraCreditSummary} />
+
+      <div className="tuner-goal-rail" aria-label="Choose practice goal">
+        {tunerGoals.map(item=><button type="button" key={item} className={goal===item?'active':''} onClick={()=>setGoal(item)}>{item}</button>)}
+      </div>
+
+      <div className="tuner-status-toast" role="status">{message}</div>
+
+      <div className="creator-guide-dock tuner-guide-dock" aria-label="Smart Tuner guide">
+        <button type="button" onClick={()=>setGuidePanel('quick')}><span>?</span><strong>Guide</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('coach')}><span>✦</span><strong>Coach</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('privacy')}><span>◉</span><strong>Privacy</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('recording')}><span>▣</span><strong>Takes</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('save')}><span>◇</span><strong>Save</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('extra')}><span>★</span><strong>Extra</strong></button>
+      </div>
+
+      {guidePanel&&<div className="creator-guide-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setGuidePanel(null)}}>
+        <aside className="creator-guide-panel" role="dialog" aria-modal="true" aria-label="Smart Tuner guidance">
+          <button type="button" className="creator-guide-close" aria-label="Close guide" onClick={()=>setGuidePanel(null)}>×</button>
+          {guidePanel==='quick'&&<div className="creator-guide-content"><span className="premium-kicker">Quick Start</span><h2>Listen. Match. Center.</h2><div className="creator-guide-steps">
+            <button type="button" onClick={()=>setGuidePanel(null)}><b>1</b><span><strong>Choose Vocal or Instrument</strong><small>Use the same visual tuner for either source.</small></span></button>
+            <button type="button" onClick={()=>{setGuidePanel(null);void startMic()}}><b>2</b><span><strong>Start the mic</strong><small>Pitch analysis stays in your browser.</small></span></button>
+            <button type="button" onClick={()=>setGuidePanel(null)}><b>3</b><span><strong>Hold one clear note</strong><small>Watch the needle move toward center.</small></span></button>
+            <button type="button" onClick={()=>setGuidePanel('save')}><b>4</b><span><strong>Capture your progress</strong><small>Save a local practice summary when you finish.</small></span></button>
+          </div></div>}
+          {guidePanel==='coach'&&<div className="creator-guide-content"><InstructorActivityPanel activities={tunerActivities} selectedId={selectedActivityId} onSelect={setSelectedActivityId}/></div>}
+          {guidePanel==='privacy'&&<div className="creator-guide-content"><span className="premium-kicker">Microphone Privacy</span><h2>You control the mic.</h2><div className="creator-guide-cards"><article><strong>Local pitch analysis</strong><p>Microphone input is analyzed in your browser while the tuner is open.</p></article><article><strong>Recording is separate</strong><p>Practice recording begins only when you press Record.</p></article><article><strong>No automatic upload</strong><p>Your practice audio is not uploaded automatically.</p></article><article><strong>Practice guidance</strong><p>This tool supports pitch practice and is not a clinical or professional measurement device.</p></article></div></div>}
+          {guidePanel==='recording'&&<div className="creator-guide-content"><LocalRecordingPanel kind="audio" status={recording.status} recordingUrl={recording.recordingUrl} error={recording.error} disabled={permission!=='active'} filename="jpac-smart-tuner-practice.webm" onRecord={recording.startRecording} onStop={recording.stopRecording} onClear={recording.clearRecording}/></div>}
+          {guidePanel==='save'&&<div className="creator-guide-content"><LocalProjectPanel toolType="smart-tuner" toolLabel="Smart Tuner" snapshot={snapshot} onLoad={loadProject} onSaved={()=>setSaved(true)}/></div>}
+          {guidePanel==='extra'&&<div className="creator-guide-content"><ExtraCreditPanel summary={extraCreditSummary}/></div>}
+        </aside>
+      </div>}
     </section>
   </ToolShell>;
 }
