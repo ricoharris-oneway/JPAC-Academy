@@ -148,3 +148,160 @@
 .guitar-chord-workstation{display:grid;grid-template-columns:minmax(180px,.7fr) minmax(320px,1.3fr) auto;align-items:center;gap:14px;padding:14px;border:1px solid rgba(247,198,76,.2);border-radius:16px;background:linear-gradient(135deg,rgba(45,24,61,.8),rgba(12,8,18,.96))}.guitar-chord-workstation h2{margin:3px 0}.instrument-strum-button{min-height:54px;padding:10px 18px;border:1px solid #f7c64c;border-radius:12px;background:linear-gradient(135deg,#ffd56d,#b87817);color:#1c1003;font-weight:950;letter-spacing:.05em;box-shadow:0 0 24px rgba(247,198,76,.18)}
 @media(max-width:900px){.instrument-app-toolbar{align-items:flex-start;flex-direction:column}.instrument-toolbar-actions{justify-content:flex-start}.instrument-control-deck,.guitar-studio-control-tower,.guitar-chord-workstation,.instrument-lower-deck{grid-template-columns:1fr}.instrument-studio-strip{grid-template-columns:1fr 1fr}.piano-studio-keyboard{height:220px}.piano-studio-keyboard .piano-key.white{height:196px}.piano-studio-keyboard .piano-key.black{height:126px}}
 @media(max-width:620px){.instrument-stage{padding:9px}.instrument-stage-heading{align-items:flex-start;flex-direction:column}.instrument-stage-heading small{max-width:100%}.piano-stage-visual{min-height:120px}.instrument-studio-strip{grid-template-columns:1fr 1fr}.instrument-coach-mission{grid-template-columns:1fr}.guitar-effect-rack{grid-template-columns:1fr}.guitar-body-shape{left:3%;transform:scale(.82);transform-origin:left center}.guitar-stage-visual>span{right:3%}}
+
+/* Piano + Guitar mobile/tablet optimization v1 */
+.instrument-app-shell,.instrument-stage,.guitar-studio-control-tower,.guitar-chord-workstation{min-width:0}
+.instrument-goal-rail,.guitar-fretboard-scroll,.virtual-piano{scrollbar-width:thin;scrollbar-color:rgba(247,198,76,.55) rgba(255,255,255,.05);-webkit-overflow-scrolling:touch;overscroll-behavior-inline:contain}
+.instrument-goal-rail::-webkit-scrollbar,.guitar-fretboard-scroll::-webkit-scrollbar,.virtual-piano::-webkit-scrollbar{height:7px}
+.instrument-goal-rail::-webkit-scrollbar-thumb,.guitar-fretboard-scroll::-webkit-scrollbar-thumb,.virtual-piano::-webkit-scrollbar-thumb{background:rgba(247,198,76,.55);border-radius:999px}
+.instrument-toolbar-actions button,.instrument-control-deck button,.instrument-goal-rail button,.guitar-effect-rack button,.guitar-chord-buttons button,.instrument-strum-button,.chord-pad-grid button{touch-action:manipulation}
+.guitar-fretboard-scroll,.piano-studio-keyboard{touch-action:pan-x}
+.piano-studio-keyboard .piano-key{user-select:none;-webkit-user-select:none}
+@media(max-width:1180px) and (min-width:721px){
+  .immersive-tool-page{max-width:100%;padding-inline:14px}
+  .immersive-tool-hero{min-height:104px;padding:17px 20px}
+  .immersive-tool-hero h1{font-size:clamp(1.85rem,4vw,2.8rem)}
+  .instrument-app-shell{padding:12px;gap:12px}
+  .instrument-toolbar-actions{max-width:62%}
+  .instrument-toolbar-actions button{min-height:46px}
+  .instrument-control-deck{grid-template-columns:minmax(180px,1.2fr) minmax(110px,.6fr) 1fr 1fr}
+  .instrument-lower-deck{grid-template-columns:1fr 1fr}
+  .piano-stage-visual{min-height:140px}
+  .piano-studio-keyboard{height:235px}
+  .piano-studio-keyboard .piano-key.white{height:210px;min-width:54px}
+  .piano-studio-keyboard .piano-key.black{height:135px;min-width:35px}
+  .guitar-studio-control-tower{grid-template-columns:minmax(180px,.7fr) minmax(340px,1.3fr)}
+  .guitar-fretboard{min-width:900px}
+  .guitar-string-row button{min-height:58px}
+  .guitar-chord-workstation{grid-template-columns:minmax(150px,.55fr) minmax(300px,1.3fr) auto}
+  .instrument-studio-strip{grid-template-columns:1.5fr repeat(3,1fr)}
+}
+@media(max-width:900px){
+  .immersive-tool-page{max-width:100%;padding-inline:10px;padding-bottom:110px}
+  .immersive-tool-hero{min-height:0;padding:16px;border-radius:16px;align-items:flex-start}
+  .immersive-tool-hero>div{min-width:0}
+  .immersive-tool-hero h1{font-size:clamp(1.75rem,6vw,2.5rem);line-height:1;margin:3px 0 7px}
+  .immersive-tool-hero p{font-size:.86rem;line-height:1.45}
+  .immersive-tool-hero .button{min-height:44px;white-space:nowrap}
+  .instrument-app-shell{padding:10px;gap:10px;border-radius:18px;overflow:visible}
+  .instrument-app-toolbar{padding:11px;border-radius:14px}
+  .instrument-brand-lockup{min-width:0;width:100%}
+  .instrument-brand-lockup strong{font-size:1rem}
+  .instrument-toolbar-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;max-width:none}
+  .instrument-toolbar-actions button{min-width:0;min-height:48px;padding:8px;font-size:.76rem}
+  .instrument-goal-rail{margin-inline:-2px;padding:2px 2px 7px}
+  .instrument-goal-rail button{min-height:44px}
+  .instrument-stage{padding:10px;border-radius:17px}
+  .instrument-stage-heading{gap:8px}
+  .instrument-stage-heading strong{font-size:.95rem}
+  .piano-stage-visual{min-height:118px}
+  .piano-studio-keyboard{height:218px;margin-inline:-2px;padding-bottom:10px;scroll-snap-type:x proximity}
+  .piano-studio-keyboard .piano-key.white{height:194px;min-width:58px;scroll-snap-align:start}
+  .piano-studio-keyboard .piano-key.black{height:124px;min-width:38px}
+  .piano-studio-keyboard .piano-key span{font-size:.68rem}
+  .instrument-control-deck{grid-template-columns:1fr 1fr}
+  .instrument-control-deck label,.instrument-control-deck button{min-width:0}
+  .instrument-control-deck select,.instrument-control-deck button{min-height:48px;font-size:.84rem}
+  .instrument-lower-deck{grid-template-columns:1fr}
+  .instrument-deck-card{padding:14px}
+  .trainer-compact-card label{grid-template-columns:auto minmax(100px,1fr) auto}
+  .instrument-studio-strip{grid-template-columns:1fr 1fr}
+  .instrument-session-strip>div{padding:11px}
+  .instrument-session-strip strong{font-size:.82rem}
+  .guitar-studio-control-tower{grid-template-columns:1fr}
+  .guitar-effect-rack{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .guitar-effect-rack button{min-height:50px;padding:7px 5px;font-size:.76rem}
+  .guitar-stage-visual{height:105px}
+  .guitar-studio-fretboard{margin-inline:-2px}
+  .guitar-fretboard{min-width:900px;padding:10px}
+  .guitar-fret-header,.guitar-string-row{grid-template-columns:68px repeat(13,minmax(58px,1fr))}
+  .guitar-string-row button{min-height:58px}
+  .guitar-chord-workstation{grid-template-columns:1fr}
+  .guitar-chord-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%}
+  .guitar-chord-buttons button{min-width:0;min-height:50px}
+  .instrument-strum-button{width:100%;min-height:58px}
+}
+@media(max-width:720px){
+  .creator-guide-dock{left:10px;right:10px;bottom:82px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;padding:6px;border-radius:16px}
+  .creator-guide-dock button{min-width:0;min-height:52px;padding:5px}
+  .creator-guide-dock button span{font-size:1.05rem}
+  .creator-guide-dock button strong{font-size:.61rem}
+  .creator-guide-backdrop{padding:10px 10px 82px}
+  .creator-guide-panel{width:100%;max-height:calc(100dvh - 104px);padding:16px;border-radius:18px}
+  .creator-guide-close{top:0;width:42px;height:42px}
+  .creator-guide-content{gap:14px}
+  .creator-guide-content>h2{font-size:1.55rem}
+  .creator-guide-steps,.creator-guide-cards{grid-template-columns:1fr}
+  .creator-guide-steps button{min-height:72px;padding:13px}
+  .local-project-fields{grid-template-columns:1fr}
+  .saved-project-list article{align-items:flex-start;flex-direction:column}
+  .saved-project-list article>div:last-child{width:100%}
+  .saved-project-list button{flex:1}
+}
+@media(max-width:620px){
+  .immersive-tool-page{padding-inline:6px;padding-bottom:150px}
+  .immersive-tool-hero{gap:10px;padding:13px}
+  .immersive-tool-hero .button{width:100%}
+  .instrument-app-shell{padding:7px;border-radius:15px}
+  .instrument-app-toolbar{padding:9px}
+  .instrument-toolbar-actions{grid-template-columns:1fr 1fr}
+  .instrument-toolbar-actions .instrument-primary-action{grid-column:1/-1}
+  .instrument-goal-rail button{min-height:46px;padding-inline:12px;font-size:.78rem}
+  .instrument-stage{padding:7px}
+  .instrument-stage-heading{align-items:flex-start;flex-direction:column}
+  .instrument-stage-heading small{max-width:100%;width:100%}
+  .piano-stage-visual{min-height:92px;border-radius:13px}
+  .piano-stage-mark{font-size:2.2rem}
+  .piano-studio-keyboard{height:204px;border-radius:12px}
+  .piano-studio-keyboard .piano-key.white{height:182px;min-width:56px}
+  .piano-studio-keyboard .piano-key.black{height:116px;min-width:36px}
+  .instrument-control-deck{grid-template-columns:1fr}
+  .instrument-control-deck select,.instrument-control-deck button{min-height:50px}
+  .instrument-lower-deck{gap:8px}
+  .chord-pad-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%}
+  .chord-pad-grid button{min-width:0;min-height:52px}
+  .trainer-compact-card label{grid-template-columns:1fr}
+  .trainer-compact-card input{min-height:30px}
+  .instrument-studio-strip{grid-template-columns:1fr 1fr}
+  .instrument-session-strip>div{padding:10px}
+  .session-pattern{padding:13px}
+  .session-pattern h2{font-size:.9rem}
+  .guitar-studio-control-tower{padding:9px}
+  .guitar-effect-rack{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .guitar-effect-rack button{display:grid;gap:2px;min-height:54px}
+  .guitar-stage-visual{height:82px}
+  .guitar-body-shape{left:2%;top:5%;transform:scale(.68);transform-origin:left center}
+  .guitar-neck-shape{left:14%;right:4%}
+  .guitar-stage-visual>span{font-size:1.8rem}
+  .guitar-fretboard{min-width:820px;padding:8px}
+  .guitar-fret-header,.guitar-string-row{grid-template-columns:60px repeat(13,minmax(54px,1fr))}
+  .guitar-string-row button{min-height:60px}
+  .guitar-string-row>strong{font-size:.95rem}
+  .guitar-chord-workstation{padding:11px}
+  .guitar-chord-buttons{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .guitar-chord-buttons button{min-height:52px}
+}
+@media(max-width:420px){
+  .immersive-tool-page{padding-inline:4px}
+  .immersive-tool-hero h1{font-size:1.65rem}
+  .instrument-app-toolbar{border-radius:12px}
+  .instrument-toolbar-actions button{font-size:.7rem}
+  .instrument-studio-strip{grid-template-columns:1fr}
+  .instrument-session-strip strong{font-size:.84rem}
+  .chord-pad-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .guitar-effect-rack{grid-template-columns:1fr 1fr 1fr}
+  .guitar-effect-rack button strong{font-size:.67rem}
+  .guitar-fretboard{min-width:780px}
+  .guitar-chord-buttons{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .creator-guide-dock{grid-template-columns:repeat(4,minmax(0,1fr));bottom:80px}
+}
+@media(orientation:landscape) and (max-height:600px) and (max-width:1000px){
+  .immersive-tool-page{padding-bottom:90px}
+  .immersive-tool-hero{display:grid;grid-template-columns:1fr auto;min-height:0}
+  .piano-stage-visual{display:none}
+  .guitar-stage-visual{height:66px}
+  .piano-studio-keyboard{height:190px}
+  .piano-studio-keyboard .piano-key.white{height:168px}
+  .piano-studio-keyboard .piano-key.black{height:108px}
+  .creator-guide-dock{bottom:10px;left:auto;right:10px;width:auto;grid-template-columns:repeat(4,58px)}
+}
