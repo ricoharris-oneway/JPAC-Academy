@@ -44,51 +44,15 @@ function yes(value){return['yes','true','1','i agree','agree'].includes(norm(val
 function studentType(dob){if(!dob)return'adult';const d=new Date(dob);if(Number.isNaN(d.getTime()))return'adult';const now=new Date();let age=now.getUTCFullYear()-d.getUTCFullYear();const m=now.getUTCMonth()-d.getUTCMonth();if(m<0||(m===0&&now.getUTCDate()<d.getUTCDate()))age--;return age<18?'minor':'adult'}
 function normalizeProgram(value){const name=text(value);return PROGRAM_ALIASES[name]||name}
 async function validSecret(supabase,provided){if(!provided)return false;const hash=crypto.createHash('sha256').update(provided).digest('hex');const{data,error}=await supabase.from('integration_webhook_secrets').select('secret_hash,active').eq('provider','jotform').maybeSingle();if(error)throw error;return Boolean(data?.active&&data.secret_hash===hash)}
-async function provisionWixAccount(row,guardianFirst,guardianLast){
-  const secret=process.env.JPAC_JOTFORM_WEBHOOK_SECRET;
-  if(!secret)throw new Error('JPAC_JOTFORM_WEBHOOK_SECRET is not configured in Vercel');
-  const minor=row.student_type==='minor';
-  const email=text(minor?row.guardian_email:row.email).toLowerCase();
-  if(!email)throw new Error(minor?'Guardian email is required for Wix registration':'Student email is required for Wix registration');
-  const payload={studentType:row.student_type,studentEmail:row.email,guardianEmail:row.guardian_email,studentFirstName:row.first_name,studentLastName:row.last_name,guardianFirstName:guardianFirst,guardianLastName:guardianLast};
-  const response=await fetch('https://www.jmonespac.org/_functions/jpacEnrollment',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${secret}`},body:JSON.stringify(payload),signal:AbortSignal.timeout(12000)});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok||result.success!==true||!result.wixMemberId)throw new Error(`Wix membership synchronization failed (HTTP ${response.status})`);
-  return result.wixMemberId;
-}
-async function provisionAcademyLogin(supabase,row){
-  const email=text(row.email).toLowerCase();
-  if(!email)return {status:'awaiting_student_email',profileId:null};
-  const {data:existing,error:lookupError}=await supabase.from('profiles').select('id,role').ilike('email',email).maybeSingle();
-  if(lookupError)throw lookupError;
-  if(existing){
-    if(existing.role!=='student')throw new Error('Student email belongs to another account role');
-    return {status:'existing',profileId:existing.id};
-  }
-  const siteUrl=(process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app').replace(/\/$/,'');
-  const {data,error}=await supabase.auth.admin.inviteUserByEmail(email,{redirectTo:`${siteUrl}/auth/callback`,data:{display_name:`${row.first_name} ${row.last_name}`.trim(),first_name:row.first_name,last_name:row.last_name,role:'student'}});
-  if(error)throw error;
-  const profileId=data?.user?.id;
-  if(!profileId)throw new Error('Academy invitation returned no user ID');
-  const displayName=`${row.first_name} ${row.last_name}`.trim();
-  const {error:profileError}=await supabase.from('profiles').upsert({id:profileId,email,display_name:displayName,first_name:row.first_name,last_name:row.last_name,full_name:displayName,role:'student',updated_at:new Date().toISOString()},{onConflict:'id'});
-  if(profileError)throw profileError;
-  return {status:'sent',profileId};
-}
 async function findCourseId(supabase,name){const title=normalizeProgram(name);if(!title)return null;const{data,error}=await supabase.from('courses').select('id').eq('title',title).maybeSingle();if(error)throw error;return data?.id||null}
 
 export default async function handler(req,res){
   if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});
   try{
     const supabase=createServerSupabase();
-    const supplied=text(req.query?.secret||req.headers['x-jpac-jotform-secret']||req.headers.authorization?.replace(/^Bearer\\s+/i,''));
-    if(!await validSecret(supabase,supplied)){console.error('JPAC Jotform webhook rejected: invalid or missing shared secret');return json(res,401,{error:'Unauthorized'});}
-    // Jotform sends application/x-www-form-urlencoded by default; JSON-only parsing silently discards those submissions.
-    let body=parseBody(req);
-    if(typeof req.body==='string'&&(!body||Object.keys(body).length===0)){
-      const fields=new URLSearchParams(req.body);body=Object.fromEntries(fields.entries());
-    }
-    if(!body||typeof body!=='object')body={};
+    const supplied=text(req.query?.secret||req.headers['x-jpac-jotform-secret']);
+    if(!await validSecret(supabase,supplied))return json(res,401,{error:'Unauthorized'});
+    const body=parseBody(req);
     let raw=body;
     if(typeof body.rawRequest==='string'){try{raw=JSON.parse(body.rawRequest)}catch{raw=body}}
     else if(body.rawRequest&&typeof body.rawRequest==='object')raw=body.rawRequest;
@@ -98,7 +62,7 @@ export default async function handler(req,res){
     for(const[k,v]of Object.entries(body))if(typeof v!=='object'&&v!=null&&!answers.has(norm(k)))answers.set(norm(k),String(v));
 
     const submissionId=text(body.submissionID||body.submissionId||raw?.submissionID||raw?.submissionId)||pick(answers,'submission id');
-    if(!submissionId){console.error('JPAC Jotform webhook: submission ID missing; received keys:',Object.keys(body).slice(0,25));return json(res,400,{error:'Submission ID missing'});}
+    if(!submissionId)return json(res,400,{error:'Submission ID missing'});
 
     const first=pick(answers,'Student First Name','student first');
     const middle=pick(answers,'Student Middle Name','student middle');
@@ -138,28 +102,10 @@ export default async function handler(req,res){
       intake_payload:{submission_id:submissionId,preferred_name:preferred,middle_name:middle,primary_program:primary,secondary_program:secondary,student_interests_goals:pick(answers,'Student Interests and Goals'),secondary_guardian_name:pick(answers,'Secondary Guardian Name'),secondary_guardian_email:pick(answers,'Secondary Guardian Email'),secondary_guardian_phone:pick(answers,'Secondary Guardian Phone'),emergency_contact_name:pick(answers,'Emergency Contact Name'),emergency_contact_relationship:pick(answers,'Emergency Contact Relationship'),emergency_contact_phone:pick(answers,'Emergency Contact Phone'),typed_signature:pick(answers,'Typed Full Name / Electronic Signature'),tuition_option:scholarshipChoice},
       updated_at:new Date().toISOString()
     };
-    if(!row.first_name||!row.last_name){console.error('JPAC Jotform webhook: student name mapping failed for submission',submissionId);return json(res,422,{error:'Student name fields could not be mapped',submission_id:submissionId});}
-    const {data:prior,error:priorError}=await supabase.from('pending_students').select('id,linked_profile_id,wix_member_id,invitation_status,admissions_stage,enrollment_status').eq('external_student_id',externalId).maybeSingle();
-    if(priorError)throw priorError;
-    // Do not downgrade an existing applicant's approval or account state on webhook retries.
-    if(prior){
-      row.admissions_stage=prior.admissions_stage||'application';
-      row.enrollment_status=prior.enrollment_status||'pending';
-    }
-    const{data,error}=await supabase.from('pending_students').upsert(row,{onConflict:'external_student_id'}).select('id,external_student_id,display_name,admissions_stage,scholarship_status,course_id,wix_member_id,linked_profile_id,invitation_status').single();
+    if(!row.first_name||!row.last_name)return json(res,422,{error:'Student name fields could not be mapped',submission_id:submissionId});
+    const{data,error}=await supabase.from('pending_students').upsert(row,{onConflict:'external_student_id'}).select('id,external_student_id,display_name,admissions_stage,scholarship_status,course_id').single();
     if(error)throw error;
-    const wixMemberId=data.wix_member_id||await provisionWixAccount(row,guardianFirst,guardianLast);
-    if(!data.wix_member_id){
-      const {error:wixUpdateError}=await supabase.from('pending_students').update({wix_member_id:wixMemberId,updated_at:new Date().toISOString()}).eq('id',data.id);
-      if(wixUpdateError)throw wixUpdateError;
-    }
-    let login={status:data.invitation_status||'existing',profileId:data.linked_profile_id};
-    if(!data.linked_profile_id){
-      login=await provisionAcademyLogin(supabase,row);
-      const {error:linkError}=await supabase.from('pending_students').update({linked_profile_id:login.profileId,invitation_status:login.status==='sent'?'sent':login.status==='existing'?'accepted':'pending',updated_at:new Date().toISOString()}).eq('id',data.id);
-      if(linkError)throw linkError;
-    }
-    await supabase.from('integration_events').upsert({provider:'jotform',external_event_id:submissionId,event_type:'student.enrollment.submitted',processing_status:'processed',payload:{form_id:FORM_ID,external_student_id:externalId,wix_member_id:wixMemberId,academy_invitation:login.status},processed_at:new Date().toISOString()},{onConflict:'provider,external_event_id'});
-    return json(res,200,{ok:true,studentId:data.id,wixMemberLinked:true,academyInvitation:login.status,courseAccessGranted:false});
-  }catch(error){console.error('JPAC Jotform enrollment processing failed:',error instanceof Error?error.message:'Unknown error');return json(res,500,{error:error instanceof Error?error.message:'Webhook processing failed'})}
+    await supabase.from('integration_events').upsert({provider:'jotform',external_event_id:submissionId,event_type:'student.enrollment.submitted',processing_status:'processed',payload:{form_id:FORM_ID,external_student_id:externalId},processed_at:new Date().toISOString()},{onConflict:'provider,external_event_id'});
+    return json(res,200,{ok:true,student:data});
+  }catch(error){return json(res,500,{error:error instanceof Error?error.message:'Webhook processing failed'})}
 }
