@@ -20,6 +20,7 @@ export function HarmonyBuilderTool() {
   const [saved, setSaved] = useState(false);
   const [keyChosen, setKeyChosen] = useState(false);
   const [styleChosen, setStyleChosen] = useState(false);
+  const [guidePanel,setGuidePanel]=useState<'quick'|'coach'|'theory'|'save'|'extra'|null>('quick');
   const progression = useMemo(() => buildProgression(keyName, style, version), [keyName, style, version]);
   const selectedActivity = harmonyActivities.find((activity) => activity.id === selectedActivityId) ?? harmonyActivities[0];
   const snapshot = useMemo<HarmonyProject>(() => ({ creative_goal: goal, instructor_activity: selectedActivity.title, selected_key: keyName, selected_style: style, suggested_song_section: progression.suggestedUse, emotional_description: progression.emotion, progression: progression.chords, roman_numerals: progression.roman, lyric_or_melody_idea: idea }), [goal, idea, keyName, progression, selectedActivity.title, style]);
@@ -32,28 +33,79 @@ export function HarmonyBuilderTool() {
 
   function loadProject(project: LocalToolProject<HarmonyProject>) { const data = project.data; setGoal(data.creative_goal); setSelectedActivityId(harmonyActivities.find((activity) => activity.title === data.instructor_activity)?.id ?? harmonyActivities[0].id); setKeyName(data.selected_key); setStyle(data.selected_style); setIdea(data.lyric_or_melody_idea); setKeyChosen(true); setStyleChosen(true); setGenerated(true); setCopyMessage(''); }
 
-  return <ToolShell title="Harmony Builder" eyebrow="JPAC Creator Tool" description="Shape chord progressions into verses, choruses, bridges, and original song ideas.">
-    <section className="premium-tool-panel songwriting-lab">
-      <div className="instrument-lab-intro"><div><span className="premium-kicker">Songwriting lab</span><h2>Choose your creative goal</h2><p>Connect music theory to a song section, emotion, and original idea.</p></div><div className="practice-goal-grid">{harmonyGoals.map((item) => <button type="button" key={item} className={goal === item ? 'active' : ''} aria-pressed={goal === item} onClick={() => setGoal(item)}>{item}</button>)}</div></div>
-      <section className="practice-mission"><header><div><span className="premium-kicker">Practice Mission</span><h2>{goal}</h2></div><strong>{[keyChosen, styleChosen, generated, idea.trim().length > 0, saved].filter(Boolean).length}/5 steps</strong></header><ol>{['Choose a key', 'Choose a style', 'Generate a progression', 'Write a lyric or melody idea', 'Save your harmony project locally'].map((step, index) => <li key={step} className={[keyChosen, styleChosen, generated, idea.trim().length > 0, saved][index] ? 'complete' : ''}><span>{index + 1}</span>{step}</li>)}</ol></section>
-      <InstructorActivityPanel activities={harmonyActivities} selectedId={selectedActivityId} onSelect={setSelectedActivityId} />
-      <div className="premium-control-grid">
-        <label>Key<select value={keyName} onChange={(e) => { setKeyName(e.target.value as HarmonyKey); setKeyChosen(true); setGenerated(false); }}>{harmonyKeys.map((key) => <option key={key}>{key}</option>)}</select></label>
-        <label>Mood / style<select value={style} onChange={(e) => { setStyle(e.target.value as HarmonyStyle); setStyleChosen(true); setGenerated(false); }}>{harmonyStyles.map((item) => <option key={item}>{item}</option>)}</select></label>
+  return <ToolShell title="Harmony Builder" eyebrow="JPAC Song Lab" description="Build the feeling. Shape the chords. Start the song." immersive>
+    <section className="premium-tool-panel songwriting-lab harmony-app-shell">
+      <div className="harmony-app-toolbar">
+        <div className="harmony-brand-lockup"><span>HARMONY BUILDER</span><strong>{goal}</strong><small>{keyName} · {style}</small></div>
+        <div className="harmony-toolbar-actions">
+          <button className="harmony-generate-primary" type="button" onClick={()=>{setKeyChosen(true);setStyleChosen(true);setGenerated(true);setVersion(0);setCopyMessage('')}}>✦ Generate</button>
+          <button type="button" onClick={()=>{setKeyChosen(true);setStyleChosen(true);setVersion(value=>value+1);setGenerated(true);setCopyMessage('Another feel generated.')}}>↻ New Feel</button>
+          <button type="button" onClick={()=>void copy()}>⧉ Copy</button>
+          <button type="button" onClick={()=>{setKeyName('C');setStyle('Pop');setGoal('Build a chorus');setVersion(0);setIdea('');setKeyChosen(false);setStyleChosen(false);setGenerated(false);setSaved(false);setCopyMessage('')}}>Reset</button>
+        </div>
       </div>
-      <div className="premium-action-row"><button className="button button-primary" type="button" onClick={() => { setKeyChosen(true); setStyleChosen(true); setGenerated(true); setVersion(0); setCopyMessage(''); }}>Generate progression</button><button className="button button-secondary" type="button" onClick={() => { setKeyChosen(true); setStyleChosen(true); setVersion((value) => value + 1); setGenerated(true); setCopyMessage('Another feel generated.'); }}>Try another feel</button><button className="button button-secondary" type="button" onClick={() => { setKeyName('C'); setStyle('Pop'); setGoal('Build a chorus'); setVersion(0); setIdea(''); setKeyChosen(false); setStyleChosen(false); setGenerated(false); setSaved(false); setCopyMessage(''); }}>Reset</button></div>
-      <div className="harmony-result" key={version}>
-        <div><small>Roman numerals</small><strong>{progression.roman.join(' · ')}</strong></div>
-        <div><small>Chord names</small><strong>{progression.chords.join(' · ')}</strong></div>
-        <div><small>Emotional direction</small><strong>{progression.emotion}</strong></div>
-        <div><small>Suggested use</small><strong>{progression.suggestedUse}</strong></div>
+
+      <div className="harmony-goal-rail" aria-label="Choose creative goal">
+        {harmonyGoals.map(item=><button type="button" key={item} className={goal===item?'active':''} aria-pressed={goal===item} onClick={()=>setGoal(item)}>{item}</button>)}
       </div>
-      <label className="harmony-idea-field">Lyric or melody idea<textarea maxLength={1000} value={idea} onChange={(event) => setIdea(event.target.value)} placeholder="Write one lyric line, melody shape, or hook idea…" /></label>
-      <div className="premium-learning-grid"><article><h2>What this teaches</h2><p>{progression.lesson}</p></article><article><h2>Try this next</h2><p>{progression.prompt}</p></article></div>
-      <div className="premium-action-row"><button className="button button-secondary" type="button" onClick={() => void copy()}>Copy progression</button>{copyMessage ? <span role="status">{copyMessage}</span> : null}</div>
-      <div className="beginner-helper-grid">{harmonyHelpers.map(([title, text]) => <article key={title}><strong>{title}</strong><span>{text}</span></article>)}</div>
-      <LocalProjectPanel toolType="harmony-builder" toolLabel="Harmony Builder" snapshot={snapshot} onLoad={loadProject} onSaved={() => setSaved(true)} />
-      <ExtraCreditPanel summary={extraCreditSummary} />
+
+      <section className="harmony-creative-stage" aria-label="Harmony creation workspace">
+        <aside className="harmony-control-tower">
+          <div className="harmony-select-card">
+            <span>KEY</span>
+            <select value={keyName} onChange={e=>{setKeyName(e.target.value as HarmonyKey);setKeyChosen(true);setGenerated(false)}}>{harmonyKeys.map(key=><option key={key}>{key}</option>)}</select>
+          </div>
+          <div className="harmony-select-card">
+            <span>STYLE / MOOD</span>
+            <select value={style} onChange={e=>{setStyle(e.target.value as HarmonyStyle);setStyleChosen(true);setGenerated(false)}}>{harmonyStyles.map(item=><option key={item}>{item}</option>)}</select>
+          </div>
+          <div className="harmony-direction-card">
+            <span>FEEL</span>
+            <strong>{progression.emotion}</strong>
+            <small>{progression.suggestedUse}</small>
+          </div>
+          <button className="harmony-coach-cue" type="button" onClick={()=>setGuidePanel('coach')}>✦ Open Coach Cue</button>
+        </aside>
+
+        <div className="harmony-chord-stage" key={version}>
+          <div className="harmony-stage-heading"><span>CURRENT PROGRESSION</span><strong>{progression.roman.join('  ·  ')}</strong></div>
+          <div className="harmony-chord-pads">
+            {progression.chords.map((chord,index)=><article key={chord+'-'+index}><small>{progression.roman[index]}</small><strong>{chord}</strong><span>{index+1}</span></article>)}
+          </div>
+          <div className="harmony-energy-line" aria-hidden="true"><i/><i/><i/><i/></div>
+          <label className="harmony-hook-pad"><span>HOOK / MELODY IDEA</span><textarea maxLength={1000} value={idea} onChange={event=>setIdea(event.target.value)} placeholder="Drop a lyric, melody shape, title, or hook idea here…"/></label>
+          <div className="harmony-stage-actions">
+            <button type="button" className="button button-primary" onClick={()=>{setKeyChosen(true);setStyleChosen(true);setGenerated(true);setVersion(value=>value+1)}}>MAKE ANOTHER VERSION</button>
+            <button type="button" className="button button-secondary" onClick={()=>setGuidePanel('theory')}>WHY THESE CHORDS?</button>
+          </div>
+        </div>
+      </section>
+
+      {copyMessage?<div className="harmony-status-toast" role="status">{copyMessage}</div>:null}
+
+      <div className="creator-guide-dock harmony-guide-dock" aria-label="Harmony Builder guide">
+        <button type="button" onClick={()=>setGuidePanel('quick')}><span>?</span><strong>Guide</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('coach')}><span>✦</span><strong>Coach</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('theory')}><span>♬</span><strong>Theory</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('save')}><span>◇</span><strong>Save</strong></button>
+        <button type="button" onClick={()=>setGuidePanel('extra')}><span>★</span><strong>Extra</strong></button>
+      </div>
+
+      {guidePanel&&<div className="creator-guide-backdrop" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setGuidePanel(null)}}>
+        <aside className="creator-guide-panel" role="dialog" aria-modal="true" aria-label="Harmony Builder guidance">
+          <button type="button" className="creator-guide-close" aria-label="Close guide" onClick={()=>setGuidePanel(null)}>×</button>
+          {guidePanel==='quick'&&<div className="creator-guide-content"><span className="premium-kicker">Quick Start</span><h2>Build first. Learn while you create.</h2><div className="creator-guide-steps">
+            <button type="button" onClick={()=>setGuidePanel(null)}><b>1</b><span><strong>Pick your goal</strong><small>Verse, chorus, bridge, mood, or creative direction.</small></span></button>
+            <button type="button" onClick={()=>setGuidePanel(null)}><b>2</b><span><strong>Choose key + style</strong><small>Set the musical world before generating.</small></span></button>
+            <button type="button" onClick={()=>{setGenerated(true);setGuidePanel(null)}}><b>3</b><span><strong>Generate and react</strong><small>Keep it, reshape it, or create another feel.</small></span></button>
+            <button type="button" onClick={()=>setGuidePanel('save')}><b>4</b><span><strong>Capture the idea</strong><small>Add a hook or melody idea, then save it locally.</small></span></button>
+          </div></div>}
+          {guidePanel==='coach'&&<div className="creator-guide-content"><InstructorActivityPanel activities={harmonyActivities} selectedId={selectedActivityId} onSelect={setSelectedActivityId}/></div>}
+          {guidePanel==='theory'&&<div className="creator-guide-content"><span className="premium-kicker">Harmony Insight</span><h2>Why this progression works</h2><div className="creator-guide-cards"><article><strong>Roman numerals</strong><p>{progression.roman.join(' · ')}</p></article><article><strong>Chord names</strong><p>{progression.chords.join(' · ')}</p></article><article><strong>What this teaches</strong><p>{progression.lesson}</p></article><article><strong>Try this next</strong><p>{progression.prompt}</p></article>{harmonyHelpers.map(([title,text])=><article key={title}><strong>{title}</strong><p>{text}</p></article>)}</div></div>}
+          {guidePanel==='save'&&<div className="creator-guide-content"><LocalProjectPanel toolType="harmony-builder" toolLabel="Harmony Builder" snapshot={snapshot} onLoad={loadProject} onSaved={()=>setSaved(true)}/></div>}
+          {guidePanel==='extra'&&<div className="creator-guide-content"><ExtraCreditPanel summary={extraCreditSummary}/></div>}
+        </aside>
+      </div>}
     </section>
   </ToolShell>;
 }
