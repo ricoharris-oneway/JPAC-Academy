@@ -65,7 +65,7 @@ async function provisionAcademyLogin(supabase,row){
     if(existing.role!=='student')throw new Error('Student email belongs to another account role');
     return {status:'existing',profileId:existing.id};
   }
-  const siteUrl=(process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app').replace(/\\/$/,'');
+  const siteUrl=(process.env.ACADEMY_SITE_URL||'https://jpac-academy.vercel.app').replace(/\/$/,'');
   const {data,error}=await supabase.auth.admin.inviteUserByEmail(email,{redirectTo:`${siteUrl}/auth/callback`,data:{display_name:`${row.first_name} ${row.last_name}`.trim(),first_name:row.first_name,last_name:row.last_name,role:'student'}});
   if(error)throw error;
   const profileId=data?.user?.id;
