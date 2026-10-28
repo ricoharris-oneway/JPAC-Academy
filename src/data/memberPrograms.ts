@@ -16,7 +16,7 @@ export const memberTools = [
   { title: 'JPAC Coach', icon: '✦', description: 'Discover guidance for your creative practice.', to: '/tools#coach' },
   { title: 'Creative Studio', icon: '◫', description: 'Explore the JPAC creative tool collection.', to: '/studio' },
   { title: 'Practice Submissions', icon: '◉', description: 'Share course practice after enrollment approval.', to: '/practice-coach' },
-  { title: 'Career Pathing', icon: '↗', description: 'Choose a direction and explore your creative future.', to: '/career-paths' },
+  { title: 'Career Pathing', icon: '↗', description: 'Choose a direction and explore your creative future.', to: '/career-pathing' },
   { title: 'Video Finder Helper', icon: '▷', description: 'Learn about curated learning resources.', to: '/tools#video-finder' },
   { title: 'Certificates & Portfolio', icon: '◇', description: 'Build toward verified work and course credentials.', to: '/certificates' },
   { title: 'Community', icon: '◎', description: 'Your next creative circle. Coming soon.', to: '/community' },
