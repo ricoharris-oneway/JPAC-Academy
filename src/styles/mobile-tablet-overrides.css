@@ -1,0 +1,199 @@
+/* JPAC Academy app-wide tablet/mobile overrides.
+   Loaded last. No desktop rules: everything is scoped to <=1180px. */
+
+@media(max-width:1180px){
+  html,body,#root{max-width:100%;overflow-x:hidden}
+  .main,.content,.content>*,.card,.page-hero>*,.workspace-hero>*,.hero>*,.dashboard-grid>*,.grid>*,.teacher-grid>*,.admin-grid>*{min-width:0}
+  img,video,canvas,svg,iframe{max-width:100%;height:auto}
+  table{max-width:100%}
+  input,select,textarea,button{max-width:100%}
+
+  .content :where(h1,h2,h3,h4,p,li,dd,dt,label,span,strong,small,a){overflow-wrap:anywhere}
+
+  .grid-4,.dream-grid,.admissions-metrics,.teacher-metrics,.admin-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .dashboard-grid,.teacher-dashboard-grid,.teacher-grid,.admin-grid,.admissions-dashboard-grid,.payment-ledger-grid,.course-enrollment-grid,.consent-ledger-grid,.curriculum-grid{grid-template-columns:minmax(0,1fr)!important}
+  .curriculum-shell{grid-template-columns:1fr!important}
+  .curriculum-courses,.aria-admissions,.teacher-roster,.quick-actions{position:static!important;top:auto!important}
+  .curriculum-courses{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+
+  .page-hero,.section-head,.module-heading,.ledger-entry-heading,.consent-record-heading{min-width:0}
+  .page-title{max-width:100%}
+
+  .table-wrap,.responsive-table,.admin-table,.teacher-table,.roster-table,.ledger-table,.submissions-table,.enrollment-table{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .content table{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .content table thead,.content table tbody,.content table tfoot{min-width:max-content}
+  .content pre,.content code{max-width:100%;overflow-x:auto}
+
+  .modal,.dialog,.modal-card,[role="dialog"]{max-width:min(94vw,980px)}
+  .sticky-action{max-width:100%}
+
+  .filter-row,.builder-tabs,.studio-meta,.lesson-meta,.course-actions,.hero-actions,.workspace-hero-actions,.review-actions,.submission-actions,.admissions-actions{max-width:100%}
+}
+
+@media(max-width:980px){
+  .app-shell{display:block!important;min-width:0}
+
+  .sidebar{
+    position:fixed!important;
+    z-index:1200!important;
+    inset:0 auto 0 0!important;
+    width:min(330px,88vw)!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    transform:translateX(-105%);
+    transition:transform .22s ease;
+    padding:20px 16px max(18px,env(safe-area-inset-bottom))!important;
+    overflow:hidden!important;
+    box-shadow:20px 0 60px rgba(0,0,0,.55)
+  }
+  .mobile-nav-open .sidebar{transform:translateX(0)}
+  .mobile-nav-shade{display:none;position:fixed;inset:0;z-index:1190;border:0;background:rgba(3,1,6,.72);backdrop-filter:blur(4px)}
+  .mobile-nav-open .mobile-nav-shade{display:block}
+  .mobile-close-button{display:grid!important;place-items:center;position:absolute;top:14px;right:14px;z-index:2;width:42px;height:42px;border:1px solid var(--border);border-radius:50%;background:#190c25;color:#fff;font-size:1.35rem}
+  .mobile-menu-button{display:grid!important;place-items:center;flex:0 0 44px;width:44px;height:44px;border:1px solid var(--border);border-radius:13px;background:#1a0c28;color:#fff;font-size:1.1rem}
+
+  .sidebar .brand{display:flex!important;margin:0 48px 18px 0!important}
+  .sidebar .brand div,.sidebar .nav-link span,.sidebar .authenticated-role,.sidebar .sidebar-footer div{display:block!important}
+  .sidebar .brand img{width:54px!important}
+  .sidebar .authenticated-role{margin-bottom:12px}
+  .sidebar .nav{display:grid!important;gap:5px!important;overflow-y:auto!important;overflow-x:hidden!important;padding:0 6px 12px 0!important}
+  .sidebar .nav-link,.sidebar .nav-link:nth-child(n+7),.sidebar>.nav-link{display:flex!important;min-width:0!important;justify-content:flex-start!important;padding:11px 12px!important}
+  .sidebar-footer{display:flex!important;margin-top:auto!important;flex-wrap:nowrap!important}
+  .sidebar-footer small{display:block!important;max-width:160px!important;overflow:hidden;text-overflow:ellipsis}
+
+  .main{padding-bottom:0!important}
+  .topbar{height:auto!important;min-height:64px!important;padding:10px 14px!important;gap:12px}
+  .topbar>div:first-of-type{min-width:0;overflow:hidden}
+  .topbar>div:first-of-type strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .content{width:100%!important;max-width:100%!important;padding:22px 18px 44px!important}
+
+  .page-hero{align-items:flex-start!important;flex-direction:column!important}
+  .page-hero>.button,.page-hero>a.button{align-self:stretch}
+
+  .workspace-hero,.live-dashboard-hero,.curriculum-overview{grid-template-columns:1fr!important}
+  .workspace-hero,.hero,.live-dashboard-hero{min-height:0!important}
+  .level-visual{justify-self:start}
+
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .registration-options,.ledger-form-grid,.ledger-details,.consent-fields,.consent-details,.builder-form{grid-template-columns:1fr!important}
+  .ledger-form-grid .wide{grid-column:auto!important}
+
+  .admissions-list article{grid-template-columns:auto minmax(0,1fr)!important}
+  .admissions-list .source-pill,.admissions-list select{grid-column:2!important}
+  .pipeline-grid{grid-template-columns:repeat(4,minmax(110px,1fr))!important}
+
+  .lesson-header-main,.lesson-learning-head{align-items:flex-start}
+  .lesson-flow{grid-template-columns:1fr minmax(30px,70px) 1fr}
+}
+
+@media(max-width:768px){
+  .content{padding:18px 14px 40px!important}
+  .topbar{padding-inline:12px!important}
+  .topbar .muted,.topbar .status{display:none!important}
+
+  .card{border-radius:18px}
+  .card-pad,.teacher-dashboard-card,.mission-card,.admin-panel,.teacher-panel{padding:18px!important}
+
+  .workspace-hero,.hero,.live-dashboard-hero,.admissions-hero{padding:24px 20px!important;border-radius:22px!important}
+  .workspace-hero-copy h1,.page-title,.lesson-content h1,.live-dashboard-copy h1,.admissions-hero .page-title{font-size:clamp(2rem,9vw,3.25rem)!important;line-height:1.02!important}
+  .hero-content,.hero-copy,.live-dashboard-copy{max-width:100%!important}
+
+  .grid-2,.grid-3,.grid-4,.achievement-grid,.dream-grid,.admissions-metrics,.teacher-metrics,.admin-metrics,.dashboard-grid,.payment-ledger-grid,.course-enrollment-grid,.consent-ledger-grid,.consent-fields,.ledger-form-grid,.ledger-details,.consent-details,.curriculum-overview,.registration-options{grid-template-columns:minmax(0,1fr)!important}
+
+  .dashboard-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .course-card,.entitled-course-card{min-height:0!important}
+  .course-card-content,.studio-body{padding:18px!important}
+
+  .section-head,.module-heading,.selected-student,.ledger-entry-heading,.consent-record-heading,.lesson-learning-head,.lesson-resource{align-items:flex-start!important;flex-direction:column!important}
+  .section-head{gap:8px;margin:28px 0 14px}
+
+  .student-lesson-list a{grid-template-columns:38px minmax(0,1fr)!important}
+  .student-lesson-list a>b{grid-column:2}
+  .lesson-body{min-height:0!important;margin:18px 0!important;padding:18px!important}
+  .lesson-header{padding:20px!important}
+  .lesson-header-main{display:block!important}
+  .lesson-status{width:max-content;min-width:0;margin-top:14px;text-align:left}
+  .lesson-flow{grid-template-columns:1fr!important;gap:9px}
+  .lesson-flow>i{width:1px!important;height:18px!important;margin-left:17px}
+  .lesson-coach{grid-template-columns:44px 1fr!important}
+  .lesson-coach .button{grid-column:1/-1;width:100%}
+  .lesson-resource .button{margin-top:15px;width:100%}
+
+  .sticky-action{position:static!important}
+  .policy-grid{grid-template-columns:1fr!important}
+  .consent-reminder,.email-lookup,.review-actions{align-items:stretch!important;flex-direction:column!important}
+  .email-lookup{display:grid!important;grid-template-columns:1fr!important}
+  .consent-submit{justify-self:stretch}
+
+  .curriculum-courses{grid-template-columns:1fr 1fr!important}
+  .curriculum-tree,.curriculum-checklist,.curriculum-builder{padding:16px!important}
+  .pipeline-grid{grid-template-columns:repeat(2,minmax(120px,1fr))!important}
+
+  .auth-page{grid-template-columns:1fr!important}
+  .auth-visual{min-height:30dvh!important;padding:26px 20px!important}
+  .auth-panel{width:calc(100% - 28px)!important;margin:20px auto 48px!important;padding:24px!important}
+
+  .content table{font-size:.84rem}
+  .content th,.content td{white-space:nowrap}
+}
+
+@media(max-width:560px){
+  body{min-width:0}
+  .content{padding:14px 10px 34px!important}
+  .topbar{padding-inline:10px!important}
+  .topbar>div:first-of-type strong{font-size:.82rem}
+
+  .card-pad,.teacher-dashboard-card,.mission-card,.admin-panel,.teacher-panel{padding:16px!important}
+  .workspace-hero,.hero,.live-dashboard-hero,.admissions-hero{padding:20px 16px!important}
+
+  .workspace-hero-actions,.hero-actions,.course-actions,.review-actions,.submission-actions,.admissions-actions,.lesson-completion-actions{display:grid!important;grid-template-columns:1fr!important;width:100%!important}
+  .button,.workspace-hero-actions .button,.hero-actions .button,.course-actions .button,.review-actions .button,.submission-actions .button,.email-lookup .button,.ledger-form>.button,.course-enrollment-form>.button,.admissions-actions .button,.lesson-completion .button{width:100%!important;min-height:46px!important;padding:12px 16px!important}
+
+  input,select,textarea{font-size:16px!important;min-height:46px}
+  input[type=checkbox],input[type=radio],input[type=range]{min-height:0}
+
+  .dashboard-strip{grid-template-columns:1fr!important}
+  .dashboard-strip>div{padding:14px 12px!important}
+  .filter-row,.builder-tabs,.studio-meta{overflow-x:auto;flex-wrap:nowrap!important;padding-bottom:6px;-webkit-overflow-scrolling:touch}
+  .filter-row>* ,.builder-tabs>* ,.studio-meta>*{flex:0 0 auto}
+
+  .student-lesson-list a{padding:12px 10px!important;gap:10px!important}
+  .student-lesson-list a>span{width:34px!important;height:34px!important}
+  .lesson-meta span{white-space:normal!important}
+  .lesson-content-blocks article{grid-template-columns:34px minmax(0,1fr)!important;padding:14px!important}
+
+  .teacher-metrics,.admin-metrics{grid-template-columns:1fr!important}
+  .admissions-metrics{grid-template-columns:1fr!important}
+  .admissions-list article{padding:12px!important;gap:10px!important}
+  .admissions-list .source-pill,.admissions-list select{grid-column:1/-1!important;margin-left:58px}
+  .pipeline-grid{display:flex!important;overflow-x:auto!important;gap:10px!important;padding-bottom:10px!important}
+  .pipeline-grid article{flex:0 0 132px}
+
+  .curriculum-courses{display:flex!important;overflow-x:auto!important;gap:8px!important}
+  .curriculum-courses .section-head{flex:0 0 100%!important}
+  .curriculum-courses button{flex:0 0 180px}
+
+  .auth-panel{width:calc(100% - 20px)!important;padding:20px!important}
+
+  [role="dialog"],.modal,.dialog,.modal-card{width:calc(100vw - 20px)!important;max-width:none!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important}
+}
+
+@media(max-width:380px){
+  .content{padding-inline:8px!important}
+  .mobile-menu-button{min-width:42px;width:42px}
+  .topbar>div:first-of-type strong{font-size:.76rem}
+  .card-pad,.teacher-dashboard-card,.mission-card,.admin-panel,.teacher-panel{padding:14px!important}
+  .workspace-hero,.hero,.live-dashboard-hero,.admissions-hero{padding:18px 14px!important}
+  .page-title,.workspace-hero-copy h1,.lesson-content h1,.live-dashboard-copy h1,.admissions-hero .page-title{font-size:clamp(1.8rem,11vw,2.4rem)!important}
+}
+
+@media(max-width:1180px) and (hover:none){
+  .button:hover,.nav-link:hover,.course-card:hover,.studio-card:hover,.mission-card:hover,.admissions-list article:hover,.admissions-metrics article:hover{transform:none!important}
+}
+
+@media(max-width:1180px) and (orientation:landscape) and (max-height:650px){
+  .sidebar{width:min(360px,72vw)!important}
+  .auth-visual{min-height:180px!important}
+  .hero,.workspace-hero,.live-dashboard-hero,.admissions-hero{min-height:0!important}
+}
