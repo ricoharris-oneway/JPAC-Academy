@@ -83,7 +83,12 @@ export default async function handler(req,res){
     const supabase=createServerSupabase();
     const supplied=text(req.query?.secret||req.headers['x-jpac-jotform-secret']||req.headers.authorization?.replace(/^Bearer\\s+/i,''));
     if(!await validSecret(supabase,supplied)){console.error('JPAC Jotform webhook rejected: invalid or missing shared secret');return json(res,401,{error:'Unauthorized'});}
-    // Jotform sends application/x-www-form-urlencoded by default; JSON-only parsing silently discards those submissions.\n    let body=parseBody(req);\n    if(typeof req.body==='string'&&(!body||Object.keys(body).length===0)){\n      const fields=new URLSearchParams(req.body);body=Object.fromEntries(fields.entries());\n    }\n    if(!body||typeof body!=='object')body={};
+    // Jotform sends application/x-www-form-urlencoded by default; JSON-only parsing silently discards those submissions.
+    let body=parseBody(req);
+    if(typeof req.body==='string'&&(!body||Object.keys(body).length===0)){
+      const fields=new URLSearchParams(req.body);body=Object.fromEntries(fields.entries());
+    }
+    if(!body||typeof body!=='object')body={};
     let raw=body;
     if(typeof body.rawRequest==='string'){try{raw=JSON.parse(body.rawRequest)}catch{raw=body}}
     else if(body.rawRequest&&typeof body.rawRequest==='object')raw=body.rawRequest;
