@@ -81,22 +81,26 @@ function jotformText(value){
   return '';
 }
 async function handleJotformImport(admin,body,req,res){
-  const submissionId=String(body.submission_id||'');
-  if(!/^\d{10,25}$/.test(submissionId))return json(res,400,{error:'Valid Jotform submission ID required'});
-  const submission=await readJotform('/submission/'+submissionId);
-  if(String(submission.form_id)!==JPAC_JOTFORM_ID)return json(res,400,{error:'Submission does not belong to JPAC enrollment form'});
-  const externalId='JF-'+submissionId;
-  const{data:existing,error:lookupError}=await admin.from('pending_students').select('id').eq('external_student_id',externalId).maybeSingle();
-  if(lookupError)return json(res,400,{error:lookupError.message});
-  if(existing)return json(res,200,{ok:true,pending_student_id:existing.id,existing:true,message:'Application already imported. Open it in Admissions Center.'});
-  const secret=process.env.JPAC_JOTFORM_WEBHOOK_SECRET;
-  if(!secret)return json(res,500,{error:'Jotform intake configuration is incomplete'});
-  const host=process.env.VERCEL_PROJECT_PRODUCTION_URL||req.headers.host;
-  const response=await fetch('https://'+host+'/api/jotform-student-webhook',{method:'POST',headers:{'Content-Type':'application/json','x-jpac-jotform-secret':secret},body:JSON.stringify({formID:JPAC_JOTFORM_ID,submissionID:submissionId,rawRequest:JSON.stringify({...submission,formID:JPAC_JOTFORM_ID,submissionID:submissionId})})});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok)return json(res,response.status,{error:result.error||'Jotform intake failed'});
-  const{data:created}=await admin.from('pending_students').select('id').eq('external_student_id',externalId).maybeSingle();
-  return json(res,200,{ok:true,pending_student_id:created?.id||null,message:'Application imported. Continue in Admissions Center.'});
+ const submissionId=String(body.submission_id||'');
+ if(!/^\d{10,25}$/.test(submissionId))return json(res,400,{error:'Valid Jotform submission ID required'});
+ const submission=await readJotform('/submission/'+submissionId);
+ if(String(submission.form_id)!==JPAC_JOTFORM_ID)return json(res,400,{error:'Submission is not from JPAC enrollment form'});
+ const field=(name)=>{const match=Object.values(submission.answers||{}).find(v=>String(v?.text||'').trim().toLowerCase()===name.toLowerCase());return jotformText(match?.answer).trim()};
+ const first=field('Student First Name'),last=field('Student Last Name'),email=field('Student Email');
+ if(!first||!last||!email)return json(res,422,{error:'Submission is missing a student name or email'});
+ const externalId='JF-'+submissionId;
+ const{data:existing,error:lookupError}=await admin.from('pending_students').select('id,linked_profile_id').eq('external_student_id',externalId).maybeSingle();
+ if(lookupError)throw lookupError;
+ if(existing)return json(res,200,{ok:true,pending_student_id:existing.id,existing:true,message:'This Jotform application is already saved in Admissions Center.'});
+ const dob=field('Date of Birth');
+ const birth=dob?new Date(dob):null;
+ const age=birth&&!Number.isNaN(birth.getTime())?Math.floor((Date.now()-birth.getTime())/31557600000):null;
+ const primary=field('Primary Program'),secondary=field('Secondary Program');
+ const guardian=[field('Guardian First Name'),field('Guardian Last Name')].filter(Boolean).join(' ');
+ const row={external_student_id:externalId,first_name:first,last_name:last,display_name:first+' '+last,email,phone:field('Student Phone')||null,date_of_birth:dob||null,grade_level:field('Grade Level')||null,school_name:field('School Name')||null,guardian_name:guardian||null,guardian_email:field('Guardian Email')||null,guardian_phone:field('Guardian Phone')||null,guardian_relationship:field('Relationship to Student')||null,enrollment_status:'pending',admissions_stage:'application',enrollment_source:'import',student_type:age===null?'adult':age<18?'minor':'adult',creative_interests:[primary,secondary].filter(Boolean),secondary_program:secondary||null,experience_level:field('Experience Level')||null,practice_availability:field('Preferred Class Day / Time')||null,intake_payload:{submission_id:submissionId,answers:submission.answers,primary_program:primary,secondary_program:secondary},source_updated_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+ const{data:created,error:saveError}=await admin.from('pending_students').upsert(row,{onConflict:'external_student_id'}).select('id,display_name,email').single();
+ if(saveError)throw saveError;
+ return json(res,200,{ok:true,pending_student_id:created.id,email:created.email,display_name:created.display_name,message:'Jotform application saved in Admissions Center. Student activation and course access remain under staff control.'});
 }
 
 export default async function handler(req,res){
