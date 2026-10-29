@@ -40,13 +40,13 @@ export function CourseEnrollmentManagerPage() {
   async function showJotformApplications(){
     if(!session?.access_token)return setError('Administrator sign-in required.');
     setError('');setShowJotform(true);setBusy(true);
-    try{const response=await fetch('/api/admin-jotform-import',{headers:{Authorization:`Bearer ${session.access_token}`}});const result=await response.json();if(!response.ok)throw new Error(result.error||'Unable to retrieve Jotform applications');setJotformApplicants(result.applications||[])}
+    try{const response=await fetch('/api/admin-reset-password?action=jotform_list',{headers:{Authorization:`Bearer ${session.access_token}`}});const result=await response.json();if(!response.ok)throw new Error(result.error||'Unable to retrieve Jotform applications');setJotformApplicants(result.applications||[])}
     catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Jotform applications.')}finally{setBusy(false)}
   }
   async function importJotformStudent(applicant:JotformApplicant){
     if(!session?.access_token)return setError('Administrator sign-in required.');
     setImportingId(applicant.submission_id);setBusy(true);setError('');setMessage('');
-    try{const response=await fetch('/api/admin-jotform-import',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({submission_id:applicant.submission_id})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Could not import student');setMessage(result.message||'Application imported for administrator review.');setShowJotform(false);if(applicant.email)await lookup(applicant.email)}
+    try{const response=await fetch('/api/admin-reset-password',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({action:'jotform_import',submission_id:applicant.submission_id})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Could not import student');setMessage(result.message||'Application imported for administrator review.');setShowJotform(false);if(applicant.email)await lookup(applicant.email)}
     catch(reason){setError(reason instanceof Error?reason.message:'Could not import student.')}finally{setBusy(false);setImportingId('')}
   }
   async function refresh() { if (!student || busy) return; setBusy(true); const token = request.current; try { const result = await loadOnboardingOverview(student.id); if (token === request.current) setOverview(result); } finally { if (token === request.current) setBusy(false); } }
