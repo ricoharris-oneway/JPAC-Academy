@@ -61,8 +61,48 @@ async function sendLoginSetupEmail(admin,user,studentId){
   return{status:200,body:{ok:true,id:result.id,message:`Fresh login setup email sent to ${student.email}.`}};
 }
 
+
+const JPAC_JOTFORM_ID='262598816503062';
+async function readJotform(path){
+  const key=process.env.JOTFORM_API_KEY;
+  if(!key)throw new Error('JOTFORM_API_KEY is not configured');
+  const response=await fetch('https://api.jotform.com'+path,{headers:{APIKEY:key,Accept:'application/json'}});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||Number(result.responseCode)>=400)throw new Error(result.message||'Jotform request failed');
+  return result.content;
+}
+function jotformAnswer(sub,label){
+  const field=Object.values(sub.answers||{}).find(v=>String(v?.text||'').toLowerCase().includes(label));
+  return field?.answer||'';
+}
+function jotformText(value){
+  if(typeof value==='string')return value;
+  if(value&&typeof value==='object')return [value.first,value.last].filter(Boolean).join(' ');
+  return '';
+}
+async function handleJotformImport(admin,body,req,res){
+  const submissionId=String(body.submission_id||'');
+  if(!/^\d{10,25}$/.test(submissionId))return json(res,400,{error:'Valid Jotform submission ID required'});
+  const submission=await readJotform('/submission/'+submissionId);
+  if(String(submission.form_id)!==JPAC_JOTFORM_ID)return json(res,400,{error:'Submission does not belong to JPAC enrollment form'});
+  const externalId='JF-'+submissionId;
+  const{data:existing,error:lookupError}=await admin.from('pending_students').select('id').eq('external_student_id',externalId).maybeSingle();
+  if(lookupError)return json(res,400,{error:lookupError.message});
+  if(existing)return json(res,200,{ok:true,pending_student_id:existing.id,existing:true,message:'Application already imported. Open it in Admissions Center.'});
+  const secret=process.env.JPAC_JOTFORM_WEBHOOK_SECRET;
+  if(!secret)return json(res,500,{error:'Jotform intake configuration is incomplete'});
+  const host=process.env.VERCEL_PROJECT_PRODUCTION_URL||req.headers.host;
+  const response=await fetch('https://'+host+'/api/jotform-student-webhook',{method:'POST',headers:{'Content-Type':'application/json','x-jpac-jotform-secret':secret},body:JSON.stringify({formID:JPAC_JOTFORM_ID,submissionID:submissionId,rawRequest:JSON.stringify({...submission,formID:JPAC_JOTFORM_ID,submissionID:submissionId})})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)return json(res,response.status,{error:result.error||'Jotform intake failed'});
+  const{data:created}=await admin.from('pending_students').select('id').eq('external_student_id',externalId).maybeSingle();
+  return json(res,200,{ok:true,pending_student_id:created?.id||null,message:'Application imported. Continue in Admissions Center.'});
+}
+
 export default async function handler(req,res){
-  if(req.method!=='POST')return json(res,405,{ok:false,error:'Method not allowed'});const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)return json(res,401,{ok:false,error:'Authentication required'});let admin;try{admin=createServerSupabase()}catch(error){return json(res,500,{ok:false,error:error instanceof Error?error.message:'Server configuration is incomplete'})}const{data:{user},error:userError}=await admin.auth.getUser(token);if(userError||!user)return json(res,401,{ok:false,error:'Invalid or expired session'});const{data:caller}=await admin.from('profiles').select('role').eq('id',user.id).maybeSingle();if(!caller||!['admin','developer'].includes(caller.role))return json(res,403,{ok:false,error:'Administrator access required'});const body=parseBody(req);const action=typeof body.action==='string'?body.action:'reset_password';
+  if(!['GET','POST'].includes(req.method))return json(res,405,{ok:false,error:'Method not allowed'});const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');if(!token)return json(res,401,{ok:false,error:'Authentication required'});let admin;try{admin=createServerSupabase()}catch(error){return json(res,500,{ok:false,error:error instanceof Error?error.message:'Server configuration is incomplete'})}const{data:{user},error:userError}=await admin.auth.getUser(token);if(userError||!user)return json(res,401,{ok:false,error:'Invalid or expired session'});const{data:caller}=await admin.from('profiles').select('role').eq('id',user.id).maybeSingle();if(!caller||!['admin','developer'].includes(caller.role))return json(res,403,{ok:false,error:'Administrator access required'});if(req.method==='GET'){if(req.query?.action!=='jotform_list')return json(res,405,{error:'Unsupported request'});try{const submissions=await readJotform('/form/'+JPAC_JOTFORM_ID+'/submissions?limit=100');const applications=(Array.isArray(submissions)?submissions:[]).map(s=>({submission_id:String(s.id),display_name:[jotformText(jotformAnswer(s,'student first name')),jotformText(jotformAnswer(s,'student last name'))].filter(Boolean).join(' ')||'Unnamed student',email:jotformText(jotformAnswer(s,'student email'))||null,created_at:s.created_at||null})).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));return json(res,200,{ok:true,applications})}catch(error){return json(res,500,{error:error instanceof Error?error.message:'Could not load Jotform submissions'})}}
+  const body=parseBody(req);const action=typeof body.action==='string'?body.action:'reset_password';
+  if(action==='jotform_import'){try{return await handleJotformImport(admin,body,req,res)}catch(error){return json(res,500,{error:error instanceof Error?error.message:'Jotform import failed'})}}
   if(action==='send_welcome_email'){const result=await sendWelcomeEmail(admin,user,typeof body.studentId==='string'?body.studentId:'');return json(res,result.status,result.body)}
   if(action==='resend_login_email'){const result=await sendLoginSetupEmail(admin,user,typeof body.studentId==='string'?body.studentId:'');return json(res,result.status,result.body)}
 
