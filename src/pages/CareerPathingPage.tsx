@@ -28,6 +28,35 @@ function programMatches(course:AcademyCourse,program:string){
   return a===b||a.startsWith(b)||b.startsWith(a);
 }
 
+const careerMilestoneNames:Record<string,[string,string,string,string,string,string]>={
+  'independent-recording-artist':['Define Your Artist Identity','Build Vocal & Song Skills','Record Your First Original','Refine Your Signature Sound','Create an Artist Portfolio','Plan Your First Release'],
+  'vocal-performer':['Choose Your Vocal Direction','Master Breath & Pitch','Build Your Repertoire','Refine Stage Presence','Record a Vocal Showcase','Prepare for Auditions'],
+  'session-live-instrumentalist':['Choose Your Instrument','Build Technique & Timing','Learn Session Repertoire','Rehearse With Feedback','Record a Performance Reel','Prepare for Live Sessions'],
+  'songwriter-composer':['Find Your Writing Voice','Master Melody & Structure','Write an Original Song','Revise Lyrics & Harmony','Build a Song Catalog','Pitch Your Composition'],
+  'music-producer':['Define Your Producer Sound','Build Beats & Arrangements','Produce an Original Track','Mix & Refine Production','Build a Producer Reel','Deliver a Finished Master'],
+  'audio-engineer':['Learn Signal Flow','Practice Clean Recording','Edit & Organize Sessions','Mix With Critical Listening','Build a Mix Portfolio','Deliver Professional Audio'],
+  'music-director':['Choose Your Musical Focus','Build Theory & Musicianship','Arrange for Performers','Lead a Rehearsal','Direct a Performance','Build a Direction Portfolio'],
+  'actor':['Discover Your Character Voice','Build Acting Foundations','Perform a Scripted Scene','Develop With Direction','Record an Acting Reel','Prepare an Audition'],
+  'voice-actor':['Explore Vocal Characters','Practice Diction & Delivery','Record a Voice Script','Refine With Direction','Produce a Voice Reel','Prepare for Casting'],
+  'professional-dancer':['Choose Your Dance Style','Master Timing & Technique','Learn Full Choreography','Improve Performance Quality','Record a Dance Reel','Prepare for Auditions'],
+  'choreographer-movement-director':['Find Your Movement Style','Develop Eight-Count Phrases','Create Original Choreography','Direct a Rehearsal','Film a Choreography Reel','Present a Directed Work'],
+  'film-video-content-creator':['Develop Your Story Concept','Learn Camera & Composition','Capture Your First Scene','Edit & Refine Your Story','Build a Video Portfolio','Publish a Finished Project'],
+  'creative-business-entrepreneurship':['Define Your Creative Venture','Identify Audience & Value','Build a Business Plan','Test Your Creative Offer','Create Brand Evidence','Prepare Your Launch'],
+  'creative-arts-educator':['Choose Your Teaching Discipline','Build Subject Mastery','Design a Creative Lesson','Practice Teaching & Feedback','Create a Teaching Portfolio','Lead a Learning Session']
+};
+const careerMilestoneDetails:Record<string,[string,string,string,string,string,string]>={
+ 'film-video-content-creator':['Describe the audience, story, and purpose of a short video.','Practice framing, camera movement, lighting, and shot composition.','Plan and capture usable footage with intentional coverage.','Edit the sequence, sound, pacing, and visual continuity; revise using feedback.','Collect approved video projects demonstrating your creative and technical growth.','Present a polished film or content piece with clear production credits.'],
+ 'vocal-performer':['Choose the vocal style and performance goals you want to pursue.','Practice healthy breathing, pitch accuracy, phrasing, and vocal control.','Learn and rehearse contrasting songs appropriate for your voice.','Use instructor feedback to strengthen expression and stage confidence.','Record approved vocal performances demonstrating technique and interpretation.','Prepare a performance set or audition recording for review.'],
+ 'music-producer':['Identify the genre, mood, and musical identity of your productions.','Build rhythmic foundations, harmonic progressions, and arrangements.','Produce an original track from idea to structured session.','Use critical listening and instructor feedback to refine the production.','Collect approved tracks showing your production range and growth.','Prepare and deliver a complete production with organized project files.'],
+ 'songwriter-composer':['Identify your themes, influences, and songwriting goals.','Practice lyric writing, melody, harmony, and song structure.','Draft an original song with complete sections.','Revise the composition using instructor critique and musical experimentation.','Compile reviewed original songs and supporting demos.','Present a polished composition for performance, recording, or pitching.']
+};
+function pathMilestoneData(pathId:string,metrics:CareerMetrics){
+ const generic=milestoneData(metrics);
+ const names=careerMilestoneNames[pathId]||careerMilestoneNames['independent-recording-artist'];
+ const details=careerMilestoneDetails[pathId];
+ return generic.map((step,index)=>({...step,title:names[index],description:details?.[index]||(index===0?'Define your professional goal and the creative work you want to pursue.':index===1?'Complete relevant lessons and develop the essential techniques for this career.':index===2?'Demonstrate this career skill in an original practical assignment.':index===3?'Use instructor review to improve the quality and consistency of your work.':index===4?'Collect approved evidence of your progress in this professional discipline.':'Prepare a polished demonstration of your skills and professional readiness.')}));
+}
+
 function milestoneData(metrics:CareerMetrics){
   const portfolioReady=metrics.portfolio_items>0||metrics.approved_submissions>=3;
   const readiness=Math.min(1,metrics.completed_modules/Math.max(1,Math.min(metrics.total_modules,12)));
@@ -84,7 +113,7 @@ export function CareerPathingPage(): JSX.Element {
   const visiblePaths = careerPaths.filter(path => category === 'all' || path.category === category);
   const selectedPath = careerPaths.find(path => path.id === selectedPathId) ?? careerPaths[0];
   const primaryPath = careerPaths.find(path=>path.id===persistedPath)||selectedPath;
-  const milestones=useMemo(()=>milestoneData(metrics),[metrics]);
+  const milestones=useMemo(()=>pathMilestoneData(primaryPath.id,metrics),[primaryPath.id,metrics]);
   const completedMilestones=milestones.filter(item=>item.done).length;
   const activeMilestone=Math.min(milestones.length-1,milestones.findIndex(item=>!item.done)===-1?milestones.length-1:milestones.findIndex(item=>!item.done));
   const relevantCourses=courses.filter(course=>primaryPath.connectedPrograms.some(program=>programMatches(course,program)));
