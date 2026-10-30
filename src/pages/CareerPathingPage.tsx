@@ -20,6 +20,8 @@ type CareerMetrics={
   career_xp:number;
 };
 
+type RoadmapStop={stop:number;course:string;level:number;first_module:number;last_module:number;required:number;completed:number;done:boolean;modules:{id:string;title:string;completed:boolean}[]};
+
 const emptyMetrics:CareerMetrics={path_slug:'',connected_courses:0,accessible_courses:0,total_modules:0,completed_modules:0,approved_submissions:0,reviewed_growth:0,average_score:0,portfolio_items:0,career_xp:0};
 
 function programMatches(course:AcademyCourse,program:string){
@@ -78,6 +80,7 @@ export function CareerPathingPage(): JSX.Element {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [metrics,setMetrics]=useState<CareerMetrics>(emptyMetrics);
+  const [roadmapStops,setRoadmapStops]=useState<RoadmapStop[]>([]);
   const [courses,setCourses]=useState<AcademyCourse[]>([]);
   const [metricsLoading,setMetricsLoading]=useState(true);
   const [popup,setPopup]=useState<{title:string;message:string}|null>(null);
@@ -95,15 +98,17 @@ export function CareerPathingPage(): JSX.Element {
   useEffect(()=>{
     let active=true;
     async function loadJourney(){
-      if(!persistedPath||!supabase){setMetricsLoading(false);return}
+      if(!persistedPath||!supabase){setRoadmapStops([]);setMetricsLoading(false);return}
       setMetricsLoading(true);
-      const[{data,error},courseResult]=await Promise.all([
+      const[{data,error},courseResult,roadmapResult]=await Promise.all([
         supabase.rpc('jpac_my_career_journey',{target_path_slug:persistedPath}),
-        loadMyCourses()
+        loadMyCourses(),
+        supabase.rpc('jpac_my_career_roadmap',{target_path_slug:persistedPath})
       ]);
       if(!active)return;
       if(!error&&data)setMetrics(data as CareerMetrics);
       setCourses(courseResult.data);
+      setRoadmapStops(!roadmapResult.error&&Array.isArray(roadmapResult.data)?roadmapResult.data as RoadmapStop[]:[]);
       setMetricsLoading(false);
     }
     void loadJourney();
@@ -113,7 +118,7 @@ export function CareerPathingPage(): JSX.Element {
   const visiblePaths = careerPaths.filter(path => category === 'all' || path.category === category);
   const selectedPath = careerPaths.find(path => path.id === selectedPathId) ?? careerPaths[0];
   const primaryPath = careerPaths.find(path=>path.id===persistedPath)||selectedPath;
-  const milestones=useMemo(()=>pathMilestoneData(primaryPath.id,metrics),[primaryPath.id,metrics]);
+  const milestones=useMemo(()=>pathMilestoneData(primaryPath.id,metrics).map((item,index)=>({...item,done:roadmapStops[index]?.done===true,description:roadmapStops[index]?`${item.description} Required: ${roadmapStops[index].course}, Level ${roadmapStops[index].level}, Modules ${roadmapStops[index].first_module}–${roadmapStops[index].last_module}. Completed ${roadmapStops[index].completed} of ${roadmapStops[index].required} published modules.`:item.description})),[primaryPath.id,metrics,roadmapStops]);
   const completedMilestones=milestones.filter(item=>item.done).length;
   const activeMilestone=Math.min(milestones.length-1,milestones.findIndex(item=>!item.done)===-1?milestones.length-1:milestones.findIndex(item=>!item.done));
   const relevantCourses=courses.filter(course=>primaryPath.connectedPrograms.some(program=>programMatches(course,program)));
@@ -249,7 +254,7 @@ export function CareerPathingPage(): JSX.Element {
             <span className="journey-map-start">START</span><span className="journey-map-finish">YOUR FUTURE →</span>
           </div>
           <div className="journey-stop-details" role="status">
-            <div><span>{focusedMilestone===null?'YOUR NEXT DESTINATION':`MILESTONE ${focusedMilestone+1} OF ${milestones.length}`}</span><h3>{milestones[focusedMilestone??activeMilestone].title}</h3><p>{milestones[focusedMilestone??activeMilestone].description}</p></div>
+            <div><span>{focusedMilestone===null?'YOUR NEXT DESTINATION':`MILESTONE ${focusedMilestone+1} OF ${milestones.length}`}</span><h3>{milestones[focusedMilestone??activeMilestone].title}</h3><p>{milestones[focusedMilestone??activeMilestone].description}</p>{roadmapStops[focusedMilestone??activeMilestone]&&<div style={{marginTop:12}}><strong>Required modules ({roadmapStops[focusedMilestone??activeMilestone].completed}/{roadmapStops[focusedMilestone??activeMilestone].required})</strong><ul style={{margin:'8px 0',paddingLeft:20}}>{roadmapStops[focusedMilestone??activeMilestone].modules.map(module=><li key={module.id}>{module.completed?'✓':'○'} {module.title}</li>)}</ul></div>}</div>
             <strong>{milestones[focusedMilestone??activeMilestone].done?'✓ Milestone completed':(focusedMilestone??activeMilestone)===activeMilestone?'✦ You are here':'○ Future milestone'}</strong>
           </div>
         </div>
