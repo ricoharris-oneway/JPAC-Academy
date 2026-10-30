@@ -58,6 +58,7 @@ export function CareerPathingPage(): JSX.Element {
   const [rhythmHits,setRhythmHits]=useState(0);
   const [rhythmSequence,setRhythmSequence]=useState<number[]>([]);
   const [rhythmStatus,setRhythmStatus]=useState('');
+  const [focusedMilestone,setFocusedMilestone]=useState<number|null>(null);
 
 
   useEffect(() => { if (persistedPath) setSelectedPathId(persistedPath); }, [persistedPath]);
@@ -204,7 +205,25 @@ export function CareerPathingPage(): JSX.Element {
       <div className="career-roadmap-grid" aria-label={`${primaryPath.title} roadmap`}>
         <div className="career-progress"><span>Career Journey progress</span><strong>{completedMilestones} of {milestones.length} professional milestones</strong><div role="progressbar" aria-valuemin={0} aria-valuemax={milestones.length} aria-valuenow={completedMilestones}><i style={{ width: `${progressPercent}%` }} /></div></div>
         <div className="career-stat-grid"><article><strong>{metrics.completed_modules}</strong><span>Modules Mastered</span></article><article><strong>{metrics.approved_submissions}</strong><span>Approved Creative Works</span></article><article><strong>{metrics.reviewed_growth}</strong><span>Teacher-Coached Wins</span></article><article><strong>{metrics.portfolio_items||Math.floor(metrics.approved_submissions/3)}</strong><span>Portfolio Evidence</span></article></div>
-        <ol className="career-node-grid">{milestones.map((item,index)=>{const status=item.done?'completed':index===activeMilestone?'active':'locked';return <li className={`roadmap-node ${status}`} data-state={status} key={item.title}><span className="roadmap-node-marker" aria-hidden="true">{status==='completed'?'✓':status==='active'?'✦':'○'}</span><div><strong>{item.title}</strong><small>{item.description}</small><em>{status==='active'?'YOU ARE HERE':status==='completed'?'Completed':'Coming next'}</em></div></li>})}</ol>
+        <div className="career-journey-map" aria-label="Interactive six-stop career journey">
+          <div className="journey-map-heading"><span>YOUR CREATIVE ROAD</span><strong>Follow the road to your next milestone</strong><small>Select any stop to see what it takes to get there.</small></div>
+          <div className="journey-map-canvas">
+            <svg className="journey-map-road" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
+              <path className="journey-road-shadow" d="M 70 108 H 825 Q 940 108 940 220 Q 940 310 825 310 H 175 Q 60 310 60 420 Q 60 530 175 530 H 930"/>
+              <path className="journey-road-base" d="M 70 108 H 825 Q 940 108 940 220 Q 940 310 825 310 H 175 Q 60 310 60 420 Q 60 530 175 530 H 930"/>
+              <path className="journey-road-dashes" d="M 70 108 H 825 Q 940 108 940 220 Q 940 310 825 310 H 175 Q 60 310 60 420 Q 60 530 175 530 H 930"/>
+            </svg>
+            {milestones.map((item,index)=>{
+              const status=item.done?'completed':index===activeMilestone?'active':'upcoming';
+              return <button type="button" key={item.title} className={`journey-stop journey-stop-${index} ${status} ${focusedMilestone===index?'selected':''}`} aria-label={`Stop ${index+1}: ${item.title}. ${status}. View details`} aria-pressed={focusedMilestone===index} onClick={()=>setFocusedMilestone(index)}><span className="journey-stop-pin"><span>{item.done?'✓':['🧭','🎯','🎤','💡','🎬','🏆'][index]}</span></span><span className="journey-stop-copy"><small>STOP {index+1} · {item.done?'COMPLETED':status==='active'?'YOU ARE HERE':'UP AHEAD'}</small><strong>{item.title}</strong></span></button>;
+            })}
+            <span className="journey-map-start">START</span><span className="journey-map-finish">YOUR FUTURE →</span>
+          </div>
+          <div className="journey-stop-details" role="status">
+            <div><span>{focusedMilestone===null?'YOUR NEXT DESTINATION':`MILESTONE ${focusedMilestone+1} OF ${milestones.length}`}</span><h3>{milestones[focusedMilestone??activeMilestone].title}</h3><p>{milestones[focusedMilestone??activeMilestone].description}</p></div>
+            <strong>{milestones[focusedMilestone??activeMilestone].done?'✓ Milestone completed':(focusedMilestone??activeMilestone)===activeMilestone?'✦ You are here':'○ Future milestone'}</strong>
+          </div>
+        </div>
         <Link className="button button-primary career-roadmap-cta" to={resume.to}>▶ CONTINUE COURSEWORK WITH CAREER PURPOSE</Link>
       </div>
     </section>
