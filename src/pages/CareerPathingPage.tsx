@@ -52,6 +52,13 @@ export function CareerPathingPage(): JSX.Element {
   const [courses,setCourses]=useState<AcademyCourse[]>([]);
   const [metricsLoading,setMetricsLoading]=useState(true);
   const [popup,setPopup]=useState<{title:string;message:string}|null>(null);
+  const [experienceTab,setExperienceTab]=useState<'growth'|'lab'|'spotlight'|'games'>('growth');
+  const [explorePathId,setExplorePathId]=useState(careerPaths[0].id);
+  const [spotlightCompleted,setSpotlightCompleted]=useState(false);
+  const [rhythmHits,setRhythmHits]=useState(0);
+  const [rhythmSequence,setRhythmSequence]=useState<number[]>([]);
+  const [rhythmStatus,setRhythmStatus]=useState('');
+
 
   useEffect(() => { if (persistedPath) setSelectedPathId(persistedPath); }, [persistedPath]);
 
@@ -82,6 +89,31 @@ export function CareerPathingPage(): JSX.Element {
   const relevantCourses=courses.filter(course=>primaryPath.connectedPrograms.some(program=>programMatches(course,program)));
   const resume=continueDestination(relevantCourses.length?relevantCourses:courses);
   const progressPercent=Math.round(completedMilestones/milestones.length*100);
+
+  const spotlightChallenges=[
+    {name:'Sing the Hook',icon:'🎤',task:'Create a 20-second original vocal hook. Practice your breath, pitch, and expression.',skill:'Singing · Performance'},
+    {name:'Beat Builder',icon:'🥁',task:'Tap out a four-bar rhythm, then experiment with changing its groove.',skill:'Music Production · Rhythm'},
+    {name:'Dance in Eight',icon:'💃',task:'Create an original eight-count combination and repeat it with confidence.',skill:'Dance · Movement'},
+    {name:'Write Four Bars',icon:'✍️',task:'Write four original bars around one emotion or story. Try two different flows.',skill:'Songwriting · Storytelling'},
+    {name:'Scene Switch',icon:'🎭',task:'Deliver one short line in three different emotions. Notice what changes.',skill:'Acting · Expression'},
+    {name:'Sound Detective',icon:'🎧',task:'Listen to a favorite clean song and identify the kick, snare, bass, and melody.',skill:'Audio Engineering · Listening'},
+    {name:'Director for a Day',icon:'🎬',task:'Storyboard three camera shots that could tell a 15-second story.',skill:'Video Production · Storytelling'}
+  ];
+  const dayIndex=Math.floor(Date.now()/86400000)%spotlightChallenges.length;
+  const spotlight=spotlightChallenges[dayIndex];
+  const spotlightKey='jpac-spotlight-'+new Date().toISOString().slice(0,10);
+  const exploredPath=careerPaths.find(path=>path.id===explorePathId)||careerPaths[0];
+  function playRhythm(){
+    const pattern=Array.from({length:4},()=>Math.floor(Math.random()*4));
+    setRhythmSequence(pattern);setRhythmHits(0);setRhythmStatus('Repeat the four-beat pattern by tapping the pads in order.');
+  }
+  function tapRhythm(pad:number){
+    if(!rhythmSequence.length)return;
+    if(rhythmSequence[rhythmHits]!==pad){setRhythmSequence([]);setRhythmStatus('Not quite! Try a new pattern.');return;}
+    if(rhythmHits===rhythmSequence.length-1){setRhythmSequence([]);setRhythmHits(0);setRhythmStatus('Perfect groove! You matched all four beats.');return;}
+    setRhythmHits(value=>value+1);
+  }
+
 
   useEffect(()=>{
     if(metricsLoading||!persistedPath)return;
@@ -118,6 +150,54 @@ export function CareerPathingPage(): JSX.Element {
       <div className="career-orbit" aria-hidden="true"><div className="career-orbit-ring"/><div className="career-orbit-ring inner"/><div className="career-orbit-core"><b>✦</b><strong>{progressPercent}%<br/>Career Journey</strong></div><i className="career-float one">♬</i><i className="career-float two">◐</i><i className="career-float three">✎</i></div>
       <article className="career-daily-move"><span>Career Motivation for Your Next Academic Move</span><strong>{metricsLoading?'Building your career guidance…':milestones[activeMilestone]?.description||careerMoveForDate(new Date())}</strong><Link className="button button-primary career-next-big" to={resume.to}>RETURN TO MY GUIDED WORKFLOW →</Link></article>
     </header>
+
+    <section aria-label="My Creative Journey interactive hub" style={{margin:'24px 0',padding:'24px',border:'1px solid #694281',borderRadius:24,background:'linear-gradient(130deg,#211032,#10091c)'}}>
+      <span style={{color:'#f5c86d',fontWeight:800,letterSpacing:2}}>MY CREATIVE JOURNEY · INTERACTIVE HUB</span>
+      <h2 style={{fontSize:'clamp(1.8rem,4vw,2.8rem)',margin:'12px 0'}}>Grow your craft. Explore your future.</h2>
+      <p>See your real progress, try other creative directions, and build your skills with short challenges.</p>
+      <div role="tablist" aria-label="Creative Journey sections" style={{display:'flex',flexWrap:'wrap',gap:10,margin:'20px 0'}}>
+        {([{id:'growth',label:'📈 My Growth'},{id:'lab',label:'🧪 Career Lab'},{id:'spotlight',label:'🌟 Daily Spotlight'},{id:'games',label:'🎵 Music Games'}] as const).map(tab=><button key={tab.id} type="button" role="tab" aria-selected={experienceTab===tab.id} onClick={()=>setExperienceTab(tab.id)} className={experienceTab===tab.id?'button button-primary':'button button-secondary'}>{tab.label}</button>)}
+      </div>
+      {experienceTab==='growth'&&<div role="tabpanel">
+        <h3>Your personal growth dashboard</h3>
+        <p>These figures come from your Academy learning records, not simulated activity.</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,margin:'18px 0'}}>
+          {[{label:'Career XP',value:metrics.career_xp,icon:'⚡'},{label:'Journey Progress',value:progressPercent+'%',icon:'🧭'},{label:'Modules Completed',value:metrics.completed_modules,icon:'📚'},{label:'Approved Work',value:metrics.approved_submissions,icon:'🏆'},{label:'Coached Improvements',value:metrics.reviewed_growth,icon:'✨'},{label:'Portfolio Items',value:metrics.portfolio_items,icon:'🎬'}].map(item=><article key={item.label} style={{background:'#2c193c',border:'1px solid #614375',borderRadius:16,padding:16}}><div style={{fontSize:24}}>{item.icon}</div><strong style={{fontSize:28,color:'#f8d17d'}}>{metricsLoading?'…':item.value}</strong><div>{item.label}</div></article>)}
+        </div>
+        <h3>Your achievement trail</h3>
+        <div style={{display:'flex',flexWrap:'wrap',gap:10}}>{milestones.map((item,index)=><button type="button" key={item.title} onClick={()=>setPopup({title:item.title,message:item.description})} style={{padding:'12px 14px',borderRadius:14,border:'1px solid #78588b',background:item.done?'#294a41':'#291a39',color:'white',cursor:'pointer'}}>{item.done?'🏅':'🔒'} {item.title}</button>)}</div>
+        <p style={{marginTop:16}}><Link className="button button-primary" to={resume.to}>Continue learning →</Link></p>
+      </div>}
+      {experienceTab==='lab'&&<div role="tabpanel">
+        <h3>Career Lab: try a different future</h3>
+        <p>Experiment freely. Your saved career path and course access will not change.</p>
+        <label htmlFor="career-lab-select">Explore a career</label>
+        <select id="career-lab-select" value={explorePathId} onChange={event=>setExplorePathId(event.target.value)} style={{display:'block',width:'100%',maxWidth:560,padding:14,margin:'10px 0 18px',borderRadius:12,background:'#29173b',color:'white',border:'1px solid #85629c'}}>{careerPaths.map(path=><option key={path.id} value={path.id}>{path.icon} {path.title}</option>)}</select>
+        <article style={{padding:20,borderRadius:18,background:'#29183d',border:'1px solid #78588b'}}>
+          <div style={{fontSize:36}}>{exploredPath.icon}</div><h3>{exploredPath.title}</h3><p>{exploredPath.description}</p><strong>Imagine yourself: {exploredPath.outcome}</strong>
+          <h4>Skills and programs to try</h4><div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{exploredPath.connectedPrograms.map(program=><span key={program} style={{border:'1px solid #79549a',borderRadius:18,padding:'7px 12px'}}>{program}</span>)}</div>
+          <p style={{marginTop:16}}>Your current direction: <strong>{primaryPath.title}</strong>. Exploring this alternative does not change it.</p>
+          <Link className="button button-secondary" to="/studio">Experiment in Creator Studio →</Link>
+        </article>
+      </div>}
+      {experienceTab==='spotlight'&&<div role="tabpanel">
+        <h3>🌟 Today's JPAC Spotlight</h3>
+        <p>One creative challenge each day · About 5–10 minutes · Practice at your own pace</p>
+        <article style={{padding:22,border:'1px solid #9062ad',borderRadius:20,background:'#301a43'}}>
+          <div style={{fontSize:48}}>{spotlight.icon}</div><h3>{spotlight.name}</h3><p>{spotlight.task}</p><small>{spotlight.skill}</small>
+          <div style={{marginTop:18}}><button className="button button-primary" type="button" onClick={()=>{window.localStorage.setItem(spotlightKey,'complete');setSpotlightCompleted(true)}}>{spotlightCompleted||window.localStorage.getItem(spotlightKey)==='complete'?'✓ Practiced today':'I completed today’s practice ✓'}</button></div>
+          <p style={{marginTop:12,fontSize:13}}>Practice check-ins are saved on this device only. Official XP and achievement credit require verified Academy activity.</p>
+        </article>
+      </div>}
+      {experienceTab==='games'&&<div role="tabpanel">
+        <h3>🥁 Rhythm Recall</h3><p>A quick music-memory game. Watch the beat sequence, then repeat it using the four pads. This is a practice game, not a graded assignment.</p>
+        <button className="button button-primary" type="button" onClick={playRhythm}>Generate four-beat challenge</button>
+        {rhythmSequence.length>0&&<p style={{marginTop:14}}>Beat pattern: <strong>{rhythmSequence.map(i=>['Kick','Snare','Hi-hat','Clap'][i]).join(' · ')}</strong></p>}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(100px,180px))',gap:12,margin:'18px 0'}}>{['🥁 Kick','👏 Snare','✨ Hi-hat','🎶 Clap'].map((name,i)=><button key={name} type="button" disabled={!rhythmSequence.length} onClick={()=>tapRhythm(i)} style={{padding:'22px 12px',background:'#3d2457',border:'2px solid #aa77ca',borderRadius:16,color:'white',fontWeight:700,cursor:'pointer'}}>{name}</button>)}</div>
+        <p role="status">{rhythmStatus}</p>
+        <p><strong>Next game concepts:</strong> Build a Hook, Producer's Ear, and Career Quest. These require audio/content testing before being released.</p>
+      </div>}
+    </section>
 
     <section className="career-path-roadmap career-path-roadmap-featured" id="career-selected-path" tabIndex={-1} aria-labelledby="career-roadmap-title">
       <div><span>Your professional development roadmap</span><h2 id="career-roadmap-title">{primaryPath.icon} {primaryPath.title}</h2><p className="career-detail-meta">{categoryLabel(primaryPath.category)} · ACTIVE CAREER JOURNEY</p><p>{primaryPath.description}</p><strong>{primaryPath.outcome}</strong><h3>Career-building JPAC programs</h3><div className="career-program-list">{primaryPath.connectedPrograms.map(program => <span key={program}>{program}</span>)}</div><p className="career-roadmap-note">Your coursework is the primary path. Career Pathing interprets that academic progress as professional growth: finishing work, accepting feedback, improving your craft, building evidence, and preparing for opportunity.</p></div>
